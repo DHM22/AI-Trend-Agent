@@ -6,3 +6,8 @@ venv/
 env/
 .env
 *.log
+
+# course materials live on Drive, not in Git
+01_data/curriculum/**/*.pdf
+01_data/curriculum/**/*.pptx
+01_data/curriculum/**/*.ipynb
