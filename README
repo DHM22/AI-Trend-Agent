@@ -1,0 +1,11 @@
+# Curriculum materials
+
+Course slides are not stored in this repo (size + redistribution).
+
+1. Download from: [your Drive link]
+2. Place each week's files in the matching `week_NN/` folder
+3. Run the ingestion:
+
+   python 02_src/curriculum_ingest.py --curriculum 01_data/curriculum --db ./vectorstore
+
+The `vectorstore/` folder is generated locally and is not committed.
