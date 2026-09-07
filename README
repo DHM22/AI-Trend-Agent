@@ -1,11 +1,95 @@
-# Curriculum materials
+# AI Trend Agent
 
-Course slides are not stored in this repo (size + redistribution).
+An AI trend monitoring project that combines course curriculum knowledge with
+fresh signals from official RSS feeds and GitHub releases. Curriculum content
+is ingested into a local Chroma vector store so later agent workflows can
+retrieve relevant, citable course material.
 
-1. Download from: [your Drive link]
-2. Place each week's files in the matching `week_NN/` folder
-3. Run the ingestion:
+## Project layout
 
-   python 02_src/curriculum_ingest.py --curriculum 01_data/curriculum --db ./vectorstore
+```text
+01_data/curriculum/       Course slide decks, grouped by week
+02_src/
+   curriculum_ingest.py    Extract and index PDF/PPTX curriculum content
+   monitoring_github.py    Fetch recent GitHub releases
+   monitoring_rss.py       Fetch recent official blog posts
+   schemas.py              Shared RawSignal and trend-analysis schemas
+vectorstore/              Local generated Chroma database
+```
 
-The `vectorstore/` folder is generated locally and is not committed.
+## Setup
+
+Use Python 3.10 or newer, then install the dependencies:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install chromadb python-pptx pdfplumber feedparser requests pydantic
+```
+
+The monitoring scripts can be run from `02_src`, or from the repository root
+with the commands shown below. No API key is required for RSS monitoring or
+local Chroma embeddings.
+
+## Curriculum ingestion
+
+Course slides are not stored in this repository because of their size and
+redistribution restrictions. Download them from the course source and place
+each PDF or PPTX in the matching `week_NN` directory, for example:
+
+```text
+01_data/curriculum/
+   week_02/
+      RAG_Introduction.pptx
+   week_03/
+      Agents_and_Tools.pdf
+```
+
+Ingest the curriculum into Chroma:
+
+```powershell
+python 02_src/curriculum_ingest.py --curriculum 01_data/curriculum --db ./vectorstore
+```
+
+Re-running ingestion is incremental: stable chunk IDs update existing content
+instead of creating duplicates. To query the resulting store:
+
+```powershell
+python 02_src/curriculum_ingest.py --db ./vectorstore --query "LangChain agents"
+python 02_src/curriculum_ingest.py --db ./vectorstore --query "chunking" --week 2
+```
+
+## Monitor RSS feeds
+
+Fetch recent posts from the configured official tool blogs:
+
+```powershell
+python 02_src/monitoring_rss.py
+python 02_src/monitoring_rss.py --days 60
+python 02_src/monitoring_rss.py --check
+```
+
+## Monitor GitHub releases
+
+Fetch recent releases from the watched project repositories:
+
+```powershell
+python 02_src/monitoring_github.py
+python 02_src/monitoring_github.py --days 60
+python 02_src/monitoring_github.py --repo langchain-ai/langchain
+```
+
+Unauthenticated GitHub requests are limited to 60 per hour. For the higher
+limit, create a token with no scopes and set it locally as `GITHUB_TOKEN`:
+
+```powershell
+$env:GITHUB_TOKEN = "your-token"
+```
+
+Never commit the token. `.env` files are ignored by Git.
+
+## Generated files
+
+`vectorstore/`, Python caches, virtual environments, logs, secrets, and course
+materials are excluded by `.gitignore`. Delete `vectorstore/` if you need to
+rebuild the local index from scratch.
