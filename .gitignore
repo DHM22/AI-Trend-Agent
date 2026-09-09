@@ -1,5 +1,6 @@
 vectorstore/
 __pycache__/
+*.pyc
 *.py[cod]
 .venv/
 venv/
@@ -11,3 +12,4 @@ env/
 01_data/curriculum/**/*.pdf
 01_data/curriculum/**/*.pptx
 01_data/curriculum/**/*.ipynb
+01_data/signals.json

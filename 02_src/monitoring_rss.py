@@ -34,7 +34,7 @@ from schemas import RawSignal
 # Official blogs for tools the curriculum teaches.
 # Feed URLs move. Run --check before the demo, not during it.
 FEEDS = {
-    "langchain_blog": "https://blog.langchain.com/rss/",
+    "langchain_blog": "https://blog.langchain.com/rss.xml",
     "openai_blog": "https://openai.com/blog/rss.xml",
     "huggingface_blog": "https://huggingface.co/blog/feed.xml",
 }

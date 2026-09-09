@@ -29,6 +29,7 @@ Usage:
 
 import argparse
 import os
+import re
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -49,6 +50,7 @@ WATCHED_REPOS = [
 
 API = "https://api.github.com"
 TIMEOUT = 15
+PRE_RELEASE_TAG = re.compile(r"(?:a|b|rc)\d+$", re.IGNORECASE)
 
 
 def _headers() -> dict:
@@ -115,8 +117,10 @@ def fetch_releases(repo: str, days: int = 30, limit: int = 10) -> list[RawSignal
     signals: list[RawSignal] = []
 
     for rel in data:
-        # drafts are unpublished; prereleases are not what students will install
-        if rel.get("draft") or rel.get("prerelease"):
+        # drafts and prereleases are not what students will install
+        tag = rel.get("tag_name") or ""
+        if (rel.get("draft") or rel.get("prerelease")
+            or PRE_RELEASE_TAG.search(tag)):
             continue
 
         published = rel.get("published_at")

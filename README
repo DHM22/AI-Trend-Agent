@@ -1,77 +1,72 @@
 # AI Trend Agent
 
-An AI trend monitoring project that combines course curriculum knowledge with
-fresh signals from official RSS feeds and GitHub releases. Curriculum content
-is ingested into a local Chroma vector store so later agent workflows can
-retrieve relevant, citable course material.
+AI Trend Agent combines course curriculum knowledge with fresh signals from
+official RSS feeds and GitHub releases. It indexes curriculum content in a
+local Chroma vector store so the future agent workflow can retrieve relevant,
+citable course material and turn verified trends into recommendations.
 
-## Project layout
+## Project structure
 
 ```text
-01_data/curriculum/       Course slide decks, grouped by week
+01_data/
+   curriculum/week_02/     Course material for week 2
+   curriculum/week_03/     Course material for week 3
+   signals.json             Saved monitoring signals
 02_src/
-   curriculum_ingest.py    Extract and index PDF/PPTX curriculum content
-   monitoring_github.py    Fetch recent GitHub releases
-   monitoring_rss.py       Fetch recent official blog posts
-   schemas.py              Shared RawSignal and trend-analysis schemas
-vectorstore/              Local generated Chroma database
+   agents/                  Agent stubs and future tool definitions
+   schemas.py               Shared dataclass contracts
+   curriculum_ingest.py     Extract and index PDF/PPTX content
+   monitoring_github.py     Fetch GitHub releases
+   monitoring_rss.py        Fetch official RSS posts
+   clustering.py            Group signals into trend clusters
+   pipeline.py              End-to-end pipeline stub
+03_assets/
+   diagrams/                Project diagrams
+   screenshots/             Project screenshots
+vectorstore/                Local generated Chroma database
 ```
 
 ## Setup
 
-Use Python 3.10 or newer, then install the dependencies:
+Use Python 3.10 or newer:
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install chromadb python-pptx pdfplumber feedparser requests pydantic
+pip install -r requirements.txt
+Copy-Item .env.example .env
 ```
 
-The monitoring scripts can be run from `02_src`, or from the repository root
-with the commands shown below. No API key is required for RSS monitoring or
-local Chroma embeddings.
+Set `GITHUB_TOKEN` in `.env` for the higher GitHub API rate limit and
+`OPENAI_API_KEY` when the agent workflow is implemented. Never commit `.env`.
 
-## Curriculum ingestion
+Course slides are excluded from Git because of their size and redistribution
+restrictions. Place downloaded PDF, PPTX, or notebook files in the matching
+`01_data/curriculum/week_NN/` directory.
 
-Course slides are not stored in this repository because of their size and
-redistribution restrictions. Download them from the course source and place
-each PDF or PPTX in the matching `week_NN` directory, for example:
+## Run the existing scripts
 
-```text
-01_data/curriculum/
-   week_02/
-      RAG_Introduction.pptx
-   week_03/
-      Agents_and_Tools.pdf
-```
-
-Ingest the curriculum into Chroma:
+### Curriculum ingestion
 
 ```powershell
 python 02_src/curriculum_ingest.py --curriculum 01_data/curriculum --db ./vectorstore
-```
-
-Re-running ingestion is incremental: stable chunk IDs update existing content
-instead of creating duplicates. To query the resulting store:
-
-```powershell
 python 02_src/curriculum_ingest.py --db ./vectorstore --query "LangChain agents"
 python 02_src/curriculum_ingest.py --db ./vectorstore --query "chunking" --week 2
 ```
 
-## Monitor RSS feeds
+The script also accepts `--week` to restrict a query and `-k` to set the
+number of results.
 
-Fetch recent posts from the configured official tool blogs:
+### RSS monitoring
 
 ```powershell
 python 02_src/monitoring_rss.py
 python 02_src/monitoring_rss.py --days 60
+python 02_src/monitoring_rss.py --secondary
 python 02_src/monitoring_rss.py --check
 ```
 
-## Monitor GitHub releases
-
-Fetch recent releases from the watched project repositories:
+### GitHub monitoring
 
 ```powershell
 python 02_src/monitoring_github.py
@@ -79,17 +74,21 @@ python 02_src/monitoring_github.py --days 60
 python 02_src/monitoring_github.py --repo langchain-ai/langchain
 ```
 
-Unauthenticated GitHub requests are limited to 60 per hour. For the higher
-limit, create a token with no scopes and set it locally as `GITHUB_TOKEN`:
+Repeat `--repo` to override the watched repository list.
+
+### Clustering
 
 ```powershell
-$env:GITHUB_TOKEN = "your-token"
+python 02_src/clustering.py --signals 01_data/signals.json
+python 02_src/clustering.py --fetch --save 01_data/signals.json
+python 02_src/clustering.py --signals 01_data/signals.json --check
 ```
 
-Never commit the token. `.env` files are ignored by Git.
+Clustering also accepts `--threshold`, `--strip-prefix`, `--no-identifiers`,
+`--max-freq`, `--frequencies`, `--min-shared`, and `--all`.
 
 ## Generated files
 
 `vectorstore/`, Python caches, virtual environments, logs, secrets, and course
-materials are excluded by `.gitignore`. Delete `vectorstore/` if you need to
-rebuild the local index from scratch.
+materials are excluded by `.gitignore`. Delete `vectorstore/` to rebuild the
+local index from scratch.
