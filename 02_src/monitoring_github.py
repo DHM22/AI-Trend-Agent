@@ -35,6 +35,12 @@ from datetime import datetime, timedelta, timezone
 
 import requests
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 from schemas import RawSignal
 
 

@@ -28,6 +28,12 @@ from time import mktime
 
 import feedparser
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 from schemas import RawSignal
 
 

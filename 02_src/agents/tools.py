@@ -30,6 +30,12 @@ from pathlib import Path
 
 import requests
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 # scripts run from the repo root, so 02_src is not automatically importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
