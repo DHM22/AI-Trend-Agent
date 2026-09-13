@@ -116,11 +116,23 @@ class CurriculumMatch:
     matched_text: str
     similarity: float | None    # None when found by literal identifier match
     exact_match: str | None = None   # the identifier found, e.g. "FAISS"
+    content_type: str = "slides"     # "slides" | "lab"
 
     @property
     def citation(self) -> str:
         wk = f"Week {self.week}" if self.week is not None else "Uncategorised"
+        if self.content_type == "lab":
+            return f"{wk} / Lab: {self.topic} / cell {self.slide_number}"
         return f"{wk} / {self.topic} / slide {self.slide_number}"
+
+    @property
+    def is_lab(self) -> bool:
+        """
+        Labs matter more than slides. A concept slide stays true across
+        versions; a notebook cell that CALLS a deprecated API stops running.
+        The recommendation tier should weight this.
+        """
+        return self.content_type == "lab"
 
     @property
     def is_reliable(self) -> bool:

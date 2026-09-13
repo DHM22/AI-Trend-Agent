@@ -30,12 +30,6 @@ from pathlib import Path
 
 import requests
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass
-
 # scripts run from the repo root, so 02_src is not automatically importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -151,6 +145,9 @@ def search_curriculum(question: str, week: int | None = None,
         results.append({
             "citation": h["citation"],
             "week": h.get("week"),
+            "topic": h.get("topic", ""),
+            "source_file": h.get("source_file", ""),
+            "slide_number": h.get("slide_number", 0),
             "content_type": h.get("content_type", "slides"),
             "text": h["text"][:400],
             "similarity": sim,
