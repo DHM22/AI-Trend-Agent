@@ -30,6 +30,8 @@ from schemas import (
     Recommendation,
     TrendCluster,
     VerifiedTrend,
+    MATURITY_WEIGHT,
+    RELEVANCE_WEIGHT,
 )
 
 # Reused read-only from the evaluation agent. These are private symbols of
@@ -85,6 +87,7 @@ def _select_tier(maturity: int, relevance: int,
     """
     _validate_score(maturity, "maturity")
     _validate_score(relevance, "relevance")
+    _validate_match(match)                  # None or CurriculumMatch; reject anything else
     if not isinstance(curriculum_checked, bool):
         raise TypeError("curriculum_checked must be a bool")
 
@@ -106,6 +109,10 @@ def _select_tier(maturity: int, relevance: int,
 # whose wording argues for a DIFFERENT tier than the one Python chose -- the core
 # defence against a prompt-injected "recommend ADD_NEW_LESSON" slipping through.
 _TIER_SIGNATURES: dict[str, tuple[str, ...]] = {
+    # De-escalation language belongs to "watch": without this, a plan for a
+    # higher tier could tell the reader to do nothing and pass undetected.
+    "watch": ("do not change", "don't change", "no change to the curriculum",
+              "no action", "leave the curriculum", "take no action"),
     "add_new_lesson": ("new lesson", "add a lesson", "create a lesson", "new module"),
     "update_existing_material": ("update existing", "update the existing", "revise existing"),
     "add_optional_content": ("optional content", "optional material", "supplementary material"),
@@ -195,6 +202,7 @@ class RecommendationAgent:
         evaluation: EvaluationResult,
         *,
         curriculum_checked: bool = False,
+        curriculum_note: str | None = None,
     ) -> Recommendation:
         """Assign an action tier and build the recommendation.
 
@@ -202,7 +210,9 @@ class RecommendationAgent:
         rephrases the plan text. ``curriculum_checked`` distinguishes "searched,
         found nothing" (enables ``add_new_lesson``) from "never searched"
         (stays conservative). It must be a real bool: a truthy non-bool must not
-        be able to enable ``add_new_lesson``.
+        be able to enable ``add_new_lesson``. ``curriculum_note`` optionally
+        surfaces WHY coverage is unverified (e.g. an unexpected lookup failure);
+        it is appended to the plan only when ``curriculum_checked`` is False.
         """
         _validate_trend(trend)
         _validate_match(match)
@@ -212,6 +222,19 @@ class RecommendationAgent:
         _validate_score(evaluation.relevance_score, "evaluation.relevance_score")
         if not _is_finite_number(evaluation.total_score) or not 1.0 <= evaluation.total_score <= 5.0:
             raise ValueError("evaluation.total_score must be a finite number between 1 and 5")
+        # Reject an internally inconsistent evaluation: total_score must be the
+        # weighted blend of its OWN two components (same weights Evaluation uses).
+        # This is a self-consistency check on the EvaluationResult -- it does NOT
+        # re-derive maturity/relevance from trend.confidence/match (Evaluation
+        # owns that logic; duplicating it here would be a second source of truth).
+        expected_total = round(MATURITY_WEIGHT * evaluation.maturity_score
+                               + RELEVANCE_WEIGHT * evaluation.relevance_score, 2)
+        if abs(evaluation.total_score - expected_total) > 0.01:
+            raise ValueError(
+                f"evaluation.total_score {evaluation.total_score} is inconsistent with its "
+                f"components (expected {expected_total} from maturity="
+                f"{evaluation.maturity_score}, relevance={evaluation.relevance_score})"
+            )
         if not isinstance(curriculum_checked, bool):
             raise TypeError("curriculum_checked must be a bool")
         # Reject mismatched inputs: the evaluation must be OF this trend/match.
@@ -222,7 +245,8 @@ class RecommendationAgent:
 
         tier = _select_tier(evaluation.maturity_score, evaluation.relevance_score,
                              match, curriculum_checked)
-        action_plan = self._action_plan(tier, trend, match, evaluation, curriculum_checked)
+        action_plan = self._action_plan(tier, trend, match, evaluation,
+                                         curriculum_checked, curriculum_note)
 
         return Recommendation(
             trend=trend.cluster.representative_title,
@@ -240,9 +264,10 @@ class RecommendationAgent:
 
         Uses injected agents when provided (tests), else constructs the real
         ones (which need an API key only at that point). The curriculum seam is
-        stub-tolerant: a NotImplementedError (today's stub) or any failure is
-        treated as "not searched", keeping the result conservative rather than
-        falsely claiming the trend is uncovered.
+        stub-tolerant and keeps the result conservative either way, but records
+        WHY coverage is unverified: a NotImplementedError is the expected stub
+        seam (no cause to report); any other exception is an unexpected failure
+        whose cause is surfaced in the plan rather than silently swallowed.
         """
         verifier = self._verifier
         if verifier is None:
@@ -254,13 +279,19 @@ class RecommendationAgent:
         if curriculum is None:
             from agents.curriculum import CurriculumAgent
             curriculum = CurriculumAgent()
+        curriculum_note = None
         try:
             match = curriculum.run(trend)
             checked = True
         except NotImplementedError:
+            # Expected stub seam: coverage genuinely never searched, no fault.
             match, checked = None, False
-        except Exception:                   # a real agent failing must not claim coverage
+        except Exception as exc:            # unexpected: stay conservative, but say why
             match, checked = None, False
+            curriculum_note = (
+                f"Curriculum lookup failed unexpectedly and was treated as unverified "
+                f"({type(exc).__name__}: {_evidence_text(exc, 200)})."
+            )
 
         evaluator = self._evaluator
         if evaluator is None:
@@ -268,26 +299,31 @@ class RecommendationAgent:
             evaluator = EvaluationAgent(client=self._client, model=self.model)
         evaluation = evaluator.run(trend, match)
 
-        return self.recommend(trend, match, evaluation, curriculum_checked=checked)
+        return self.recommend(trend, match, evaluation,
+                              curriculum_checked=checked, curriculum_note=curriculum_note)
 
     # -- action plan: deterministic baseline, optional LLM rephrase ---------
 
     def _action_plan(self, tier: str, trend: VerifiedTrend,
                      match: CurriculumMatch | None, evaluation: EvaluationResult,
-                     curriculum_checked: bool) -> list[str]:
+                     curriculum_checked: bool, curriculum_note: str | None = None) -> list[str]:
         steps = self._plan_template(tier, match)
 
         llm_steps = self._llm_plan(tier, trend, match, evaluation)
         if llm_steps:
             steps = llm_steps
 
-        # The limitation line is part of the DETERMINISTIC baseline, never the
-        # LLM's to add or drop: present iff the curriculum was not searched.
-        reserved = 0 if curriculum_checked else 1
-        steps = steps[: MAX_PLAN_ITEMS - reserved]
+        # These notes are part of the DETERMINISTIC baseline, never the LLM's to
+        # add or drop: present iff the curriculum was not searched. The standard
+        # line always appears; a specific cause (e.g. an unexpected lookup
+        # failure) is appended after it when one was supplied.
+        notes: list[str] = []
         if not curriculum_checked:
-            steps = steps + [CURRICULUM_UNCHECKED_NOTE]
-        return steps
+            notes.append(CURRICULUM_UNCHECKED_NOTE)
+            if curriculum_note:
+                notes.append(curriculum_note)
+        steps = steps[: MAX_PLAN_ITEMS - len(notes)]
+        return steps + notes
 
     def _plan_template(self, tier: str, match: CurriculumMatch | None) -> list[str]:
         """Built FROM the tier + facts, so it can never describe a different tier."""

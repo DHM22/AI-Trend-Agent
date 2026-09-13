@@ -12,4 +12,6 @@ env/
 01_data/curriculum/**/*.pdf
 01_data/curriculum/**/*.pptx
 01_data/curriculum/**/*.ipynb
-01_data/signals.json
+01_data/signals.json.DS_Store
+**/.DS_Store
+01_data/.tool_cache/

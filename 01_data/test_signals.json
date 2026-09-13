@@ -1,0 +1,34 @@
+[
+  {
+    "title": "langchain-ai/langgraph: v1.0.0 release",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "LangGraph 1.0 is here. A durable, low-level orchestration framework for building stateful, long-running agents. Adds durable execution, streaming, and human-in-the-loop primitives.",
+    "url": "https://github.com/langchain-ai/langgraph/releases/tag/1.0.0",
+    "published": "2025-10-22"
+  },
+  {
+    "title": "LangGraph 1.0 released for building stateful agents",
+    "source": "hackernews",
+    "source_tier": "secondary",
+    "summary": "Discussion of LangGraph reaching 1.0, with commenters noting production use for agent orchestration and comparing it to alternatives.",
+    "url": "https://news.ycombinator.com/item?id=00000000",
+    "published": "2025-10-22"
+  },
+  {
+    "title": "NeuroForgeX 4.0 will replace all transformer training overnight",
+    "source": "some_blog",
+    "source_tier": "secondary",
+    "summary": "An anonymous post claims a framework called NeuroForgeX 4.0 trains 500B-parameter models on a single laptop GPU in minutes and is about to make PyTorch obsolete. No official repository or paper is linked.",
+    "url": "https://example.com/neuroforgex-hype",
+    "published": "2025-11-01"
+  },
+  {
+    "title": "vllm-project/vllm: high-throughput LLM inference engine",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "vLLM announces a new release with improved PagedAttention memory management and expanded model support for high-throughput, memory-efficient LLM serving.",
+    "url": "https://github.com/vllm-project/vllm/releases",
+    "published": "2025-11-05"
+  }
+]
