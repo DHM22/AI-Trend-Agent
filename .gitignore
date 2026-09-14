@@ -8,10 +8,17 @@ env/
 .env
 *.log
 
+# local run outputs and caches
+01_data/.tool_cache/
+01_data/recommendations.json
+01_data/recs*.json
+
 # course materials live on Drive, not in Git
 01_data/curriculum/**/*.pdf
 01_data/curriculum/**/*.pptx
 01_data/curriculum/**/*.ipynb
-01_data/signals.json.DS_Store
+# Signals are a committed replay/input fixture.
+!01_data/signals.json
+
+# macOS noise
 **/.DS_Store
-01_data/.tool_cache/

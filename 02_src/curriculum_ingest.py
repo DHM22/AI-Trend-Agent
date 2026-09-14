@@ -35,6 +35,7 @@ Swap to OpenAI embeddings for better quality -- see EMBEDDING NOTE at bottom.
 
 import argparse
 import hashlib
+import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -56,8 +57,9 @@ class CurriculumChunk:
     week: int | None      # 2                    (from the week_02/ folder)
     topic: str            # "RAG Introduction"   (from the filename)
     source_file: str      # "RAG_Introduction.pptx"
-    slide_number: int     # 25
+    slide_number: int     # 25   (cell number for notebooks)
     chunk_index: int = 0  # >0 if one slide was split into several chunks
+    content_type: str = "slides"   # "slides" | "lab"
 
     @property
     def chunk_id(self) -> str:
@@ -68,6 +70,8 @@ class CurriculumChunk:
     @property
     def citation(self) -> str:
         wk = f"Week {self.week}" if self.week is not None else "Uncategorised"
+        if self.content_type == "lab":
+            return f"{wk} / Lab: {self.topic} / cell {self.slide_number}"
         return f"{wk} / {self.topic} / slide {self.slide_number}"
 
 
@@ -151,6 +155,49 @@ def extract_pdf(path: Path, week: int | None) -> list[CurriculumChunk]:
     return chunks
 
 
+def extract_ipynb(path: Path, week: int | None) -> list[CurriculumChunk]:
+    """
+    Pull cells from a Jupyter/Colab notebook. Each cell becomes one chunk,
+    so a citation reads "cell 14" -- as precise as a slide number.
+
+    Labs matter more than slides for this project: a concept slide stays true
+    across versions, but a cell that calls AgentExecutor BREAKS when LangChain
+    deprecates it. That is a concrete, checkable recommendation.
+
+    Outputs are deliberately ignored -- tracebacks, base64 images and printed
+    dataframes are noise that would swamp the actual teaching content.
+    """
+    topic = topic_from_filename(path)
+    chunks: list[CurriculumChunk] = []
+
+    try:
+        nb = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        print(f"  ! could not parse notebook {path.name}: {e}")
+        return []
+
+    for i, cell in enumerate(nb.get("cells", []), start=1):
+        source = cell.get("source", "")
+        # nbformat stores source as a list of lines, but some tools write a string
+        text = ("".join(source) if isinstance(source, list) else str(source)).strip()
+        if not text:
+            continue
+
+        kind = cell.get("cell_type")
+        if kind == "code":
+            # tag it so retrieval can tell prose from executable code
+            text = f"[Code cell]\n{text}"
+        elif kind != "markdown":
+            continue   # raw cells are usually config, not content
+
+        chunks.append(CurriculumChunk(
+            text=text, week=week, topic=topic,
+            source_file=path.name, slide_number=i,
+            content_type="lab"))
+
+    return chunks
+
+
 def extract_all(curriculum_root: Path) -> list[CurriculumChunk]:
     """
     Recursively walk the curriculum tree, routing each file to the right
@@ -163,6 +210,8 @@ def extract_all(curriculum_root: Path) -> list[CurriculumChunk]:
     for path in sorted(curriculum_root.rglob("*")):
         if not path.is_file() or path.name.startswith("."):
             continue
+        if ".ipynb_checkpoints" in path.parts:
+            continue   # Jupyter autosaves - duplicates of the real notebook
 
         week = week_from_path(path, curriculum_root)
         suffix = path.suffix.lower()
@@ -171,6 +220,8 @@ def extract_all(curriculum_root: Path) -> list[CurriculumChunk]:
             found = extract_pptx(path, week)
         elif suffix == ".pdf":
             found = extract_pdf(path, week)
+        elif suffix == ".ipynb":
+            found = extract_ipynb(path, week)
         else:
             skipped.append(path.name)
             continue
@@ -230,7 +281,8 @@ def split_long_chunks(chunks: list[CurriculumChunk],
                 text=chunk.text[start:start + max_chars],
                 week=chunk.week, topic=chunk.topic,
                 source_file=chunk.source_file,
-                slide_number=chunk.slide_number, chunk_index=idx))
+                slide_number=chunk.slide_number, chunk_index=idx,
+                content_type=chunk.content_type))
             start += max_chars - overlap
             idx += 1
 
@@ -270,7 +322,12 @@ def ingest(curriculum_root: str, db_path: str, embedding_function=None) -> int:
         key = f"week_{c.week:02d}" if c.week is not None else "uncategorised"
         by_week[key] = by_week.get(key, 0) + 1
     for wk in sorted(by_week):
-        print(f"    {wk}: {by_week[wk]} slides")
+        print(f"    {wk}: {by_week[wk]} items")
+    by_type: dict[str, int] = {}
+    for c in raw:
+        by_type[c.content_type] = by_type.get(c.content_type, 0) + 1
+    if len(by_type) > 1:
+        print("    (" + ", ".join(f"{k}: {v}" for k, v in sorted(by_type.items())) + ")")
 
     kept, dropped = drop_thin_chunks(raw)
     if dropped:
@@ -294,6 +351,7 @@ def ingest(curriculum_root: str, db_path: str, embedding_function=None) -> int:
             "topic": c.topic,
             "source_file": c.source_file,
             "slide_number": c.slide_number,
+            "content_type": c.content_type,
         } for c in chunks],
     )
 
@@ -338,6 +396,13 @@ def extract_identifiers(question: str) -> list[str]:
     return [t for t in dict.fromkeys(found) if t.upper() not in STOP_IDENTIFIERS]
 
 
+def _format_citation(wk, meta) -> str:
+    head = f"Week {wk}" if wk else "Uncategorised"
+    if meta.get("content_type") == "lab":
+        return f"{head} / Lab: {meta['topic']} / cell {meta['slide_number']}"
+    return f"{head} / {meta['topic']} / slide {meta['slide_number']}"
+
+
 def _row_to_hit(doc, meta, similarity: float, exact_match: str | None) -> dict:
     wk = meta["week"] if meta["week"] != -1 else None
     return {
@@ -346,20 +411,23 @@ def _row_to_hit(doc, meta, similarity: float, exact_match: str | None) -> dict:
         "topic": meta["topic"],
         "source_file": meta["source_file"],
         "slide_number": meta["slide_number"],
+        "content_type": meta.get("content_type", "slides"),
         "similarity": similarity,
         "exact_match": exact_match,     # the identifier found, or None
-        "citation": (f"Week {wk}" if wk else "Uncategorised")
-                    + f" / {meta['topic']} / slide {meta['slide_number']}",
+        "citation": _format_citation(wk, meta),
     }
 
 
 def query(db_path: str, question: str, k: int = 3,
-          week: int | None = None, embedding_function=None,
-          hybrid: bool = True) -> list[dict]:
+          week: int | None = None, content_type: str | None = None,
+          embedding_function=None, hybrid: bool = True) -> list[dict]:
     """
     This is what CurriculumAgent calls. Returns chunks WITH citations.
 
     week=N restricts the search to one week's material.
+    content_type="lab" restricts to notebooks, "slides" to decks. Useful
+    because a trend that breaks LAB CODE is more urgent than one that dates
+    a concept slide -- the code literally stops running.
     hybrid=False disables the literal identifier pass (semantic only).
 
     Hits carry an "exact_match" field: the identifier literally found in the
@@ -374,7 +442,17 @@ def query(db_path: str, question: str, k: int = 3,
     if total == 0:
         return []
 
-    where = {"week": week} if week is not None else None
+    filters = []
+    if week is not None:
+        filters.append({"week": week})
+    if content_type is not None:
+        filters.append({"content_type": content_type})
+    # Chroma needs $and for multiple conditions, a bare dict for one
+    where = None
+    if len(filters) == 1:
+        where = filters[0]
+    elif len(filters) > 1:
+        where = {"$and": filters}
 
     # --- pass 1: semantic
     kwargs = {"query_texts": [question], "n_results": min(k, total)}
@@ -426,11 +504,14 @@ def main():
     ap.add_argument("--db", default="./vectorstore", help="Chroma persistence path")
     ap.add_argument("--query", help="skip ingestion, just search the existing store")
     ap.add_argument("--week", type=int, help="restrict a query to one week")
+    ap.add_argument("--type", choices=["slides", "lab"], dest="content_type",
+                    help="restrict a query to slides or lab notebooks")
     ap.add_argument("-k", type=int, default=3, help="results to return")
     args = ap.parse_args()
 
     if args.query:
-        hits = query(args.db, args.query, args.k, week=args.week)
+        hits = query(args.db, args.query, args.k, week=args.week,
+                     content_type=args.content_type)
         if not hits:
             print("no results -- has anything been ingested?")
             return

@@ -1,9 +1,9 @@
 # AI Trend Agent
 
-AI Trend Agent combines course curriculum knowledge with fresh signals from
-official RSS feeds and GitHub releases. It indexes curriculum content in a
-local Chroma vector store so the future agent workflow can retrieve relevant,
-citable course material and turn verified trends into recommendations.
+AI Trend Agent turns technology signals from official RSS feeds and GitHub
+releases into evidence-backed curriculum recommendations. It searches the
+course material, verifies trends, scores their curriculum impact, and produces
+an action plan with citations.
 
 ## Project structure
 
@@ -13,13 +13,13 @@ citable course material and turn verified trends into recommendations.
    curriculum/week_03/     Course material for week 3
    signals.json             Saved monitoring signals
 02_src/
-   agents/                  Agent stubs and future tool definitions
+   agents/                  Verification, curriculum, evaluation, and recommendation agents
    schemas.py               Shared dataclass contracts
    curriculum_ingest.py     Extract and index PDF/PPTX content
    monitoring_github.py     Fetch GitHub releases
    monitoring_rss.py        Fetch official RSS posts
    clustering.py            Group signals into trend clusters
-   pipeline.py              End-to-end pipeline stub
+   demo_snapshot.py         Capture or replay a recorded run
 03_assets/
    diagrams/                Project diagrams
    screenshots/             Project screenshots
@@ -38,11 +38,22 @@ Copy-Item .env.example .env
 ```
 
 Set `GITHUB_TOKEN` in `.env` for the higher GitHub API rate limit and
-`OPENAI_API_KEY` when the agent workflow is implemented. Never commit `.env`.
+`OPENAI_API_KEY` for live agent runs. Never commit `.env`.
 
 Course slides are excluded from Git because of their size and redistribution
 restrictions. Place downloaded PDF, PPTX, or notebook files in the matching
 `01_data/curriculum/week_NN/` directory.
+
+## Quickstart without an API key
+
+Replay the committed run. This makes zero API calls:
+
+```powershell
+python 02_src/demo_snapshot.py --replay
+```
+
+For the full command list, observed outputs, offline checks, and troubleshooting,
+see [02_src/agents/TESTING.md](02_src/agents/TESTING.md).
 
 ## Run the existing scripts
 
@@ -89,6 +100,6 @@ Clustering also accepts `--threshold`, `--strip-prefix`, `--no-identifiers`,
 
 ## Generated files
 
-`vectorstore/`, Python caches, virtual environments, logs, secrets, and course
-materials are excluded by `.gitignore`. Delete `vectorstore/` to rebuild the
-local index from scratch.
+`vectorstore/`, Python caches, virtual environments, logs, secrets, generated
+run outputs, and course materials are excluded by `.gitignore`. Delete
+`vectorstore/` to rebuild the local index from scratch.
