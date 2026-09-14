@@ -1,0 +1,446 @@
+{
+  "format_version": 1,
+  "timestamp_utc": "2026-09-14T13:39:01.416109+00:00",
+  "code": {
+    "commit": "4ea2abe0c65b868a95c32e3b58515c0b2393ec03",
+    "dirty": true
+  },
+  "dataset": {
+    "path": "test_signals_graded.json",
+    "sha256": "8bd9b3e1dc2748b5d45a6e63b3c39a03d862c493a54c27140890a4b0bb7790a8",
+    "item_count": 8
+  },
+  "model": {
+    "requested_identifier": "gpt-4o-mini",
+    "observed_identifiers": [],
+    "temperature": 0,
+    "version_pinned": false,
+    "note": "Set OPENAI_MODEL to a provider version-pinned identifier before freezing a live baseline."
+  },
+  "repeats": 3,
+  "runs": [
+    {
+      "layers": {
+        "clustering": {
+          "status": "implemented",
+          "metrics": {
+            "contamination_rate": {
+              "value": 0.14285714285714285
+            },
+            "cluster_count": {
+              "value": 7
+            },
+            "expected_cluster_count": {
+              "value": 7
+            },
+            "cluster_count_delta": {
+              "value": 0
+            }
+          },
+          "score": 85.71428571428572
+        },
+        "verification": {
+          "status": "implemented",
+          "metrics": {
+            "truth_confidence_gap": {
+              "value": null,
+              "requirement": "gold.is_genuine=true/false on every truth-scored signal"
+            },
+            "confidence_mae": {
+              "value": null,
+              "requirement": "gold.confidence (0.0\u20131.0) on every confidence-scored signal"
+            },
+            "stale_flag_rate": {
+              "value": null,
+              "requirement": "gold.stale_presented_as_new plus a verification output field/contract that records a stale flag; VerifiedTrend has neither"
+            }
+          },
+          "score": null
+        },
+        "curriculum": {
+          "status": "implemented",
+          "metrics": {
+            "precision_at_3": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals; CurriculumAgent exposes one selected match, not its top-3 candidates"
+            },
+            "recall": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.acceptable_citations"
+            },
+            "correct_abstention_rate": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.no_match_expected"
+            }
+          },
+          "score": null
+        },
+        "evaluation": {
+          "status": "implemented",
+          "metrics": {
+            "spearman_rank_correlation": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.rank"
+            },
+            "maturity_mae": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.maturity (1\u20135)"
+            },
+            "relevance_mae": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.relevance (1\u20135)"
+            }
+          },
+          "score": null
+        },
+        "recommendation": {
+          "status": "implemented",
+          "metrics": {
+            "exact_tier_accuracy": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.action_tier"
+            },
+            "off_by_one_tier_accuracy": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.action_tier and an agreed ordered-tier policy"
+            },
+            "over_recommendation_rate": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.action_tier and an agreed ordered-tier policy"
+            }
+          },
+          "score": null
+        }
+      },
+      "composite_score": 85.71428571428572,
+      "pipeline": {
+        "clusters": 7,
+        "recommendations": 7
+      },
+      "repeat": 1,
+      "total_tokens": 0,
+      "wall_clock_seconds": 20.635927125003946
+    },
+    {
+      "layers": {
+        "clustering": {
+          "status": "implemented",
+          "metrics": {
+            "contamination_rate": {
+              "value": 0.14285714285714285
+            },
+            "cluster_count": {
+              "value": 7
+            },
+            "expected_cluster_count": {
+              "value": 7
+            },
+            "cluster_count_delta": {
+              "value": 0
+            }
+          },
+          "score": 85.71428571428572
+        },
+        "verification": {
+          "status": "implemented",
+          "metrics": {
+            "truth_confidence_gap": {
+              "value": null,
+              "requirement": "gold.is_genuine=true/false on every truth-scored signal"
+            },
+            "confidence_mae": {
+              "value": null,
+              "requirement": "gold.confidence (0.0\u20131.0) on every confidence-scored signal"
+            },
+            "stale_flag_rate": {
+              "value": null,
+              "requirement": "gold.stale_presented_as_new plus a verification output field/contract that records a stale flag; VerifiedTrend has neither"
+            }
+          },
+          "score": null
+        },
+        "curriculum": {
+          "status": "implemented",
+          "metrics": {
+            "precision_at_3": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals; CurriculumAgent exposes one selected match, not its top-3 candidates"
+            },
+            "recall": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.acceptable_citations"
+            },
+            "correct_abstention_rate": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.no_match_expected"
+            }
+          },
+          "score": null
+        },
+        "evaluation": {
+          "status": "implemented",
+          "metrics": {
+            "spearman_rank_correlation": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.rank"
+            },
+            "maturity_mae": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.maturity (1\u20135)"
+            },
+            "relevance_mae": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.relevance (1\u20135)"
+            }
+          },
+          "score": null
+        },
+        "recommendation": {
+          "status": "implemented",
+          "metrics": {
+            "exact_tier_accuracy": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.action_tier"
+            },
+            "off_by_one_tier_accuracy": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.action_tier and an agreed ordered-tier policy"
+            },
+            "over_recommendation_rate": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.action_tier and an agreed ordered-tier policy"
+            }
+          },
+          "score": null
+        }
+      },
+      "composite_score": 85.71428571428572,
+      "pipeline": {
+        "clusters": 7,
+        "recommendations": 7
+      },
+      "repeat": 2,
+      "total_tokens": 0,
+      "wall_clock_seconds": 20.226036375002877
+    },
+    {
+      "layers": {
+        "clustering": {
+          "status": "implemented",
+          "metrics": {
+            "contamination_rate": {
+              "value": 0.14285714285714285
+            },
+            "cluster_count": {
+              "value": 7
+            },
+            "expected_cluster_count": {
+              "value": 7
+            },
+            "cluster_count_delta": {
+              "value": 0
+            }
+          },
+          "score": 85.71428571428572
+        },
+        "verification": {
+          "status": "implemented",
+          "metrics": {
+            "truth_confidence_gap": {
+              "value": null,
+              "requirement": "gold.is_genuine=true/false on every truth-scored signal"
+            },
+            "confidence_mae": {
+              "value": null,
+              "requirement": "gold.confidence (0.0\u20131.0) on every confidence-scored signal"
+            },
+            "stale_flag_rate": {
+              "value": null,
+              "requirement": "gold.stale_presented_as_new plus a verification output field/contract that records a stale flag; VerifiedTrend has neither"
+            }
+          },
+          "score": null
+        },
+        "curriculum": {
+          "status": "implemented",
+          "metrics": {
+            "precision_at_3": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals; CurriculumAgent exposes one selected match, not its top-3 candidates"
+            },
+            "recall": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.acceptable_citations"
+            },
+            "correct_abstention_rate": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.no_match_expected"
+            }
+          },
+          "score": null
+        },
+        "evaluation": {
+          "status": "implemented",
+          "metrics": {
+            "spearman_rank_correlation": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.rank"
+            },
+            "maturity_mae": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.maturity (1\u20135)"
+            },
+            "relevance_mae": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.relevance (1\u20135)"
+            }
+          },
+          "score": null
+        },
+        "recommendation": {
+          "status": "implemented",
+          "metrics": {
+            "exact_tier_accuracy": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.action_tier"
+            },
+            "off_by_one_tier_accuracy": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.action_tier and an agreed ordered-tier policy"
+            },
+            "over_recommendation_rate": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.action_tier and an agreed ordered-tier policy"
+            }
+          },
+          "score": null
+        }
+      },
+      "composite_score": 85.71428571428572,
+      "pipeline": {
+        "clusters": 7,
+        "recommendations": 7
+      },
+      "repeat": 3,
+      "total_tokens": 0,
+      "wall_clock_seconds": 19.215847915998893
+    }
+  ],
+  "aggregate": {
+    "layers": {
+      "clustering": {
+        "status": "implemented",
+        "metrics": {
+          "contamination_rate": {
+            "mean": 0.14285714285714285,
+            "std": 0.0
+          },
+          "cluster_count": {
+            "mean": 7.0,
+            "std": 0.0
+          },
+          "expected_cluster_count": {
+            "mean": 7.0,
+            "std": 0.0
+          },
+          "cluster_count_delta": {
+            "mean": 0.0,
+            "std": 0.0
+          }
+        },
+        "score": {
+          "mean": 85.71428571428572,
+          "std": 0.0
+        }
+      },
+      "verification": {
+        "status": "implemented",
+        "metrics": {
+          "truth_confidence_gap": {
+            "mean": null,
+            "std": null
+          },
+          "confidence_mae": {
+            "mean": null,
+            "std": null
+          },
+          "stale_flag_rate": {
+            "mean": null,
+            "std": null
+          }
+        },
+        "score": {
+          "mean": null,
+          "std": null
+        }
+      },
+      "curriculum": {
+        "status": "implemented",
+        "metrics": {
+          "precision_at_3": {
+            "mean": null,
+            "std": null
+          },
+          "recall": {
+            "mean": null,
+            "std": null
+          },
+          "correct_abstention_rate": {
+            "mean": null,
+            "std": null
+          }
+        },
+        "score": {
+          "mean": null,
+          "std": null
+        }
+      },
+      "evaluation": {
+        "status": "implemented",
+        "metrics": {
+          "spearman_rank_correlation": {
+            "mean": null,
+            "std": null
+          },
+          "maturity_mae": {
+            "mean": null,
+            "std": null
+          },
+          "relevance_mae": {
+            "mean": null,
+            "std": null
+          }
+        },
+        "score": {
+          "mean": null,
+          "std": null
+        }
+      },
+      "recommendation": {
+        "status": "implemented",
+        "metrics": {
+          "exact_tier_accuracy": {
+            "mean": null,
+            "std": null
+          },
+          "off_by_one_tier_accuracy": {
+            "mean": null,
+            "std": null
+          },
+          "over_recommendation_rate": {
+            "mean": null,
+            "std": null
+          }
+        },
+        "score": {
+          "mean": null,
+          "std": null
+        }
+      }
+    },
+    "composite_score": {
+      "mean": 85.71428571428572,
+      "std": 0.0
+    }
+  }
+}
