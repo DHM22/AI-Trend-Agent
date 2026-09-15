@@ -161,12 +161,18 @@ def verification_metrics(trends, clusters, entries):
                    if isinstance((target := cluster_label(c, "confidence")), (int, float))]
     gap = mean(genuine) - mean(fabricated) if genuine and fabricated else None
     mae = mean([abs(c - float(target)) for c, target in confidences])
+    per_cluster = [{
+        "signal_titles": [s.title for s in c.signals],
+        "agent_confidence": t.confidence,
+        "gold_is_genuine": cluster_label(c, "is_genuine"),
+        "gold_confidence": cluster_label(c, "confidence"),
+    } for t, c in zip(trends, clusters)]
     # No VerifiedTrend field says whether an old claim was recognized as stale.
     return {"status": "implemented", "metrics": {
         "truth_confidence_gap": metric(gap, "gold.is_genuine=true/false on every truth-scored signal"),
         "confidence_mae": metric(mae, "gold.confidence (0.0–1.0) on every confidence-scored signal"),
         "stale_flag_rate": metric(None, "gold.stale_presented_as_new plus a verification output field/contract that records a stale flag; VerifiedTrend has neither"),
-    }, "score": mean([x for x in ((gap * 100) if gap is not None else None, (1 - mae) * 100 if mae is not None else None) if x is not None])}
+    }, "score": mean([x for x in ((gap * 100) if gap is not None else None, (1 - mae) * 100 if mae is not None else None) if x is not None]), "per_cluster": per_cluster}
 
 
 def score_repeat(signals, entries, model: str) -> tuple[dict[str, Any], int, set[str]]:
