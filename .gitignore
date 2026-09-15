@@ -22,3 +22,5 @@ env/
 
 # macOS noise
 **/.DS_Store
+
+evals/results/
