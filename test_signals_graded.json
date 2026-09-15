@@ -7,13 +7,13 @@
     "url": "https://opentelemetry.io/blog/2026/genai-observability/",
     "published": "2026-06-18",
     "gold": {
-      "is_genuine": null,
-      "confidence": null,
-      "stale_presented_as_new": null,
-      "rank": null,
-      "maturity": null,
-      "relevance": null,
-      "action_tier": null
+      "is_genuine": true,
+      "confidence": 0.8,
+      "stale_presented_as_new": false,
+      "rank": 2,
+      "maturity": 2,
+      "relevance": 4,
+      "action_tier": "update_existing_material"
     }
   },
   {
@@ -24,13 +24,13 @@
     "url": "https://opentelemetry.io/blog/2026/genai-observability/",
     "published": "2026-05-14",
     "gold": {
-      "is_genuine": null,
-      "confidence": null,
-      "stale_presented_as_new": null,
-      "rank": null,
-      "maturity": null,
-      "relevance": null,
-      "action_tier": null
+      "is_genuine": true,
+      "confidence": 0.9,
+      "stale_presented_as_new": false,
+      "rank": 1,
+      "maturity": 3,
+      "relevance": 5,
+      "action_tier": "add_new_lesson"
     }
   },
   {
@@ -42,12 +42,12 @@
     "published": "2026-04-30",
     "gold": {
       "is_genuine": null,
-      "confidence": null,
-      "stale_presented_as_new": null,
-      "rank": null,
-      "maturity": null,
-      "relevance": null,
-      "action_tier": null
+      "confidence": 0.5,
+      "stale_presented_as_new": false,
+      "rank": 3,
+      "maturity": 3,
+      "relevance": 3,
+      "action_tier": "watch"
     }
   },
   {
@@ -59,12 +59,12 @@
     "published": "2026-05-21",
     "gold": {
       "is_genuine": null,
-      "confidence": null,
-      "stale_presented_as_new": null,
-      "rank": null,
-      "maturity": null,
-      "relevance": null,
-      "action_tier": null
+      "confidence": 0.3,
+      "stale_presented_as_new": false,
+      "rank": 4,
+      "maturity": 2,
+      "relevance": 2,
+      "action_tier": "watch"
     }
   },
   {
@@ -75,13 +75,13 @@
     "url": "https://example.com/otel-genai-v1-ga",
     "published": "2026-08-02",
     "gold": {
-      "is_genuine": null,
-      "confidence": null,
-      "stale_presented_as_new": null,
-      "rank": null,
-      "maturity": null,
-      "relevance": null,
-      "action_tier": null
+      "is_genuine": false,
+      "confidence": 0.1,
+      "stale_presented_as_new": false,
+      "rank": 6,
+      "maturity": 1,
+      "relevance": 2,
+      "action_tier": "watch"
     }
   },
   {
@@ -92,13 +92,13 @@
     "url": "https://example.com/agenttrace-protocol-2",
     "published": "2026-07-19",
     "gold": {
-      "is_genuine": null,
-      "confidence": null,
-      "stale_presented_as_new": null,
-      "rank": null,
-      "maturity": null,
-      "relevance": null,
-      "action_tier": null
+      "is_genuine": false,
+      "confidence": 0.05,
+      "stale_presented_as_new": false,
+      "rank": 7,
+      "maturity": 1,
+      "relevance": 1,
+      "action_tier": "watch"
     }
   },
   {
@@ -109,13 +109,13 @@
     "url": "https://example.com/otel-genai-sig-news",
     "published": "2026-08-25",
     "gold": {
-      "is_genuine": null,
-      "confidence": null,
-      "stale_presented_as_new": null,
-      "rank": null,
-      "maturity": null,
-      "relevance": null,
-      "action_tier": null
+      "is_genuine": true,
+      "confidence": 0.7,
+      "stale_presented_as_new": true,
+      "rank": 5,
+      "maturity": 3,
+      "relevance": 3,
+      "action_tier": "watch"
     }
   },
   {
@@ -126,13 +126,13 @@
     "url": "https://example.com/tracing-roundup",
     "published": "2026-09-01",
     "gold": {
-      "is_genuine": null,
-      "confidence": null,
-      "stale_presented_as_new": null,
-      "rank": null,
-      "maturity": null,
-      "relevance": null,
-      "action_tier": null
+      "is_genuine": false,
+      "confidence": 0.05,
+      "stale_presented_as_new": false,
+      "rank": 8,
+      "maturity": 1,
+      "relevance": 1,
+      "action_tier": "watch"
     }
   }
 ]
