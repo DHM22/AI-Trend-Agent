@@ -164,6 +164,8 @@ def verification_metrics(trends, clusters, entries):
     per_cluster = [{
         "signal_titles": [s.title for s in c.signals],
         "agent_confidence": t.confidence,
+        "note": t.verification_note,
+        "used_fallback": t.verification_note.startswith("Fallback verdict"),
         "gold_is_genuine": cluster_label(c, "is_genuine"),
         "gold_confidence": cluster_label(c, "confidence"),
     } for t, c in zip(trends, clusters)]
