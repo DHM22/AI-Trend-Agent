@@ -137,10 +137,28 @@ def clustering_metrics(clusters, entries: list[dict[str, Any]]) -> dict[str, Any
     }, "score": mean(parts)}
 
 
-def verification_metrics(trends, entries):
-    truth = [(t.confidence, gold(e, "is_genuine")) for t, e in zip(trends, entries) if gold(e, "is_genuine") in (True, False)]
+def verification_metrics(trends, clusters, entries):
+    # A trend is produced per CLUSTER but gold labels live per SIGNAL, so we
+    # cannot zip trends against the flat entry list -- once clustering merges
+    # signals there are fewer trends than entries and the pairing slips,
+    # attaching a label to the wrong trend.  Map each trend to the signals in
+    # its own cluster instead (trends[i] is verifier.run(clusters[i])).
+    by_title = {e["title"]: e for e in entries}
+
+    def cluster_label(cluster, name):
+        # Score a cluster only when EVERY signal in it carries the same
+        # non-null gold value; a cluster that mixes labels (or has any
+        # unlabelled signal) is skipped rather than scored against a guess.
+        values = [gold(by_title.get(s.title, {}), name) for s in cluster.signals]
+        if not values or any(v is None for v in values) or len(set(values)) != 1:
+            return None
+        return values[0]
+
+    truth = [(t.confidence, label) for t, c in zip(trends, clusters)
+             if (label := cluster_label(c, "is_genuine")) in (True, False)]
     genuine, fabricated = [c for c, label in truth if label], [c for c, label in truth if not label]
-    confidences = [(t.confidence, gold(e, "confidence")) for t, e in zip(trends, entries) if isinstance(gold(e, "confidence"), (int, float))]
+    confidences = [(t.confidence, target) for t, c in zip(trends, clusters)
+                   if isinstance((target := cluster_label(c, "confidence")), (int, float))]
     gap = mean(genuine) - mean(fabricated) if genuine and fabricated else None
     mae = mean([abs(c - float(target)) for c, target in confidences])
     # No VerifiedTrend field says whether an old claim was recognized as stale.
@@ -188,7 +206,7 @@ def score_repeat(signals, entries, model: str) -> tuple[dict[str, Any], int, set
         "off_by_one_tier_accuracy": metric(None, unavailable + " plus gold.action_tier and an agreed ordered-tier policy"),
         "over_recommendation_rate": metric(None, unavailable + " plus gold.action_tier and an agreed ordered-tier policy"),
     }, "score": None}
-    blocks = {"clustering": clustering_metrics(clusters, entries), "verification": verification_metrics(trends, entries),
+    blocks = {"clustering": clustering_metrics(clusters, entries), "verification": verification_metrics(trends, clusters, entries),
               "curriculum": curriculum, "evaluation": evaluation_block, "recommendation": recommendation_block}
     active = {name: block["score"] for name, block in blocks.items() if block["score"] is not None}
     composite = sum(WEIGHTS[n] * v for n, v in active.items()) / sum(WEIGHTS[n] for n in active) if active else None
