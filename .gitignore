@@ -24,3 +24,7 @@ env/
 **/.DS_Store
 
 evals/results/
+
+# Generated Netlify dashboard and local CLI metadata
+dist/
+.netlify/

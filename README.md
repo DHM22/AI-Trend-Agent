@@ -89,6 +89,47 @@ requirements-pipeline.txt   Optional original pipeline dependencies, pinned
 The original pipeline remains available below. To run its scripts, additionally
 install `python -m pip install -r requirements-pipeline.txt`.
 
+### Deploy the demo to Netlify
+
+The Netlify deployment is a **static snapshot** generated from the same validated
+report and Jinja templates. Python runs at build time; FastAPI is not started on
+Netlify. Search, action filters, and expandable details still work in the browser.
+
+1. In Netlify, choose **Add new project → Import an existing project → GitHub**.
+2. Select `DHM22/AI-Trend-Agent` and branch **`feat/curriculum-report-ui`**.
+3. Leave the base directory empty. The committed `netlify.toml` supplies:
+   - Build command: `python -m app.export_static`
+   - Publish directory: `dist`
+   - Python version: `3.11`
+4. Deploy. No OpenAI key, GitHub token, or other application secret is needed.
+
+Netlify installs `requirements.txt` before building. `REPORT_PATH` is optional;
+it defaults to the committed `data/report.json`. A custom path must exist in the
+build checkout. Update the report on this branch and push to trigger a fresh
+deployment. Refreshing the website alone does not rebuild a static snapshot.
+Invalid or missing reports fail the build so they do not replace a good deploy.
+
+The published `/api/report` serves the validated JSON produced at build time,
+and `/health` serves `{"status": "ok"}` as a static response (not a Python-process
+health check). Only six generated files in `dist/` are published: the page, CSS,
+JavaScript, report JSON, health JSON, and Netlify redirects. Report content,
+including its curriculum excerpts, is visible to site visitors.
+
+Preview the static files locally:
+
+```bash
+python -m app.export_static
+python -m http.server 8080 --directory dist
+```
+
+Open http://localhost:8080. Python's simple preview server does not implement
+Netlify rewrites, so use `/api/report.json` and `/health.json` during this preview.
+The FastAPI development command above continues to provide the original live
+file-reading routes.
+
+References: [Netlify Python builds](https://docs.netlify.com/build/configure-builds/manage-dependencies/#python)
+and [Netlify rewrites](https://docs.netlify.com/manage/routing/redirects/rewrites-proxies/).
+
 ## Project structure
 
 ```text

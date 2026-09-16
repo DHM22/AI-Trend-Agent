@@ -1,0 +1,18 @@
+[build]
+  command = "python -m app.export_static"
+  publish = "dist"
+
+[build.environment]
+  PYTHON_VERSION = "3.11"
+
+# Netlify installs the pinned requirements.txt before running the build.
+# Only dist/ is published; the Python app and repository remain build inputs.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-store"
