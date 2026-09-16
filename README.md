@@ -5,6 +5,90 @@ releases into evidence-backed curriculum recommendations. It searches the
 course material, verifies trends, scores their curriculum impact, and produces
 an action plan with citations.
 
+## Curriculum Trend Monitor dashboard
+
+A read-only, server-rendered FastAPI dashboard for a saved curriculum report.
+It needs **Python 3.11+**, no API keys, no database, and no JavaScript build step.
+
+### Install and run
+
+From the repository root:
+
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+On Windows, activate with `.venv\Scripts\Activate.ps1` instead.
+Open **http://127.0.0.1:8000**. Stop the server with Ctrl+C.
+
+The included `data/report.json` is an unchanged copy of the repository's
+`01_data/demo_snapshot.json`: 13 recommendations captured on 13 September 2026,
+including seven null curriculum matches and two low-confidence items. It is a
+saved report, not a live pipeline run.
+
+### Use another report
+
+```bash
+REPORT_PATH=/absolute/path/to/another-report.json uvicorn app.main:app --reload
+```
+
+PowerShell:
+
+```powershell
+$env:REPORT_PATH = "C:\reports\another-report.json"
+uvicorn app.main:app --reload
+```
+
+`REPORT_PATH` defaults to `data/report.json`. Relative paths resolve from the
+repository root. The file is read and validated on each page/API request;
+refresh the page after replacing it. Environment variables are read directly;
+the dashboard does not load `.env` or call the agents.
+
+### Routes and behavior
+
+- `GET /`: report dashboard, sorted by score and then confidence, highest first.
+- `GET /api/report`: the validated report JSON, preserving source order and
+  additional snapshot metadata. Missing optional fields have null/default values.
+- `GET /health`: `{"status": "ok"}`; checks server liveness independently of the report.
+
+Click an action card or **All** to filter; search matches trend titles and combines
+with the selected action. **Details** reveals evidence, plans, and course content.
+The footer announces the visible count. Without JavaScript, all recommendations
+and details remain readable. Missing values display neutral placeholders;
+missing action counts are derived from the recommendations. Present `tier_counts`
+values are displayed as supplied, without rewriting the report.
+
+Missing/unreadable files or invalid JSON/schema return a friendly page and HTTP
+503; `/api/report` returns a friendly JSON error with the same status. Confidence
+and similarity must be finite numbers from 0 to 1, and scores from 0 to 5.
+Timestamps display in UTC; timestamps without a timezone are assumed to be UTC.
+Evidence links use `url`, falling back to `source`, and permit only HTTP(S).
+All report text is escaped. Inter is loaded from Google Fonts when available,
+with a system-font fallback for offline presentations.
+
+### Dashboard files
+
+```text
+app/
+  main.py
+  models.py
+  templates/
+    base.html
+    index.html
+  static/
+    style.css
+    app.js
+data/report.json
+requirements.txt            Minimal dashboard dependencies, pinned
+requirements-pipeline.txt   Optional original pipeline dependencies, pinned
+```
+
+The original pipeline remains available below. To run its scripts, additionally
+install `python -m pip install -r requirements-pipeline.txt`.
+
 ## Project structure
 
 ```text
@@ -28,12 +112,12 @@ vectorstore/                Local generated Chroma database
 
 ## Setup
 
-Use Python 3.10 or newer:
+For the original pipeline, use the same Python 3.11+ environment:
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements-pipeline.txt
 Copy-Item .env.example .env
 ```
 
