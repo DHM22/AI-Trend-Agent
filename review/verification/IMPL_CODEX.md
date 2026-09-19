@@ -53,6 +53,25 @@ PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/run.py --run
 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/analyze.py --run-id codex-cr1
 ```
 
+## CR-2 — kept
+
+`02_src/agents/tools.py` now returns `author` in matched_release and every recent-release entry. It extracts only a string login from the API's author object. Missing/null authors remain an empty string. Legacy disk-cache records lacking this field are normalized to an empty string in memory; cache keys, cache-only behavior and stored records remain compatible. No author is invented and no network refresh is forced in offline mode.
+
+The existing public snapshots already contain author.login. [Extracted fixtures](eval/fixtures/release_authors.json) identify HTTPX `lovelydinosaur` and Pydantic `samuelcolvin`, and point to those snapshots; no existing snapshot, case or checker was changed. [Payload/cache checks](implementation/cr2_payload_checks.json) verify matched and recent authors, legacy cache hits, cache-only misses without network, and dispatcher error dictionaries.
+
+Fresh run `codex-cr2`, 102 results: [summary](implementation/cr2_summary.json), [log](implementation/cr2_eval.log). Compared with reproduced baseline: wrong-detail **15/24 → 18/24**, correct **81/102 → 84/102**; false refusal **0/18**, fabrication **0/18**, correct refusal **27/27**, half-true **12/12**, stale **4/12**, clarification **5/9** unchanged. All required metrics pass. Ancillary URL provenance was 66/102 versus 67/102, and the unchanged decisive-evidence checker reports 27/102 versus 31/102; these are reported, not hidden, and no provenance improvement is claimed from CR-2.
+
+Wrong-publisher improved **0/6 → 2/6** under the frozen checker. All six raw outputs name the actual author, but four say “but the actual author ...” without a word matching the checker's negation regex. They remain failures in every metric; no checker was adjusted. This demonstrates the added source field's use without inventing credit for unrelated run variation.
+
+[Unit tests](implementation/cr2_unit_tests.txt): **19/19 passed**. [Compatibility](implementation/cr2_compatibility.json): both saved reports load 13 recommendations; ASGI startup, health, dashboard HTML and API all return 200; dashboard HTML is 48,188 bytes; no-key cache-only replay exits 0 with the original 5/1/1/6 tier counts. Status remains absent because CR-1 was reverted.
+
+Commands:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/run.py --run-id codex-cr2 --repeats 3 --workers 3 --offline-sources
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/analyze.py --run-id codex-cr2
+```
+
 ## Remaining work
 
-CR-2 author payload, provenance metadata, source-coverage decision and final comparison are pending. No sources added yet. No change to the recency gate is implemented or proposed in clustering. Private curriculum is isolated from live evaluation as in the existing harness.
+Provenance metadata, source-coverage decision and final comparison are pending. No sources added yet. No change to the recency gate is implemented or proposed in clustering. Private curriculum is isolated from live evaluation as in the existing harness.

@@ -1,0 +1,17 @@
+{
+  "public_payload_checks": [
+    {
+      "repo": "encode/httpx",
+      "matched_author": "lovelydinosaur",
+      "recent_authors_match_snapshot": true
+    },
+    {
+      "repo": "pydantic/pydantic",
+      "matched_author": "samuelcolvin",
+      "recent_authors_match_snapshot": true
+    }
+  ],
+  "legacy_author_is_unknown": true,
+  "offline_cache_hit_and_miss_no_network": true,
+  "dispatcher_errors_are_dicts": true
+}
