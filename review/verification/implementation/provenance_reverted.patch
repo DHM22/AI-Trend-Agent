@@ -1,0 +1,188 @@
+diff --git a/02_src/agents/tools.py b/02_src/agents/tools.py
+index 6583e78..ad7860e 100644
+--- a/02_src/agents/tools.py
++++ b/02_src/agents/tools.py
+@@ -30,6 +30,10 @@ import json
+ import os
+ import sys
+ import time
++from datetime import datetime, timezone
++from functools import wraps
++from inspect import signature
++from urllib.parse import urlencode
+ from pathlib import Path
+ 
+ import requests
+@@ -45,6 +49,70 @@ GITHUB_API = "https://api.github.com"
+ TIMEOUT = 15
+ 
+ 
++
++def _with_provenance(name: str, arguments: dict, result: dict,
++                     *, legacy_cache: bool = False) -> dict:
++    """Attach an observation identity, not a verification verdict.
++
++    Cached observations retain their original metadata. A legacy cache or an
++    error has no known successful retrieval time: keep that value null.
++    """
++    if isinstance(result.get("_provenance"), dict):
++        return result
++    canonical_url = None
++    source_id = "tool:" + name
++    if name == "verify_release":
++        repo = str(arguments.get("repo", ""))
++        source_id = "github:" + repo.lower()
++        matched = result.get("matched_release")
++        if isinstance(matched, dict):
++            canonical_url = matched.get("url") or None
++        if canonical_url is None and "/" in repo:
++            canonical_url = "https://github.com/" + repo + "/releases"
++    elif name == "github_lookup":
++        source_id = "github:repository_search"
++        canonical_url = GITHUB_API + "/search/repositories?" + urlencode(
++            {"q": arguments.get("query", "")})
++    elif name == "search_curriculum":
++        source_id = "local:curriculum"
++        canonical_url = "local://curriculum"
++    retrieved_at = (None if legacy_cache or "error" in result else
++                    datetime.now(timezone.utc).isoformat())
++    payload = {k: v for k, v in result.items() if k != "_cache"}
++    identity = json.dumps({"tool": name, "arguments": arguments,
++                           "retrieved_at": retrieved_at, "payload": payload},
++                          sort_keys=True, default=str).encode()
++    return {**result, "_provenance": {
++        "source_id": source_id,
++        "canonical_url": canonical_url,
++        "retrieved_at": retrieved_at,
++        "tool_result_id": "sha256:" + hashlib.sha256(identity).hexdigest(),
++        "origin": ("legacy_cache" if legacy_cache else
++                   "error" if "error" in result else "tool_observation"),
++    }}
++
++
++def _tool_result(name: str):
++    """Give direct tool callers the same dict/error/provenance contract."""
++    def decorate(func):
++        @wraps(func)
++        def wrapped(*args, **kwargs):
++            arguments = {}
++            try:
++                bound = signature(func).bind(*args, **kwargs)
++                bound.apply_defaults()
++                arguments = dict(bound.arguments)
++                result = func(*args, **kwargs)
++                if not isinstance(result, dict):
++                    result = {"error": f"{name} returned a non-dict result"}
++                return _with_provenance(name, arguments, result)
++            except Exception as exc:
++                return _with_provenance(name, {}, {
++                    "error": f"{name} failed: {type(exc).__name__}"})
++        return wrapped
++    return decorate
++
++
+ # ---------------------------------------------------------------------------
+ # RESPONSE CACHE
+ #
+@@ -113,11 +181,15 @@ def _with_cache(name: str, key_args: dict, compute) -> dict:
+     key = _cache_key(name, key_args)
+     hit = _cache_get(key)
+     if hit is not None:
+-        return hit
++        if not isinstance(hit, dict):
++            return _with_provenance(name, key_args, {"error": "invalid cached tool result"})
++        return _with_provenance(name, key_args, hit, legacy_cache=True)
+     if _cache_only():
+         return {**key_args, "error": "cache-only mode (TOOL_CACHE_ONLY): "
+                 "no cached response for this call", "_cache": "miss"}
+     result = compute()
++    if isinstance(result, dict):
++        result = _with_provenance(name, key_args, result)
+     if isinstance(result, dict) and "error" not in result:
+         _cache_put(key, result)
+     return result
+@@ -141,6 +213,7 @@ def _headers() -> dict:
+     return h
+ 
+ 
++@_tool_result("github_lookup")
+ def github_lookup(query: str, max_results: int = 3) -> dict:
+     """
+     Search GitHub repositories by name or keyword.
+@@ -234,6 +307,7 @@ def _release_author(release: dict) -> str:
+     return login if isinstance(login, str) else ""
+ 
+ 
++@_tool_result("verify_release")
+ def verify_release(repo: str, version: str = "", max_results: int = 8) -> dict:
+     """
+     Confirm a project's release record via the GitHub Releases API.
+@@ -336,6 +410,7 @@ def _verify_release_uncached(repo: str, version: str = "", max_results: int = 8)
+ # exact identifiers.
+ # ---------------------------------------------------------------------------
+ 
++@_tool_result("search_curriculum")
+ def search_curriculum(question: str, week: int | None = None,
+                       max_results: int = 3,
+                       db_path: str = DEFAULT_DB) -> dict:
+@@ -509,31 +584,29 @@ TOOL_FUNCTIONS = {
+ 
+ 
+ def call_tool(name: str, arguments: dict | str) -> dict:
+-    """
+-    Execute a tool call from the model and return the result.
+-
+-    Never raises. A tool that blows up returns {"error": ...} so the model can
+-    read the failure and decide what to do -- try a different query, or give
+-    up and report low confidence. An exception here would kill the agent loop
+-    instead, which loses that reasoning.
+-    """
++    """Dispatch always returns a dict, including failures with provenance."""
++    if not isinstance(name, str):
++        return _with_provenance("unknown", {}, {"error": "tool name must be a string"})
+     if isinstance(arguments, str):
+         try:
+             arguments = json.loads(arguments or "{}")
+         except json.JSONDecodeError as e:
+-            return {"error": f"could not parse arguments: {e}"}
+-
++            return _with_provenance(name, {}, {"error": f"could not parse arguments: {e}"})
++    if not isinstance(arguments, dict):
++        return _with_provenance(name, {}, {"error": "tool arguments must be an object"})
+     func = TOOL_FUNCTIONS.get(name)
+     if func is None:
+-        return {"error": f"unknown tool '{name}'. "
+-                         f"Available: {', '.join(TOOL_FUNCTIONS)}"}
+-
++        return _with_provenance(name, arguments, {
++            "error": f"unknown tool '{name}'. Available: {', '.join(TOOL_FUNCTIONS)}"})
+     try:
+-        return func(**arguments)
++        result = func(**arguments)
++        if not isinstance(result, dict):
++            result = {"error": f"{name} returned a non-dict result"}
+     except TypeError as e:
+-        return {"error": f"bad arguments for {name}: {e}"}
++        result = {"error": f"bad arguments for {name}: {e}"}
+     except Exception as e:
+-        return {"error": f"{name} failed: {type(e).__name__}: {e}"}
++        result = {"error": f"{name} failed: {type(e).__name__}: {e}"}
++    return _with_provenance(name, arguments, result)
+ 
+ 
+ if __name__ == "__main__":
+diff --git a/02_src/schemas.py b/02_src/schemas.py
+index 8949cf2..27d7e76 100644
+--- a/02_src/schemas.py
++++ b/02_src/schemas.py
+@@ -91,6 +91,10 @@ class Evidence:
+     tier: SourceTier
+     url: str = ""
+     note: str = ""           # what this source actually confirmed or failed to
++    source_id: str = ""
++    canonical_url: str = ""
++    retrieved_at: str | None = None
++    tool_result_id: str = ""
+ 
+ 
+ @dataclass

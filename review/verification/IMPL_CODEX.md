@@ -1,4 +1,6 @@
-# Data/tools/schema implementation report — in progress
+# Data/tools/schema implementation report
+
+**Retained: CR-2 release-author payload only. CR-1 status and the provenance prototype were reverted under the mandatory numerical guardrails. No sources were added. The main typed-status task remains incomplete.**
 
 Read `IMPL_CLAUDE.md` and all four requested prior-review documents. The missing-report blocker is resolved. The other engineer's modified `verification.py` is preserved unchanged. No eval case/checker or sampling/model setting has been changed.
 
@@ -33,7 +35,7 @@ The required full evaluation nevertheless produced **13/24 wrong-detail**, below
 
 The confidence-based evaluator does not inspect the added status, and the verifier's model input/tool payloads were unchanged by CR-1. The observed metric changes are not established causal effects of CR-1. In particular, **no stale improvement is claimed**. The hard numerical rule still requires rollback; this was not selectively rerun until it passed.
 
-**Current status field: absent. Current consumers touched by a retained change: none.** The main task remains unblocked only by a future successfully validated status change. The peer will also need to explicitly produce verified status on accepted cases; a default-unverified field must never infer that from a float.
+**Current status field: absent. Current consumers touched by a retained change: none.** The main task remains blocked until a future status change passes the required validation. The peer will also need to explicitly produce verified status on accepted cases; a default-unverified field must never infer that from a float.
 
 ## Compatibility actually run
 
@@ -72,6 +74,72 @@ PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/run.py --run
 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/analyze.py --run-id codex-cr2
 ```
 
-## Remaining work
+## Priority 3 — provenance prototype reverted
 
-Provenance metadata, source-coverage decision and final comparison are pending. No sources added yet. No change to the recency gate is implemented or proposed in clustering. Private curriculum is isolated from live evaluation as in the existing harness.
+The prototype added `_provenance` to each tool result, containing `source_id`, `canonical_url`, `retrieved_at`, `tool_result_id` and `origin`. It retained original observation metadata across disk-cache hits and used a SHA-256-based identifier. Errors and legacy caches had null retrieval time rather than invented timestamps. Evidence gained optional/defaulted counterparts without breaking the old constructor. Direct tools and dispatch errors returned dictionaries. This was data/schema work only; no verifier parser, prompt, confidence or sampling change was made.
+
+Local [payload checks](implementation/provenance_payload_checks.json) passed: cold/warm result identity equal, real canonical release URL, timestamp present for fresh observations, unknown legacy time preserved, zero network calls on cache-only hit/miss, error dictionaries with IDs, old Evidence constructor compatible. All **248/248** results in the live eval carried metadata; max tool JSON was **1,475 characters**, below the verifier's 4,000-character truncation. [Observation counts](implementation/provenance_observations.json). In replay, these timestamps represent tool observation time, not live upstream revalidation.
+
+Nevertheless, the 102-run candidate violated the mandatory false-refusal constraint: **1/18**, versus zero required. Wrong-detail was 18/24 and half-true 12/12, but clarification also fell to 1/9 and correct verdict to 80/102. [Summary](implementation/provenance_summary.json), [full log](implementation/provenance_eval.log). The candidate was reverted to committed CR-2; no metadata or Evidence schema extension remains in source. [Reverted patch](implementation/provenance_reverted.patch). Unit tests were **19/19**, and [compatibility checks](implementation/provenance_compatibility.json) passed before rollback; these did not override the failed guardrail.
+
+### Exact incident and scope boundary
+
+[T03 repeat 2](eval/runs/codex-provenance/T03-2.json) received a successful matched HTTPX release with tag `0.24.1`, author `lovelydinosaur` and publication timestamp. It then searched repositories for `lovelydinosaur`. The frozen replay transport returned **“Pinned public snapshot unavailable for this exact request”**. This is a fixture miss, **not evidence of an actual GitHub outage**. The model's final confidence was 0.4 and its note:
+
+> The release 0.24.1 was found, but the publisher (lovelydinosaur) is unverified due to a network error while checking the specific account.
+
+The claim asserted only publication of the release, not a publisher identity. The verifier already instructs against inventing extra parts (`02_src/agents/verification.py:91–103,143–146`), but `_parse` still takes the model's confidence directly (`299–303`). There were four successful model responses and no harness exception. Successful release evidence was available; the extra lookup should not have governed acceptance. No claim is made that metadata alone causally caused this stochastic behavior.
+
+**Stopping at the ownership boundary:** enforcing that only actually asserted subclaims affect acceptance requires the verifier owner's work. The precise needed behavior is: identify asserted fields from claim text; for a plain publication claim with a matching primary release record, a failed lookup about an unclaimed publisher must not downgrade that claim; required publisher assertions must still compare the claimed login to the returned author. This belongs in `verification.py`'s decision/gating path, not clustering or a tool that lacks claim context. CR-1 must also be successfully coordinated/validated before that gate can set typed status. No such gate was implemented here, and no extra fixture was added to mask the unnecessary publisher check.
+
+The shipped prompt at `verification.py:113–115,125–127` still says the tool has no author. That is now outdated after CR-2. The other engineer's requested follow-up can replace the publisher instruction with: “When a publisher is asserted, compare the claimed account to matched_release.author. If author is empty, the publisher is unverified; if it differs, state the actual author. Do not check publisher identity for a claim that does not assert one.” This is documented only; **the prompt was not changed**. A deterministic asserted-field gate, not this text alone, is the proposed protection against the observed extra-claim refusal.
+
+## Priority 4 — no source additions retained or attempted
+
+No new source/provider/feed was added. The retained change exposes a field already present in an existing **primary** source: the project's GitHub release object. Its evidence and authority are the captured exact release records referenced by the author fixtures. It fixes the measured missing-publisher-field problem without expanding the provider set.
+
+`02_src/monitoring_github.py:50–55` remains four repos; `02_src/monitoring_rss.py:42–53` remains three primary blogs and no secondary feeds. The frozen harness directly constructs TrendCluster (`review/verification/eval/run.py:64`) and bypasses both monitors. Therefore adding monitored repos/feeds cannot be credited with fixing its observed wrong-detail or stale failures. Live collection coverage and added-feed impact are **NOT TESTED**. No demonstrated collection omission justified a new source under the user's “fix something measurable” rule. The provenance incident involved unnecessary account checking, not a missing release record; more sources are not presented as its fix.
+
+## Final reproduced-baseline versus retained-state metrics
+
+“Final” below means the **kept CR-2 revision**, measured in `codex-cr2`. The failed provenance candidate is shown separately above and was restored byte-for-byte to that tested source state; it is not relabeled as a passing run. Four complete 102-run suites were executed: reproduction, CR-1, CR-2 and provenance.
+
+| Metric | Reproduced cand04 | Retained CR-2 | Decision |
+| --- | ---: | ---: | --- |
+| False refusal | 0/18 | 0/18 | Required zero retained |
+| Fabrication acceptance | 0/18 | 0/18 | Required zero retained |
+| Correct refusal | 27/27 | 27/27 | Retained |
+| Half-true | 12/12 (100%) | 12/12 (100%) | No regression |
+| Wrong-detail | 15/24 (62.5%) | 18/24 (75.0%) | Improved |
+| Correct verdict | 81/102 (79.4%) | 84/102 (82.4%) | Improved |
+| Clarification | 5/9 (55.6%) | 5/9 (55.6%) | Unchanged; supplied cand04 had 6/9 |
+| Stale | 4/12 (33.3%) | 4/12 (33.3%) | Unchanged; no stale improvement claimed |
+| Wrong-publisher | 0/6 | 2/6 | Improved under unchanged checker |
+| URL provenance | 67/102 | 66/102 | Ancillary measure lower by one; reported, not claimed improved |
+| Decisive evidence + correctness | 31/102 | 27/102 | Ancillary measure lower; checker hard-excludes publisher support at `eval/checkers.py:21–22` |
+
+Token/latency observations: reproduced baseline 343 model responses, 642,573 tokens, estimated $0.074643, mean 4.44s/p95 6.97s; retained CR-2 317 model responses, 588,899 tokens, estimated $0.064478, mean 3.91s/p95 7.19s. Actual billing is **NOT TESTED**, and stochastic response-count/latency differences are not a demonstrated causal optimization. The entire four-suite exercise used 1,342 model responses and an estimated $0.291387. All were the same returned model `gpt-4o-mini-2024-07-18`; no model/sampling setting was changed.
+
+## Final compatibility and audit
+
+After rollback, the 19 unit tests passed again: [final log](implementation/final_unit_tests.txt). A real Uvicorn process was started on localhost with the API key removed; `/health`, `/`, `/api/report` returned **200**. HTML was **48,198 bytes** and the JSON endpoint **17,239 bytes**. The server was explicitly terminated after the checks; its log confirms application shutdown completed. [HTTP results](implementation/final_dashboard_http.json), [server log](implementation/final_dashboard_server.log). Both report files also passed the per-stage load/render tests above, and the kept CR-2 offline replay exited 0 without a key. Browser JavaScript/visual layout remains **NOT TESTED**; actual server-side rendering and startup were tested.
+
+[Final scope audit](implementation/final_scope_audit.json): of 64 initial source/config/eval fingerprints, **only `02_src/agents/tools.py` differs**. The peer's pre-existing `verification.py` changes have exactly the same hash as at task start. All 13 index files checked against the previous snapshot remain unchanged. Saved JSON reports, sampling settings, eval cases/checkers and prohibited source files were not modified. Private curriculum was not sent to the live model; the unchanged public-only harness isolation remained in place.
+
+Separate commits: `1b49d7c` records CR-1 rollback; `53cc983` retains CR-2 author payload. A final documentation commit records provenance rollback and final evidence. The unapplied patches remain available for coordinated follow-up; they are not shipped source changes.
+
+## Remaining NOT TESTED / not implemented
+
+- **Typed status is not shipped.** Exact attempted shape is documented above; every consumer change was reverted. Original confidence-only gating remains. This is the main outstanding task.
+- **Per-claim provenance schema/metadata is not shipped.** Prototype coverage is recorded, but the failed false-refusal run prevented keeping it. Claim-to-tool reference validation was never implemented in the protected verifier.
+- Explicit temperature 0 cannot be verified from the existing call sites; no unapproved sampling override was introduced.
+- No new monitoring sources, registry adapter or live source-coverage benchmark; no causal stale-detection gain.
+- No changed gold labels, regexes or native-status scorer. The frozen checker remains conservative and can miss correct wording; it was not adjusted to make a candidate pass.
+- No live private-curriculum pipeline execution, external tracing service, browser JavaScript automation or actual account-billing validation.
+
+Additional commands run:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/run.py --run-id codex-provenance --repeats 3 --workers 3 --offline-sources
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/analyze.py --run-id codex-provenance
+```
