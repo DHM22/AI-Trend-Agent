@@ -1,0 +1,28 @@
+{
+  "02_src/agents/verification.py": [
+    {
+      "line": 278,
+      "keyword_names": [
+        "model",
+        "messages"
+      ]
+    },
+    {
+      "line": 236,
+      "keyword_names": [
+        "model",
+        "messages",
+        "tools",
+        "tool_choice"
+      ]
+    }
+  ],
+  "review/verification/eval/run.py": [
+    {
+      "line": 58,
+      "keyword_names": [
+        null
+      ]
+    }
+  ]
+}

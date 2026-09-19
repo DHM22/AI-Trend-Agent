@@ -1,0 +1,39 @@
+{
+  "saved_reports_and_in_process_asgi_startup": [
+    {
+      "saved_report": "01_data/demo_snapshot.json",
+      "recommendations_loaded": 13,
+      "health_status": 200,
+      "health_json": {
+        "status": "ok"
+      },
+      "dashboard_status": 200,
+      "dashboard_html_bytes": 48188,
+      "dashboard_has_html": true,
+      "report_api_status": 200
+    },
+    {
+      "saved_report": "data/report.json",
+      "recommendations_loaded": 13,
+      "health_status": 200,
+      "health_json": {
+        "status": "ok"
+      },
+      "dashboard_status": 200,
+      "dashboard_html_bytes": 48188,
+      "dashboard_has_html": true,
+      "report_api_status": 200
+    }
+  ],
+  "offline_replay": {
+    "exit_code": 0,
+    "output_summary": [
+      "",
+      "captured 2026-09-13 17:38 UTC",
+      "45 signals -> 41 clusters -> 15 evaluated -> 13 recommendations",
+      "(2 duplicate-citation recommendation(s) merged)",
+      "UPDATE EXISTING MATERIAL: 5  ADD NEW LESSON: 1  ADD OPTIONAL CONTENT: 1  WATCH: 6"
+    ]
+  },
+  "scope": "Baseline compatibility. ASGI lifespan startup and HTML response via TestClient; browser JS execution not tested."
+}

@@ -1,0 +1,195 @@
+diff --git a/02_src/agents/evaluation.py b/02_src/agents/evaluation.py
+index 3433b52..3aa482a 100644
+--- a/02_src/agents/evaluation.py
++++ b/02_src/agents/evaluation.py
+@@ -80,9 +80,10 @@ MAX_RATIONALE_CHARS = 1_200
+ # SCORING -- pure functions, no API key, straightforward to test
+ # ---------------------------------------------------------------------------
+ 
+-def _maturity_score(confidence: float) -> int:
+-    """Map verification confidence onto 1-5. Bands mirror the verification
+-    rubric so the two agents cannot drift apart."""
++def _maturity_score(confidence: float, status: str = "unverified") -> int:
++    """Only explicit verified status permits the legacy confidence bands."""
++    if status != "verified":
++        return 1
+     try:
+         c = float(confidence)
+     except (TypeError, ValueError):
+@@ -208,7 +209,7 @@ class EvaluationAgent:
+     # -----------------------------------------------------------------
+     def run(self, trend: VerifiedTrend,
+             match: CurriculumMatch | None = None) -> EvaluationResult:
+-        maturity = _maturity_score(trend.confidence)
++        maturity = _maturity_score(trend.confidence, trend.status)
+         relevance = _relevance_score(match)
+         total = _total(maturity, relevance)
+ 
+@@ -339,7 +340,7 @@ def main():
+ 
+     for c in clusters[:args.limit]:
+         trend = verifier.run(c)
+-        match = curriculum.run(trend) if trend.confidence >= 0.4 else None
++        match = curriculum.run(trend) if trend.status == "verified" and trend.confidence >= 0.4 else None
+         result = evaluator.run(trend, match)
+ 
+         print(f"\n{'='*72}\n{c.representative_title[:70]}")
+diff --git a/02_src/agents/recommendation.py b/02_src/agents/recommendation.py
+index 66f7884..5505860 100644
+--- a/02_src/agents/recommendation.py
++++ b/02_src/agents/recommendation.py
+@@ -152,7 +152,7 @@ MAX_PLAN_STEPS = 5
+ 
+ def select_tier(maturity: int, relevance: int, match: CurriculumMatch | None,
+                 curriculum_checked: bool, trend_title: str = "",
+-                trend_summary: str = "") -> str:
++                trend_summary: str = "", status: str = "unverified") -> str:
+     """
+     Pick the action tier.
+ 
+@@ -173,7 +173,7 @@ def select_tier(maturity: int, relevance: int, match: CurriculumMatch | None,
+         if not isinstance(v, int) or isinstance(v, bool) or not 1 <= v <= 5:
+             raise ValueError(f"{name} must be an int in 1-5, got {v!r}")
+ 
+-    if maturity < MATURE_FLOOR:
++    if status != "verified" or maturity < MATURE_FLOOR:
+         return "watch"                      # not established enough to act on
+ 
+     if match is not None:                   # some coverage exists
+@@ -357,12 +357,13 @@ class RecommendationAgent:
+         summaries = " ".join(s.summary or "" for s in ev.trend.cluster.signals)
+         tier = select_tier(ev.maturity_score, ev.relevance_score, ev.match,
+                            curriculum_checked,
+-                           ev.trend.cluster.representative_title, summaries)
++                           ev.trend.cluster.representative_title, summaries, status=ev.trend.status)
+         plan = self._plan(tier, ev, curriculum_checked)
+ 
+         return Recommendation(
+             trend=ev.trend.cluster.representative_title,
+             confidence=ev.trend.confidence,
++            status=ev.trend.status,
+             verification_note=ev.trend.verification_note,
+             evidence=ev.trend.evidence,
+             recommended_action=tier,
+@@ -509,7 +510,7 @@ def main():
+ 
+         # only search the curriculum for trends worth acting on -- and record
+         # whether we actually looked, because that changes the tier
+-        checked = trend.confidence >= 0.4
++        checked = trend.status == "verified" and trend.confidence >= 0.4
+         match = curriculum.run(trend) if checked else None
+ 
+         ev = evaluator.run(trend, match)
+diff --git a/02_src/demo_snapshot.py b/02_src/demo_snapshot.py
+index 3d1439a..c2232f0 100644
+--- a/02_src/demo_snapshot.py
++++ b/02_src/demo_snapshot.py
+@@ -68,7 +68,7 @@ def capture(signals_path: str, snapshot_path: str, limit: int,
+     for i, c in enumerate(batch, start=1):
+         print(f"  [{i}/{len(batch)}] {c.representative_title[:60]}")
+         trend = verifier.run(c)
+-        checked = trend.confidence >= 0.4
++        checked = trend.status == "verified" and trend.confidence >= 0.4
+         match = curriculum.run(trend) if checked else None
+         ev = evaluator.run(trend, match)
+         recs.append(recommender.run(ev, curriculum_checked=checked))
+@@ -105,7 +105,16 @@ def load_snapshot(path: str) -> dict:
+     p = Path(path)
+     if not p.exists():
+         raise SystemExit(f"no snapshot at {path} -- run with --capture first")
+-    return json.loads(p.read_text(encoding="utf-8"))
++    snapshot = json.loads(p.read_text(encoding="utf-8"))
++    counts: dict[str, int] = {}
++    for row in snapshot.get("recommendations", []):
++        row.setdefault("status", "unverified")
++        if row["status"] != "verified":
++            row["recommended_action"] = "watch"
++        action = row["recommended_action"]
++        counts[action] = counts.get(action, 0) + 1
++    snapshot["tier_counts"] = counts
++    return snapshot
+ 
+ 
+ # order by how much a curriculum lead should care, not alphabetically
+@@ -153,7 +162,7 @@ def show(snapshot: dict, actionable_only: bool = False,
+         print(f"\n{'=' * 74}\n{TIER_LABEL[tier]}  ({len(group)})\n{'=' * 74}")
+         for r in sorted(group, key=lambda x: -(x.get("total_score") or 0)):
+             print(f"\n  {r['trend'][:68]}")
+-            print(f"    score {r.get('total_score')}/5   confidence {r['confidence']}")
++            print(f"    score {r.get('total_score')}/5   confidence {r['confidence']}   status {r.get('status', 'unverified')}")
+             if r.get("match"):
+                 print(f"    cite  {r['match'].get('citation', '')}")
+             for step in r["action_plan"]:
+diff --git a/02_src/schemas.py b/02_src/schemas.py
+index 8949cf2..8da177d 100644
+--- a/02_src/schemas.py
++++ b/02_src/schemas.py
+@@ -31,6 +31,8 @@ from typing import Literal
+ # SourceTier is an immediate NameError.
+ # ---------------------------------------------------------------------------
+ 
++VerificationStatus = Literal["verified", "contradicted", "unverified", "needs_clarification"]
++
+ SourceTier = Literal["primary", "secondary"]
+ # primary   = the tool's own words: official repo release, official blog, the paper
+ # secondary = someone reporting on it: news article, forum post, tweet
+@@ -99,6 +101,7 @@ class VerifiedTrend:
+     confidence: float                    # 0.0 - 1.0
+     verification_note: str
+     evidence: list[Evidence] = field(default_factory=list)
++    status: VerificationStatus = "unverified"
+ 
+ 
+ # ---------------------------------------------------------------------------
+@@ -190,6 +193,7 @@ class Recommendation:
+     action_plan: list[str]
+     match: CurriculumMatch | None = None
+     total_score: float | None = None
++    status: VerificationStatus = "unverified"
+ 
+     def to_dict(self) -> dict:
+         """JSON-serialisable form for the API response."""
+diff --git a/app/main.py b/app/main.py
+index 36adc4c..a8e726f 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -52,7 +52,17 @@ def load_report() -> Report:
+         path = ROOT / path
+     try:
+         data = json.loads(path.read_text(encoding="utf-8"), parse_constant=reject_nonfinite)
+-        return Report.model_validate(data)
++        report = Report.model_validate(data)
++        # Legacy reports have no verified status; confidence cannot promote them.
++        counts: dict[str, int] = {}
++        for recommendation in report.recommendations or []:
++            if recommendation.status != "verified":
++                recommendation.recommended_action = "watch"
++            if recommendation.recommended_action is not None:
++                action = recommendation.recommended_action
++                counts[action] = counts.get(action, 0) + 1
++        report.tier_counts = counts
++        return report
+     except FileNotFoundError as exc:
+         raise ReportUnavailable("The report file hasn’t arrived yet. Please ask the presenter to check the report location, then refresh.") from exc
+     except (OSError, UnicodeError) as exc:
+@@ -84,7 +94,7 @@ def dashboard_context(report: Report) -> dict:
+         row["action"] = ACTIONS.get(action, {"label": "Not specified", "tone": "gray"})
+         confidence = row.get("confidence")
+         row["confidence_pct"] = round(confidence * 100) if confidence is not None else None
+-        row["confidence_tone"] = "gray" if confidence is None else "green" if confidence >= .8 else "amber" if confidence >= .5 else "red"
++        row["confidence_tone"] = "gray" if row["status"] != "verified" or confidence is None else "green" if confidence >= .8 else "amber" if confidence >= .5 else "red"
+         row["score_label"] = f"{row.get('total_score'):g}" if row.get("total_score") is not None else "—"
+         for evidence in row.get("evidence") or []:
+             evidence["link"] = evidence_link(evidence)
+diff --git a/app/models.py b/app/models.py
+index 0400c32..6b488d8 100644
+--- a/app/models.py
++++ b/app/models.py
+@@ -35,6 +35,7 @@ class CurriculumMatch(ReportModel):
+ 
+ 
+ class Recommendation(ReportModel):
++    status: Literal["verified", "contradicted", "unverified", "needs_clarification"] = "unverified"
+     trend: Optional[str] = None
+     confidence: Optional[UnitInterval] = None
+     total_score: Optional[Annotated[float, Field(ge=0, le=5)]] = None

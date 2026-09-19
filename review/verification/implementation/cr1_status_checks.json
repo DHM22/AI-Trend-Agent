@@ -1,0 +1,29 @@
+{
+  "default": "unverified",
+  "rows": [
+    {
+      "status": "verified",
+      "confidence": 1.0,
+      "maturity": 5,
+      "action_given_maturity_5": "update_existing_material"
+    },
+    {
+      "status": "contradicted",
+      "confidence": 1.0,
+      "maturity": 1,
+      "action_given_maturity_5": "watch"
+    },
+    {
+      "status": "unverified",
+      "confidence": 1.0,
+      "maturity": 1,
+      "action_given_maturity_5": "watch"
+    },
+    {
+      "status": "needs_clarification",
+      "confidence": 1.0,
+      "maturity": 1,
+      "action_given_maturity_5": "watch"
+    }
+  ]
+}
