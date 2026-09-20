@@ -99,6 +99,7 @@ class VerifiedTrend:
     confidence: float                    # 0.0 - 1.0
     verification_note: str
     evidence: list[Evidence] = field(default_factory=list)
+    status: Literal["verified", "contradicted", "unverified", "needs_clarification"] = "unverified"
 
 
 # ---------------------------------------------------------------------------

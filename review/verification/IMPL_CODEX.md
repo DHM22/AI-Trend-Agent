@@ -1,6 +1,8 @@
 # Data/tools/schema implementation report
 
-**Retained: CR-2 release-author payload only. CR-1 status and the provenance prototype were reverted under the mandatory numerical guardrails. No sources were added. The main typed-status task remains incomplete.**
+**Corrected attribution:** the original CR-1 revert was **not evidence of a code regression**. [Isolated experiments](ISOLATION_FINDINGS.md) showed identical request hashes and a clean schema-only live run. At the user’s direction, the exact tested VerifiedTrend field is now shipped and available for the other engineer’s deterministic staleness gate. No gating or provenance changes were reapplied.
+
+**Current retained source: CR-2 release-author payload plus the single defaulted VerifiedTrend.status field. Consumer gates and provenance remain absent. Local verification passes; the newly requested live rerun is blocked by the API project spend limit (102 fallbacks, zero model responses). See the current delivery section below.**
 
 Read `IMPL_CLAUDE.md` and all four requested prior-review documents. The missing-report blocker is resolved. The other engineer's modified `verification.py` is preserved unchanged. No eval case/checker or sampling/model setting has been changed.
 
@@ -23,7 +25,7 @@ Materiality decision before implementation: every hard guardrail and stale resul
 
 **Sampling discrepancy:** neither model-call site in `02_src/agents/verification.py:236–239,278` supplies temperature. The unchanged harness at `review/verification/eval/run.py:58` forwards keyword arguments without adding it. [AST call-site record](implementation/sampling_call_sites.json). Therefore the report's assertion of temperature 0 cannot be confirmed from this checkout. No setting was changed, injected or inferred. Explicit temperature-zero behavior is **NOT TESTED**.
 
-## CR-1 — reverted, not shipped
+## Original bundled CR-1 — historical rollback; field-only change now shipped
 
 The attempted minimal field was `status: VerificationStatus = "unverified"`, with `VerificationStatus = Literal["verified", "contradicted", "unverified", "needs_clarification"]`. Confidence remained unchanged and the field was appended to dataclasses for positional compatibility. A full per-claim structure was deliberately deferred: a scalar status is enough for the peer's upcoming deterministic gate; an unused list that the current parser cannot populate would over-build.
 
@@ -100,7 +102,7 @@ No new source/provider/feed was added. The retained change exposes a field alrea
 
 `02_src/monitoring_github.py:50–55` remains four repos; `02_src/monitoring_rss.py:42–53` remains three primary blogs and no secondary feeds. The frozen harness directly constructs TrendCluster (`review/verification/eval/run.py:64`) and bypasses both monitors. Therefore adding monitored repos/feeds cannot be credited with fixing its observed wrong-detail or stale failures. Live collection coverage and added-feed impact are **NOT TESTED**. No demonstrated collection omission justified a new source under the user's “fix something measurable” rule. The provenance incident involved unnecessary account checking, not a missing release record; more sources are not presented as its fix.
 
-## Final reproduced-baseline versus retained-state metrics
+## Earlier reproduced-baseline versus CR-2 metrics (before schema-only delivery)
 
 “Final” below means the **kept CR-2 revision**, measured in `codex-cr2`. The failed provenance candidate is shown separately above and was restored byte-for-byte to that tested source state; it is not relabeled as a passing run. Four complete 102-run suites were executed: reproduction, CR-1, CR-2 and provenance.
 
@@ -120,7 +122,7 @@ No new source/provider/feed was added. The retained change exposes a field alrea
 
 Token/latency observations: reproduced baseline 343 model responses, 642,573 tokens, estimated $0.074643, mean 4.44s/p95 6.97s; retained CR-2 317 model responses, 588,899 tokens, estimated $0.064478, mean 3.91s/p95 7.19s. Actual billing is **NOT TESTED**, and stochastic response-count/latency differences are not a demonstrated causal optimization. The entire four-suite exercise used 1,342 model responses and an estimated $0.291387. All were the same returned model `gpt-4o-mini-2024-07-18`; no model/sampling setting was changed.
 
-## Final compatibility and audit
+## Earlier CR-2 compatibility and audit
 
 After rollback, the 19 unit tests passed again: [final log](implementation/final_unit_tests.txt). A real Uvicorn process was started on localhost with the API key removed; `/health`, `/`, `/api/report` returned **200**. HTML was **48,198 bytes** and the JSON endpoint **17,239 bytes**. The server was explicitly terminated after the checks; its log confirms application shutdown completed. [HTTP results](implementation/final_dashboard_http.json), [server log](implementation/final_dashboard_server.log). Both report files also passed the per-stage load/render tests above, and the kept CR-2 offline replay exited 0 without a key. Browser JavaScript/visual layout remains **NOT TESTED**; actual server-side rendering and startup were tested.
 
@@ -130,7 +132,7 @@ Separate commits: `1b49d7c` records CR-1 rollback; `53cc983` retains CR-2 author
 
 ## Remaining NOT TESTED / not implemented
 
-- **Typed status is not shipped.** Exact attempted shape is documented above; every consumer change was reverted. Original confidence-only gating remains. This is the main outstanding task.
+- **Typed status is now shipped on VerifiedTrend only.** Consumer changes remain reverted. Original confidence-only gating remains; setting status from the deterministic gate belongs to the other engineer.
 - **Per-claim provenance schema/metadata is not shipped.** Prototype coverage is recorded, but the failed false-refusal run prevented keeping it. Claim-to-tool reference validation was never implemented in the protected verifier.
 - Explicit temperature 0 cannot be verified from the existing call sites; no unapproved sampling override was introduced.
 - No new monitoring sources, registry adapter or live source-coverage benchmark; no causal stale-detection gain.
@@ -142,4 +144,62 @@ Additional commands run:
 ```sh
 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/run.py --run-id codex-provenance --repeats 3 --workers 3 --offline-sources
 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/analyze.py --run-id codex-provenance
+```
+
+
+## Current delivery — exact schema-only status field
+
+`02_src/schemas.py:102` now contains exactly:
+
+```python
+status: Literal["verified", "contradicted", "unverified", "needs_clarification"] = "unverified"
+```
+
+Confidence is retained. The file is byte-identical to the earlier status-only isolation condition. No Recommendation field, consumer normalization, evaluation/recommendation gate, model setting, verifier prompt/parser, or provenance field was added. Only schemas.py changes in this delivery; the earlier CR-2 tools change remains. [Scope audit](implementation/status_shipped_scope.json).
+
+**The original CR-1 rollback was not evidence of a code regression.** The harness never executes downstream gates, and identical-response replay produced identical 343 model-request hashes with and without the schema field. The observed 13/24 was a threshold failure affected by wording-sensitive checks and run variation, not a demonstrated field effect. The field is now available for the peer to set from their deterministic staleness gate. No improvement in verification behavior is attributed to adding it.
+
+### Local checks and legacy status semantics
+
+[19/19 unit tests pass](implementation/status_shipped_tests.txt). [Executable compatibility check](implementation/check_status_compatibility.py) and [actual results](implementation/status_shipped_compatibility.json):
+
+- `01_data/demo_snapshot.json`: 13 recommendations load; all 13 lack status. Constructing VerifiedTrend from those legacy rows without status yields **unverified for all 13**, including when confidence is high.
+- `data/report.json`: same 13/13 missing-status default result.
+- A real Uvicorn process was started separately for each report, with OPENAI_API_KEY removed. For each, `/health`, `/`, `/api/report` returned **200**. Dashboard HTML was **48,198 bytes**, report JSON **17,239 bytes**. Both servers were terminated after the checks.
+- Offline `demo_snapshot.py --replay`, with OPENAI_API_KEY removed and TOOL_CACHE_ONLY=1, exited **0** and printed: `45 signals -> 41 clusters -> 15 evaluated -> 13 recommendations`; `UPDATE EXISTING MATERIAL: 5  ADD NEW LESSON: 1  ADD OPTIONAL CONTENT: 1  WATCH: 6`.
+
+**Boundary of the missing-status guarantee:** saved reports contain Recommendation rows, not serialized VerifiedTrend. The unchanged dashboard/replay readers retain an absent status field; they do not materialize an `unverified` property, and do not synthesize `verified`. The VerifiedTrend constructor defaults missing status to unverified. Normalizing the saved Recommendation/API contracts themselves would require consumer changes outside the explicitly requested schema-only scope. Those changes were not made. Browser JavaScript is NOT TESTED; actual server startup and rendered HTML over HTTP were tested. Saved report files were not rewritten.
+
+### Requested three-repeat evaluation: API quota blocked
+
+The exact requested full eval command ran all 102 cases, then the unchanged analyzer ran:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python 02_src/tests/test_verification.py
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/run.py --run-id codex-status-shipped --repeats 3 --workers 3 --offline-sources
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/analyze.py --run-id codex-status-shipped
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/implementation/check_status_compatibility.py
+```
+
+**All 102 cases hit HTTP 429 `project_spend_limit_exceeded`; there were zero successful model responses.** They exercised the existing source-tier fallback, not model verification. All returned status=unverified. [Failure counts](implementation/status_shipped_api_block.json), [analyzer output](implementation/status_shipped_summary.json). The analyzer reports no harness exception because the agent catches the API failure itself.
+
+| Metric | New quota-blocked fallback run — invalid quality baseline | Earlier exact status-only live isolation |
+| --- | ---: | ---: |
+| Correct verdict | 36/102 | 88/102 |
+| Wrong-detail | 0/24 | 21/24 |
+| False refusal | 18/18 | 0/18 |
+| Fabrication acceptance | 0/18 | 0/18 |
+| Correct refusal | 27/27 | 27/27 |
+| Half-true | 0/12 | 12/12 |
+| Clarification | 9/9 | 3/9 |
+| Stale | 0/12 | 7/12 |
+| Successful model responses | 0 | 333 |
+
+The prior isolation numbers are explicitly historical, not represented as a successful new rerun. No quality regression or improvement is inferred from the quota-blocked results. The requested fresh live-model validation remains **NOT TESTED successfully: API quota unavailable**. The user has been notified; no billing limit, credential, model or sampling setting was changed. The schema-only change is retained as explicitly directed.
+
+Once quota is restored, use a **new run ID** so the harness does not skip the 102 saved fallback records:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/run.py --run-id codex-status-shipped-live --repeats 3 --workers 3 --offline-sources
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/analyze.py --run-id codex-status-shipped-live
 ```

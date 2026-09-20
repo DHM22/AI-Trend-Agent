@@ -1,0 +1,8 @@
+{
+  "records": 102,
+  "model_responses": 0,
+  "spend_limit_fallbacks": 102,
+  "valid_quality_measurement": false,
+  "reason": "HTTP 429 project_spend_limit_exceeded before any model response",
+  "all_status_unverified": true
+}

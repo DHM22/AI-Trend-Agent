@@ -1,0 +1,261 @@
+{
+  "codex-repro-cand04": {
+    "n": 102,
+    "repeats": {
+      "1": {
+        "wrong_detail": "5/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W03",
+          "W07",
+          "W08"
+        ],
+        "false_refusal_cases": []
+      },
+      "2": {
+        "wrong_detail": "5/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W08",
+          "W02",
+          "W07"
+        ],
+        "false_refusal_cases": []
+      },
+      "3": {
+        "wrong_detail": "5/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W08",
+          "W02",
+          "W07"
+        ],
+        "false_refusal_cases": []
+      }
+    }
+  },
+  "codex-cr1": {
+    "n": 102,
+    "repeats": {
+      "1": {
+        "wrong_detail": "4/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W01",
+          "W07",
+          "W08",
+          "W04"
+        ],
+        "false_refusal_cases": []
+      },
+      "2": {
+        "wrong_detail": "6/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W08",
+          "W07"
+        ],
+        "false_refusal_cases": []
+      },
+      "3": {
+        "wrong_detail": "3/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W08",
+          "W02",
+          "W07",
+          "W03",
+          "W01"
+        ],
+        "false_refusal_cases": []
+      }
+    }
+  },
+  "codex-cr2": {
+    "n": 102,
+    "repeats": {
+      "1": {
+        "wrong_detail": "6/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W07",
+          "W02"
+        ],
+        "false_refusal_cases": []
+      },
+      "2": {
+        "wrong_detail": "6/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W08",
+          "W07"
+        ],
+        "false_refusal_cases": []
+      },
+      "3": {
+        "wrong_detail": "6/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W02",
+          "W07"
+        ],
+        "false_refusal_cases": []
+      }
+    }
+  },
+  "codex-provenance": {
+    "n": 102,
+    "repeats": {
+      "1": {
+        "wrong_detail": "6/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W07",
+          "W02"
+        ],
+        "false_refusal_cases": []
+      },
+      "2": {
+        "wrong_detail": "5/8",
+        "false_refusal": "1/6",
+        "wrong_detail_failed": [
+          "W08",
+          "W02",
+          "W01"
+        ],
+        "false_refusal_cases": [
+          "T03"
+        ]
+      },
+      "3": {
+        "wrong_detail": "7/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W06"
+        ],
+        "false_refusal_cases": []
+      }
+    }
+  },
+  "codex-isolate-control": {
+    "n": 102,
+    "repeats": {
+      "1": {
+        "wrong_detail": "6/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W02",
+          "W04"
+        ],
+        "false_refusal_cases": []
+      },
+      "2": {
+        "wrong_detail": "8/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [],
+        "false_refusal_cases": []
+      },
+      "3": {
+        "wrong_detail": "5/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W08",
+          "W03",
+          "W01"
+        ],
+        "false_refusal_cases": []
+      }
+    }
+  },
+  "codex-isolate-status": {
+    "n": 102,
+    "repeats": {
+      "1": {
+        "wrong_detail": "5/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W01",
+          "W07",
+          "W02"
+        ],
+        "false_refusal_cases": []
+      },
+      "2": {
+        "wrong_detail": "8/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [],
+        "false_refusal_cases": []
+      },
+      "3": {
+        "wrong_detail": "8/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [],
+        "false_refusal_cases": []
+      }
+    }
+  },
+  "codex-isolate-evidence": {
+    "n": 102,
+    "repeats": {
+      "1": {
+        "wrong_detail": "6/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W01",
+          "W02"
+        ],
+        "false_refusal_cases": []
+      },
+      "2": {
+        "wrong_detail": "5/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W04",
+          "W02",
+          "W01"
+        ],
+        "false_refusal_cases": []
+      },
+      "3": {
+        "wrong_detail": "7/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W02"
+        ],
+        "false_refusal_cases": []
+      }
+    }
+  },
+  "codex-isolate-metadata": {
+    "n": 102,
+    "repeats": {
+      "1": {
+        "wrong_detail": "7/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W01"
+        ],
+        "false_refusal_cases": []
+      },
+      "2": {
+        "wrong_detail": "6/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W07",
+          "W03"
+        ],
+        "false_refusal_cases": []
+      },
+      "3": {
+        "wrong_detail": "5/8",
+        "false_refusal": "0/6",
+        "wrong_detail_failed": [
+          "W08",
+          "W05",
+          "W03"
+        ],
+        "false_refusal_cases": []
+      }
+    }
+  }
+}
