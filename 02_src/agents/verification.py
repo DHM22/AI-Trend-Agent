@@ -408,6 +408,7 @@ class VerificationAgent:
                 reply = self.client.chat.completions.create(
                     model=self.model, messages=messages,
                     tools=TOOL_SCHEMAS, tool_choice="auto",
+                    temperature=0,
                 )
             except Exception as e:
                 # never let an API failure kill the pipeline -- fall back to
@@ -448,7 +449,7 @@ class VerificationAgent:
                        "unverified and keeps confidence below 0.7; name it in the note.",
         })
         try:
-            reply = self.client.chat.completions.create(model=self.model, messages=messages)
+            reply = self.client.chat.completions.create(model=self.model, messages=messages, temperature=0)
             trace.raw_reply = reply.choices[0].message.content or ""
             return self._parse(cluster, trace.raw_reply, trace)
         except Exception as e:
