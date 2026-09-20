@@ -37,6 +37,7 @@ Usage:
 """
 
 import json
+import math
 import os
 import re
 import sys
@@ -106,6 +107,36 @@ _PUBLISHER_RE = re.compile(
     r"author\s+account|maintainer\s+account)\b",
     re.IGNORECASE,
 )
+
+
+def _extract_json_object(text: str) -> str | None:
+    """Return the first balanced {...} object in text, or None. Lets a verdict
+    survive when the model wraps its JSON in prose, instead of that prose
+    silently collapsing to a rule-based fallback."""
+    start = text.find("{")
+    if start < 0:
+        return None
+    depth = 0
+    in_str = False
+    esc = False
+    for i in range(start, len(text)):
+        ch = text[i]
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+        elif ch == '"':
+            in_str = True
+        elif ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start:i + 1]
+    return None
 
 
 def _claim_text(cluster: TrendCluster) -> str:
@@ -443,12 +474,34 @@ class VerificationAgent:
         try:
             data = json.loads(cleaned)
         except json.JSONDecodeError:
-            return self._fallback(cluster, "model did not return valid JSON", trace)
+            # Face 1: the model may wrap valid JSON in prose. Recover the object
+            # rather than silently dropping the verdict into the rule-based
+            # fallback. Only genuinely non-JSON text falls back.
+            obj = _extract_json_object(cleaned)
+            if obj is None:
+                return self._fallback(cluster, "model did not return valid JSON", trace)
+            try:
+                data = json.loads(obj)
+            except json.JSONDecodeError:
+                return self._fallback(cluster, "model did not return valid JSON", trace)
 
+        # Face 3: valid JSON of the wrong shape (e.g. a top-level list) must not
+        # crash the parse or be treated as a verdict.
+        if not isinstance(data, dict):
+            return self._unverified(cluster, "model response was not a JSON object", trace)
+
+        # Face 2: the confidence field must be a FINITE number. A boolean, NaN,
+        # Infinity, or any non-numeric value is malformed -- map it to an
+        # explicit unverified status, never to a usable confidence band.
+        raw = data.get("confidence", 0.0)
+        if isinstance(raw, bool):
+            return self._unverified(cluster, "confidence was a boolean, not a number", trace)
         try:
-            confidence = float(data.get("confidence", 0.0))
+            confidence = float(raw)
         except (TypeError, ValueError):
-            confidence = 0.0
+            return self._unverified(cluster, "confidence was not a number", trace)
+        if not math.isfinite(confidence):
+            return self._unverified(cluster, "confidence was not a finite number", trace)
         confidence = max(0.0, min(1.0, confidence))
 
         evidence = []
@@ -482,6 +535,20 @@ class VerificationAgent:
         return VerifiedTrend(cluster=cluster, confidence=confidence,
                               verification_note=note, evidence=evidence,
                               status=status)
+
+    def _unverified(self, cluster: TrendCluster, reason: str,
+                    trace: VerificationTrace) -> VerifiedTrend:
+        """Explicit unverified verdict for a malformed model response. The parse
+        failure is visible via status and confidence 0.0 -- never absorbed into a
+        confidence band downstream code might act on."""
+        note = f"Unverified: {reason}."
+        conf, note = _apply_injection_cap(cluster, 0.0, note)
+        return VerifiedTrend(
+            cluster=cluster, confidence=conf, verification_note=note,
+            evidence=[Evidence(source=s.source, tier=s.source_tier, url=s.url)
+                      for s in cluster.signals],
+            status="unverified",
+        )
 
     def _fallback(self, cluster: TrendCluster, reason: str,
                   trace: VerificationTrace) -> VerifiedTrend:
