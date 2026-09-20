@@ -63,9 +63,9 @@ PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/analyze.py -
 
 The existing public snapshots already contain author.login. [Extracted fixtures](eval/fixtures/release_authors.json) identify HTTPX `lovelydinosaur` and Pydantic `samuelcolvin`, and point to those snapshots; no existing snapshot, case or checker was changed. [Payload/cache checks](implementation/cr2_payload_checks.json) verify matched and recent authors, legacy cache hits, cache-only misses without network, and dispatcher error dictionaries.
 
-Fresh run `codex-cr2`, 102 results: [summary](implementation/cr2_summary.json), [log](implementation/cr2_eval.log). Compared with reproduced baseline: wrong-detail **15/24 → 18/24**, correct **81/102 → 84/102**; false refusal **0/18**, fabrication **0/18**, correct refusal **27/27**, half-true **12/12**, stale **4/12**, clarification **5/9** unchanged. All required metrics pass. Ancillary URL provenance was 66/102 versus 67/102, and the unchanged decisive-evidence checker reports 27/102 versus 31/102; these are reported, not hidden, and no provenance improvement is claimed from CR-2.
+Fresh run `codex-cr2`, 102 results at **`--repeats 3 --workers 3`** (the reproduced baseline also used three workers): [summary](implementation/cr2_summary.json), [log](implementation/cr2_eval.log). Compared with reproduced baseline: wrong-detail **15/24 → 18/24**, correct **81/102 → 84/102**; false refusal **0/18**, fabrication **0/18**, correct refusal **27/27**, half-true **12/12**, stale **4/12**, clarification **5/9** unchanged. **Attribution correction:** the wrong-detail 15→18 and correct-verdict 81→84 deltas are checker-lexical/run-to-run variance, not a measured improvement caused by exposing `author.login`. Passing the required thresholds does not establish causality. CR-2 supplies a previously omitted source field; these runs do not establish a verification-quality benefit. Ancillary URL provenance was 66/102 versus 67/102, and the unchanged decisive-evidence checker reports 27/102 versus 31/102; these are reported, not hidden, and no provenance improvement is claimed from CR-2.
 
-Wrong-publisher improved **0/6 → 2/6** under the frozen checker. All six raw outputs name the actual author, but four say “but the actual author ...” without a word matching the checker's negation regex. They remain failures in every metric; no checker was adjusted. This demonstrates the added source field's use without inventing credit for unrelated run variation.
+Wrong-publisher scores were **0/6 → 2/6** under the frozen lexical checker; this is not a demonstrated causal quality improvement. All six raw outputs name the actual author, but four say “but the actual author ...” without a word matching the checker's negation regex. They remain failures in every metric; no checker was adjusted. The outputs show that author information was available and mentioned. They do not establish that the field caused the aggregate metric deltas; the negation-regex sensitivity makes those counts wording-dependent. No verification-quality improvement is claimed from CR-2, consistent with the separate source-coverage report in [SOURCES.md](SOURCES.md).
 
 [Unit tests](implementation/cr2_unit_tests.txt): **19/19 passed**. [Compatibility](implementation/cr2_compatibility.json): both saved reports load 13 recommendations; ASGI startup, health, dashboard HTML and API all return 200; dashboard HTML is 48,188 bytes; no-key cache-only replay exits 0 with the original 5/1/1/6 tier counts. Status remains absent because CR-1 was reverted.
 
@@ -104,7 +104,7 @@ No new source/provider/feed was added. The retained change exposes a field alrea
 
 ## Earlier reproduced-baseline versus CR-2 metrics (before schema-only delivery)
 
-“Final” below means the **kept CR-2 revision**, measured in `codex-cr2`. The failed provenance candidate is shown separately above and was restored byte-for-byte to that tested source state; it is not relabeled as a passing run. Four complete 102-run suites were executed: reproduction, CR-1, CR-2 and provenance.
+“Final” below means the **kept CR-2 revision**, measured in `codex-cr2`. The failed provenance candidate is shown separately above and was restored byte-for-byte to that tested source state; it is not relabeled as a passing run. Four complete 102-run suites were executed: reproduction, CR-1, CR-2 and provenance. The baseline/CR-2 comparison below used **three workers** and is a historical score comparison, not evidence that the author payload improved verification quality.
 
 | Metric | Reproduced cand04 | Retained CR-2 | Decision |
 | --- | ---: | ---: | --- |
@@ -112,11 +112,11 @@ No new source/provider/feed was added. The retained change exposes a field alrea
 | Fabrication acceptance | 0/18 | 0/18 | Required zero retained |
 | Correct refusal | 27/27 | 27/27 | Retained |
 | Half-true | 12/12 (100%) | 12/12 (100%) | No regression |
-| Wrong-detail | 15/24 (62.5%) | 18/24 (75.0%) | Improved |
-| Correct verdict | 81/102 (79.4%) | 84/102 (82.4%) | Improved |
+| Wrong-detail | 15/24 (62.5%) | 18/24 (75.0%) | Checker-lexical/run variance; no causal improvement claimed |
+| Correct verdict | 81/102 (79.4%) | 84/102 (82.4%) | Checker-lexical/run variance; no causal improvement claimed |
 | Clarification | 5/9 (55.6%) | 5/9 (55.6%) | Unchanged; supplied cand04 had 6/9 |
 | Stale | 4/12 (33.3%) | 4/12 (33.3%) | Unchanged; no stale improvement claimed |
-| Wrong-publisher | 0/6 | 2/6 | Improved under unchanged checker |
+| Wrong-publisher | 0/6 | 2/6 | Wording-sensitive score difference; no causal improvement established |
 | URL provenance | 67/102 | 66/102 | Ancillary measure lower by one; reported, not claimed improved |
 | Decisive evidence + correctness | 31/102 | 27/102 | Ancillary measure lower; checker hard-excludes publisher support at `eval/checkers.py:21–22` |
 
