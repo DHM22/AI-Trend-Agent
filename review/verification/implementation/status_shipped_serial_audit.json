@@ -1,0 +1,11 @@
+{
+  "records": 102,
+  "model_responses": 327,
+  "API_failure_notes": 0,
+  "all_status_unverified": true,
+  "wrong_detail_by_repeat": {
+    "1": 6,
+    "2": 8,
+    "3": 6
+  }
+}

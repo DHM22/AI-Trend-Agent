@@ -2,7 +2,7 @@
 
 **Corrected attribution:** the original CR-1 revert was **not evidence of a code regression**. [Isolated experiments](ISOLATION_FINDINGS.md) showed identical request hashes and a clean schema-only live run. At the user’s direction, the exact tested VerifiedTrend field is now shipped and available for the other engineer’s deterministic staleness gate. No gating or provenance changes were reapplied.
 
-**Current retained source: CR-2 release-author payload plus the single defaulted VerifiedTrend.status field. Consumer gates and provenance remain absent. Local verification passes; the newly requested live rerun is blocked by the API project spend limit (102 fallbacks, zero model responses). See the current delivery section below.**
+**Current retained source: CR-2 release-author payload plus the single defaulted VerifiedTrend.status field. Consumer gates and provenance remain absent. Local verification passes. The completed one-worker three-repeat live rerun has 327 model responses, zero API failures, and passes all mandatory guardrails: correct verdict 86/102, wrong-detail 20/24, false refusal 0/18. The earlier infrastructure-affected runs remain documented separately below.**
 
 Read `IMPL_CLAUDE.md` and all four requested prior-review documents. The missing-report blocker is resolved. The other engineer's modified `verification.py` is preserved unchanged. No eval case/checker or sampling/model setting has been changed.
 
@@ -170,7 +170,7 @@ Confidence is retained. The file is byte-identical to the earlier status-only is
 
 **Boundary of the missing-status guarantee:** saved reports contain Recommendation rows, not serialized VerifiedTrend. The unchanged dashboard/replay readers retain an absent status field; they do not materialize an `unverified` property, and do not synthesize `verified`. The VerifiedTrend constructor defaults missing status to unverified. Normalizing the saved Recommendation/API contracts themselves would require consumer changes outside the explicitly requested schema-only scope. Those changes were not made. Browser JavaScript is NOT TESTED; actual server startup and rendered HTML over HTTP were tested. Saved report files were not rewritten.
 
-### Requested three-repeat evaluation: API quota blocked
+### Earlier requested evaluation: API quota blocked (resolved by subsequent live rerun)
 
 The exact requested full eval command ran all 102 cases, then the unchanged analyzer ran:
 
@@ -195,11 +195,68 @@ PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/implementation/ch
 | Stale | 0/12 | 7/12 |
 | Successful model responses | 0 | 333 |
 
-The prior isolation numbers are explicitly historical, not represented as a successful new rerun. No quality regression or improvement is inferred from the quota-blocked results. The requested fresh live-model validation remains **NOT TESTED successfully: API quota unavailable**. The user has been notified; no billing limit, credential, model or sampling setting was changed. The schema-only change is retained as explicitly directed.
+The prior isolation numbers are explicitly historical, not represented as a successful new rerun. No quality regression or improvement is inferred from the quota-blocked results. At that point fresh live-model validation was **NOT TESTED successfully: API quota unavailable**. This blocker is now resolved in the subsequent live run below after the user updated the local key. The assistant did not change credentials, billing limits, model or sampling settings. The schema-only change is retained as explicitly directed.
 
-Once quota is restored, use a **new run ID** so the harness does not skip the 102 saved fallback records:
+After the user updated the key, the following **new run ID** was used so the harness did not skip the 102 saved fallback records:
 
 ```sh
 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/run.py --run-id codex-status-shipped-live --repeats 3 --workers 3 --offline-sources
 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/analyze.py --run-id codex-status-shipped-live
 ```
+
+
+### Three-worker live rerun after user updated key — two rate-limit fallbacks
+
+The single public probe `codex-status-keycheck/T01-1` passed with two successful model responses. Then `codex-status-shipped-live` completed **102 cases / 3 repeats**, with **342 successful model responses**, **two API-failure notes** and zero harness exceptions. Q03/3 hit a token-per-minute rate limit after five responses; E02/3 hit it before any response. These were `rate_limit_exceeded`, not the earlier project spend-limit error. [Full summary](implementation/status_shipped_live_summary.json), [audit](implementation/status_shipped_live_audit.json), [raw results](eval/runs/codex-status-shipped-live/). The prior quota-fallback run is not included in these metrics.
+
+| Metric | Fresh shipped-field live result |
+| --- | ---: |
+| Correct verdict | **85/102 (83.3%)** |
+| Wrong-detail detection | **18/24 (75.0%)** |
+| False refusal | **0/18** |
+| Fabrication acceptance | **0/18** |
+| Correct refusal | **27/27** |
+| Half-true detection | **12/12 (100%)** |
+| Stale detection | 6/12 (50.0%) |
+| Clarification | 4/9 (44.4%) |
+| URL provenance | 62/102 |
+| Decisive evidence + correctness | 29/102 |
+
+**All mandatory numerical guardrails pass, but two results are API fallbacks. The completed one-worker run below is the final measurement without API failures.** No improvement in any metric is attributed to the schema field. In particular, stale 6/12 does not establish a staleness improvement: no gate was implemented. All 102 results carry default status=unverified, as expected while the verifier does not set it; the frozen checker scores confidence/notes rather than typed status.
+
+The response model remained `gpt-4o-mini-2024-07-18`; no sampling setting changed. Observed usage: **643,093 tokens**, estimated **$0.0768384** using the existing pricing file; mean case latency **4.01s**, p95 **6.24s**. Actual billing is NOT TESTED. The full suite's successful model responses were checked before accepting the measurement.
+
+No source edits were made during this rerun. The existing **19/19 unit tests**, both saved-report HTTP rendering checks, and successful offline replay from this exact source revision remain the compatibility evidence; changing the user's local key does not alter those source files. The audit still identifies only the retained tools author payload and schema field as changes relative to the original task fingerprint. The peer's verifier and the eval cases/checkers remain untouched.
+
+The schema field is shipped in **c31d683** and available for the other engineer's deterministic gate. Consumer gates and provenance remain unapplied.
+
+
+### Final complete live measurement — one worker, three repeats
+
+The three-worker attempt encountered two API token-rate-limit fallbacks. Its records were preserved. A new **complete** 102-case run, `codex-status-shipped-serial`, used **one worker** to lower request volume. No results were replaced selectively, and no model, sampling, source, prompt or checker setting changed.
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/run.py --run-id codex-status-shipped-serial --repeats 3 --workers 1 --offline-sources
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python review/verification/eval/analyze.py --run-id codex-status-shipped-serial
+```
+
+[Summary](implementation/status_shipped_serial_summary.json), [audit](implementation/status_shipped_serial_audit.json), [raw records](eval/runs/codex-status-shipped-serial/). All 102 cases completed; **327 successful model responses, zero API-failure notes, zero harness exceptions**. Every result has default status=unverified, confirming the field is available but not yet set by the protected verifier.
+
+| Metric | Final shipped-field run |
+| --- | ---: |
+| Correct verdict | **86/102 (84.3%)** |
+| Wrong-detail detection | **20/24 (83.3%)** |
+| False refusal | **0/18** |
+| Fabrication acceptance | **0/18** |
+| Correct refusal | **27/27** |
+| Half-true detection | **12/12 (100%)** |
+| Stale detection | 7/12 (58.3%) |
+| Clarification | 2/9 (22.2%) |
+| URL provenance | 64/102 |
+| Decisive evidence + correctness | 29/102 |
+
+Wrong-detail by repeat: **6/8, 8/8, 6/8**. All mandatory guardrails pass. Clarification is lower than the reproduced baseline's 5/9; it is explicitly reported rather than hidden. No metric increase or decrease is attributed to this post-response schema field; earlier identical-request replay demonstrated why it cannot cause those model-behavior differences. In particular, no deterministic stale gate was added and no stale-detection improvement is claimed.
+
+Model: `gpt-4o-mini-2024-07-18`. Usage: **613,401 tokens**, estimated **$0.06234795** under the existing pricing file; mean case latency **3.82s**, p95 **6.03s**. Actual account billing remains NOT TESTED. The quota and rate-limit blocks on completing a live measurement are resolved for this run.
+
+This documentation update changes no source. The one-line schema field remains committed in **c31d683**, with the previously recorded 19/19 unit tests, both saved-report server-rendering checks and successful no-key offline replay. The original CR-1 revert was not evidence of a code regression. The field is shipped and ready for the other engineer's deterministic staleness gate; consumer gates and provenance remain unapplied.
