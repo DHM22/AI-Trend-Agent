@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+{% if error %}
+<section class="error-state" aria-labelledby="error-title">
+  <span class="error-icon" aria-hidden="true">!</span>
+  <p class="eyebrow">Curriculum Trend Monitor</p>
+  <h1 id="error-title">Report unavailable</h1>
+  <p>{{ error }}</p>
+  <a href="/" class="button">Try again</a>
+</section>
+{% else %}
+<header class="page-header">
+  <div>
+    <p class="eyebrow">Your curriculum, up to date</p>
+    <h1>Curriculum Trend Monitor</h1>
+    <p class="captured">{% if report.get('captured_at') %}Captured {% endif %}{{ captured_label }}</p>
+  </div>
+  <div class="source"><span class="eyebrow">Source</span><span>{{ report.get('source_signals') or 'Not specified' }}</span></div>
+</header>
+
+<section class="section" aria-labelledby="pipeline-title">
+  <div class="section-heading"><h2 id="pipeline-title">Pipeline overview</h2><p>From incoming signals to reviewed trends</p></div>
+  <ol class="pipeline-grid">
+    {% for key, label, description in stats %}
+    <li class="stat-card">
+      <div class="stat-label">{{ label }}<span class="step-number">0{{ loop.index }}</span></div>
+      <strong class="stat-value">{{ report.get(key) if report.get(key) is not none else '—' }}</strong>
+      <p>{{ description }}</p>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+
+<section class="section" aria-labelledby="actions-title">
+  <div class="section-heading"><h2 id="actions-title">What needs attention</h2><p>Select an action to filter recommendations</p></div>
+  <div class="action-grid" role="group" aria-label="Filter recommendations by action">
+    {% for filter in filters %}
+    <button type="button" class="action-card tone-{{ filter.get('tone') }}" data-action-filter="{{ filter.get('key') }}" aria-pressed="false" aria-controls="recommendations" disabled>
+      <span class="action-card-top"><span class="action-symbol" aria-hidden="true">{{ filter.get('symbol') }}</span><strong>{{ filter.get('count') }}</strong><span class="selected-mark" aria-hidden="true">✓</span></span>
+      <span class="action-card-label">{{ filter.get('label') }}</span>
+      <span class="action-description">{{ filter.get('description') }}</span>
+    </button>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section recommendations-section" aria-labelledby="recommendations-title">
+  <div class="list-heading">
+    <div class="list-title"><h2 id="recommendations-title">Recommendations</h2><span class="count-pill">{{ rows|length }}</span></div>
+    <span class="sort-note">Highest score first <span aria-hidden="true">↓</span></span>
+  </div>
+  <div class="list-toolbar">
+    <div class="filter-summary"><button type="button" class="all-filter" data-action-filter="all" aria-pressed="true" aria-controls="recommendations" disabled>All <span>{{ rows|length }}</span></button><span id="filter-label">All actions</span></div>
+    <div class="search-control"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.7"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><label class="sr-only" for="search">Search recommendations by trend</label><input id="search" type="search" placeholder="Search trends…" autocomplete="off" disabled></div>
+  </div>
+  <noscript><p class="noscript-note">All recommendations and details are shown. Enable JavaScript to search, filter, and collapse details.</p></noscript>
+  <div id="recommendations" class="recommendations">
+    {% for row in rows %}
+    {% set match = row.get('match') %}
+    {% set confidence = row.get('confidence') %}
+    <article class="recommendation{% if row.get('recommended_action') == 'watch' %} is-watch{% endif %}" data-action="{{ row.get('recommended_action') or 'unknown' }}" data-trend="{{ row.get('trend') or '' }}" aria-labelledby="trend-{{ loop.index }}">
+      <div class="recommendation-top">
+        <div class="recommendation-heading"><span class="badge tone-{{ row.get('action').get('tone') }}"><span class="badge-dot" aria-hidden="true"></span>{{ row.get('action').get('label') }}</span><h3 id="trend-{{ loop.index }}">{{ row.get('trend') or 'Untitled trend' }}</h3></div>
+        <div class="score" aria-label="Score {{ row.get('score_label') }} out of 5"><strong>{{ row.get('score_label') }}</strong><span> / 5</span><small>Priority score</small></div>
+      </div>
+      <div class="confidence-row">
+        <span class="confidence-label">Confidence</span>
+        {% if confidence is not none %}
+        <meter class="confidence-meter tone-{{ row.get('confidence_tone') }}" min="0" max="1" value="{{ confidence }}" aria-label="Verification confidence">{{ row.get('confidence_pct') }}%</meter>
+        <strong class="confidence-value">{{ row.get('confidence_pct') }}%</strong>
+        {% if confidence < 0.5 %}<span class="low-confidence"><span aria-hidden="true">!</span> Low confidence</span>{% endif %}
+        {% else %}<span class="muted">Not available</span>{% endif %}
+      </div>
+      <div class="recommendation-bottom">
+        {% if match %}<span class="target-pill"><span aria-hidden="true">{{ '📓' if match.get('content_type') == 'lab' else '🖥' }}</span>{{ match.get('citation') or match.get('topic') or 'Course material — citation unavailable' }}</span>
+        {% else %}<span class="no-match">No matching course material</span>{% endif %}
+        <button type="button" class="details-toggle" aria-expanded="true" aria-controls="details-{{ loop.index }}" aria-label="Details for {{ row.get('trend') or 'untitled trend' }}" hidden>Details <svg aria-hidden="true" viewBox="0 0 16 16" fill="none"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div class="details" id="details-{{ loop.index }}">
+        <section><h4>Why we trust this</h4><p>{{ row.get('verification_note') or 'No verification note provided.' }}</p></section>
+        <section><h4>Evidence</h4>
+          {% if row.get('evidence') %}<ul class="evidence-list">{% for evidence in row.get('evidence') %}
+          <li><div class="evidence-source"><span class="tier-tag">{{ evidence.get('tier') or 'Unspecified tier' }}</span>{% if evidence.get('link') %}<a href="{{ evidence.get('link') }}" target="_blank" rel="noopener noreferrer">{{ evidence.get('source') or evidence.get('url') or 'View source' }} <span aria-hidden="true">↗</span><span class="sr-only"> (opens in a new tab)</span></a>{% else %}<span>{{ evidence.get('source') or evidence.get('url') or 'Source not provided' }}</span>{% endif %}</div>{% if evidence.get('note') %}<p>{{ evidence.get('note') }}</p>{% endif %}</li>
+          {% endfor %}</ul>{% else %}<p class="muted">No supporting sources provided.</p>{% endif %}
+        </section>
+        <section><h4>Action plan</h4>{% if row.get('action_plan') %}<ol class="action-plan">{% for step in row.get('action_plan') %}<li>{{ step }}</li>{% endfor %}</ol>{% else %}<p class="muted">No action plan provided.</p>{% endif %}</section>
+        {% if match %}<section class="matched-content"><h4>Matched content</h4>
+          <dl class="match-metadata"><div><dt>File</dt><dd>{{ match.get('source_file') or 'Not specified' }}</dd></div><div><dt>Week</dt><dd>{{ match.get('week') if match.get('week') is not none else 'Not specified' }}</dd></div><div><dt>Type</dt><dd>{{ 'Lab notebook' if match.get('content_type') == 'lab' else 'Slides' if match.get('content_type') == 'slides' else 'Not specified' }}</dd></div></dl>
+          <div class="match-method">{% if match.get('exact_match') %}<span>Exact keyword: {{ match.get('exact_match') }}</span>{% endif %}{% if match.get('similarity') is not none %}<span>Semantic similarity {{ (match.get('similarity') * 100)|round|int }}%</span>{% endif %}{% if not match.get('exact_match') and match.get('similarity') is none %}<span>Match method not provided</span>{% endif %}</div>
+          <pre tabindex="0" aria-label="Matched course content"><code>{{ match.get('matched_text') or 'No matched text provided.' }}</code></pre>
+        </section>{% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  <div id="empty-state" class="empty-state"{% if rows %} hidden{% endif %}><span aria-hidden="true">⌕</span><h3>{{ 'No matching recommendations' if rows else 'No recommendations yet' }}</h3><p>{{ 'Try a different search or select another action.' if rows else 'This report does not contain any recommendations.' }}</p><button type="button" id="reset-filters" class="button" hidden>Clear filters</button></div>
+</section>
+{% endif %}
+{% endblock %}

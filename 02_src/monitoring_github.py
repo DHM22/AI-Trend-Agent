@@ -52,6 +52,12 @@ WATCHED_REPOS = [
     "openai/openai-python",
     "chroma-core/chroma",
     "fastapi/fastapi",
+    "langchain-ai/langgraph",            # agent orchestration
+    "huggingface/transformers",          # BERT and model inference/training
+    "huggingface/sentence-transformers", # embeddings and retrieval
+    "facebookresearch/faiss",           # vector indexing
+    "stanfordnlp/dspy",                  # programmatic prompt optimization
+    "evidentlyai/evidently",             # RAG and LLM evaluation
 ]
 
 API = "https://api.github.com"

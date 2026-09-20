@@ -1,0 +1,17 @@
+{
+  "cold_and_cached_identity_equal": true,
+  "cold_retrieval_timestamp_recorded": true,
+  "canonical_release_url_matches_source": true,
+  "legacy_timestamp_unknown_not_fabricated": true,
+  "offline_cache_hit_miss_network_calls": 0,
+  "error_dict_provenance_cases": 5,
+  "local_tool_provenance": true,
+  "old_evidence_constructor_compatible": true,
+  "example_public_provenance": {
+    "source_id": "github:encode/httpx",
+    "canonical_url": "https://github.com/encode/httpx/releases/tag/0.24.1",
+    "retrieved_at": "2026-09-19T20:41:19.267088+00:00",
+    "tool_result_id": "sha256:84abea6854977c6d1af1f1f155cb824e450c5923482917648ee6fec8f3f3641e",
+    "origin": "tool_observation"
+  }
+}

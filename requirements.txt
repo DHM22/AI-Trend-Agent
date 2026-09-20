@@ -1,8 +1,4 @@
-chromadb
-python-pptx
-pdfplumber
-feedparser
-requests
-pydantic
-openai
-python-dotenv
+fastapi==0.141.1
+uvicorn==0.52.4
+Jinja2==3.1.6
+pydantic==2.13.5

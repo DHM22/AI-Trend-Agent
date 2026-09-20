@@ -1,0 +1,16 @@
+[
+  {
+    "repo": "encode/httpx",
+    "tag": "0.24.1",
+    "release_snapshot": "3781e80a7d9c5a5f9730b138",
+    "author": "lovelydinosaur",
+    "recent_snapshot": "6178734a269dd505c4ced9a9"
+  },
+  {
+    "repo": "pydantic/pydantic",
+    "tag": "v2.0",
+    "release_snapshot": "7e822f7e6aeebc74e25bc192",
+    "author": "samuelcolvin",
+    "recent_snapshot": "0835400338ba8d4bc1914260"
+  }
+]

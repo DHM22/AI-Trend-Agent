@@ -1,0 +1,28 @@
+{
+  "server_started": true,
+  "health": {
+    "status": "ok"
+  },
+  "http_checks": [
+    {
+      "route": "/health",
+      "status": 200,
+      "bytes": 15,
+      "content_type": "application/json"
+    },
+    {
+      "route": "/",
+      "status": 200,
+      "bytes": 48198,
+      "content_type": "text/html; charset=utf-8"
+    },
+    {
+      "route": "/api/report",
+      "status": 200,
+      "bytes": 17239,
+      "content_type": "application/json"
+    }
+  ],
+  "shutdown_exit_code": -15,
+  "browser_javascript": "NOT TESTED: no browser automation; actual server-rendered HTML over local HTTP verified."
+}

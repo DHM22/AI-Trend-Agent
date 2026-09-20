@@ -1,0 +1,16 @@
+{
+  "status": {
+    "records": 102,
+    "request_sequences_equal": true,
+    "confidence_and_note_equal": true,
+    "model_requests": 343,
+    "downstream_imported": []
+  },
+  "evidence": {
+    "records": 102,
+    "request_sequences_equal": true,
+    "confidence_and_note_equal": true,
+    "model_requests": 343,
+    "downstream_imported": []
+  }
+}

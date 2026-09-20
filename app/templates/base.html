@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Curriculum Trend Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;650;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+  <script src="{{ url_for('static', path='app.js') }}" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to report</a>
+  <div class="topbar">
+    <div class="shell topbar-inner">
+      <a href="/" class="brand" aria-label="Curriculum Trend Monitor home">
+        <span class="brand-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 17V9m7 8V5m7 12v-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></span>
+        Course intelligence
+      </a>
+      <span class="snapshot-label"><span class="status-dot" aria-hidden="true"></span> Saved report</span>
+    </div>
+  </div>
+  <main id="main" class="shell" tabindex="-1">{% block content %}{% endblock %}</main>
+  <footer class="shell footer">
+    <span><span aria-hidden="true">◷</span> Read-only demo view</span>
+    {% if not error %}<span id="shown-count" role="status" aria-live="polite" aria-atomic="true">{{ rows|length }} of {{ rows|length }} recommendations shown</span>{% endif %}
+  </footer>
+</body>
+</html>

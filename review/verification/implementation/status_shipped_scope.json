@@ -1,0 +1,7 @@
+{
+  "changed_vs_original_task_start": [
+    "02_src/agents/tools.py",
+    "02_src/schemas.py"
+  ],
+  "verifier_unchanged": true
+}

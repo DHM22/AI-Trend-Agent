@@ -1,0 +1,22 @@
+== VerificationAgent (tool-using) ==
+  PASS  test_api_failure_triggers_fallback
+  PASS  test_code_fenced_json_is_stripped
+  PASS  test_confidence_is_clamped_to_unit_interval
+  PASS  test_describe_cluster_lists_signals_and_tiers
+  PASS  test_empty_evidence_falls_back_to_cluster_signals
+  PASS  test_evidence_tier_is_normalised
+  PASS  test_fallback_scoring_bands
+  PASS  test_final_json_verdict_is_parsed
+  PASS  test_injection_after_summary_truncation_is_detected
+  PASS  test_injection_cap_preserves_lower_confidence
+  PASS  test_injection_caps_both_fallback_causes
+  PASS  test_injection_marker_variants_cap_model_confidence
+  PASS  test_injection_normal_signal_unaffected
+  PASS  test_invalid_json_triggers_fallback
+  PASS  test_module_exposes_max_steps
+  PASS  test_multiple_tool_calls_in_one_round_all_recorded
+  PASS  test_stops_early_after_max_steps_and_notes_it
+  PASS  test_summarise_result_shapes
+  PASS  test_tool_call_round_is_recorded_then_final_verdict
+
+19/19 passed

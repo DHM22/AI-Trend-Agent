@@ -43,6 +43,9 @@ FEEDS = {
     "langchain_blog": "https://blog.langchain.com/rss.xml",
     "openai_blog": "https://openai.com/blog/rss.xml",
     "huggingface_blog": "https://huggingface.co/blog/feed.xml",
+    "ollama_blog": "https://ollama.com/blog/rss.xml",
+    "qdrant_blog": "https://qdrant.tech/blog/index.xml",
+    "pytorch_blog": "https://pytorch.org/blog/feed/",
 }
 
 # Feeds we treat as secondary -- community discussion, not announcements.
@@ -50,6 +53,7 @@ FEEDS = {
 # something to filter, which makes the filtering visible in the demo.
 SECONDARY_FEEDS = {
     # "hackernews_ai": "https://hnrss.org/newest?q=langchain",
+    "latent_space": "https://www.latent.space/feed",  # third-party AI coverage
 }
 
 

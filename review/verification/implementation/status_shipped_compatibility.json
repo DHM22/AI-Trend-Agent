@@ -1,0 +1,70 @@
+{
+  "reports": [
+    {
+      "path": "01_data/demo_snapshot.json",
+      "loaded": 13,
+      "missing_status_rows": 13,
+      "reconstructed_verified_trend_statuses": [
+        "unverified"
+      ],
+      "dashboard_model_missing_status_rows": 13
+    },
+    {
+      "path": "data/report.json",
+      "loaded": 13,
+      "missing_status_rows": 13,
+      "reconstructed_verified_trend_statuses": [
+        "unverified"
+      ],
+      "dashboard_model_missing_status_rows": 13
+    }
+  ],
+  "http": [
+    {
+      "report": "01_data/demo_snapshot.json",
+      "route": "/health",
+      "status": 200,
+      "bytes": 15
+    },
+    {
+      "report": "01_data/demo_snapshot.json",
+      "route": "/",
+      "status": 200,
+      "bytes": 48198
+    },
+    {
+      "report": "01_data/demo_snapshot.json",
+      "route": "/api/report",
+      "status": 200,
+      "bytes": 17239
+    },
+    {
+      "report": "data/report.json",
+      "route": "/health",
+      "status": 200,
+      "bytes": 15
+    },
+    {
+      "report": "data/report.json",
+      "route": "/",
+      "status": 200,
+      "bytes": 48198
+    },
+    {
+      "report": "data/report.json",
+      "route": "/api/report",
+      "status": 200,
+      "bytes": 17239
+    }
+  ],
+  "offline_replay": {
+    "exit_code": 0,
+    "api_key_present": false,
+    "TOOL_CACHE_ONLY": "1",
+    "summary": [
+      "45 signals -> 41 clusters -> 15 evaluated -> 13 recommendations",
+      "UPDATE EXISTING MATERIAL: 5  ADD NEW LESSON: 1  ADD OPTIONAL CONTENT: 1  WATCH: 6"
+    ]
+  },
+  "limitations": "Saved reports contain Recommendation rows, not serialized VerifiedTrend. Existing dashboard and replay readers retain absent status; they do not synthesize verified or unverified. Reconstructing VerifiedTrend without status defaults to unverified. No consumer/gating change was made. Browser JavaScript NOT TESTED."
+}

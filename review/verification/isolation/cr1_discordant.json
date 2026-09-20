@@ -1,0 +1,128 @@
+[
+  {
+    "case": "W01",
+    "repeat": 1,
+    "category": "wrong_date",
+    "baseline": {
+      "correct": true,
+      "confidence": 0.4,
+      "note": "The claimed published date of 2023-05-29 does not match the actual published date of 2023-05-22.",
+      "neg_regex_match": true,
+      "required_detail": "2023-05-22",
+      "detail_present": true
+    },
+    "cr1": {
+      "correct": false,
+      "confidence": 0.4,
+      "note": "The claimed published date was 2023-05-29, but the actual published date is 2023-05-22.",
+      "neg_regex_match": false,
+      "required_detail": "2023-05-22",
+      "detail_present": true
+    }
+  },
+  {
+    "case": "W01",
+    "repeat": 3,
+    "category": "wrong_date",
+    "baseline": {
+      "correct": true,
+      "confidence": 0.4,
+      "note": "The claimed published date of 2023-05-29 is incorrect. The actual published date for release v2.31.0 is 2023-05-22.",
+      "neg_regex_match": true,
+      "required_detail": "2023-05-22",
+      "detail_present": true
+    },
+    "cr1": {
+      "correct": false,
+      "confidence": 0.4,
+      "note": "The claimed publication date was 2023-05-29, but the actual published date is 2023-05-22.",
+      "neg_regex_match": false,
+      "required_detail": "2023-05-22",
+      "detail_present": true
+    }
+  },
+  {
+    "case": "W02",
+    "repeat": 2,
+    "category": "wrong_date",
+    "baseline": {
+      "correct": false,
+      "confidence": 0.4,
+      "note": "Claim states release date as 2021-05-19, but the actual published date is 2021-05-12.",
+      "neg_regex_match": false,
+      "required_detail": "2021-05-12",
+      "detail_present": true
+    },
+    "cr1": {
+      "correct": true,
+      "confidence": 0.4,
+      "note": "The claim states the release date as 2021-05-19, but the actual published date is 2021-05-12. The version 2.0.0 does exist but the date is contradicted.",
+      "neg_regex_match": true,
+      "required_detail": "2021-05-12",
+      "detail_present": true
+    }
+  },
+  {
+    "case": "W03",
+    "repeat": 1,
+    "category": "wrong_version",
+    "baseline": {
+      "correct": false,
+      "confidence": 0.4,
+      "note": "The claim asserts the tag_name is 0.24.99 for the release named 0.24.1, but the actual tag for the release 0.24.1 is 0.24.1.",
+      "neg_regex_match": false,
+      "required_detail": "0.24.1",
+      "detail_present": true
+    },
+    "cr1": {
+      "correct": true,
+      "confidence": 0.0,
+      "note": "The claim states that the release named 0.24.1 has the exact tag_name 0.24.99; however, the actual tag is 0.24.1.",
+      "neg_regex_match": true,
+      "required_detail": "0.24.1",
+      "detail_present": true
+    }
+  },
+  {
+    "case": "W03",
+    "repeat": 3,
+    "category": "wrong_version",
+    "baseline": {
+      "correct": true,
+      "confidence": 0.0,
+      "note": "The claim states the online release 0.24.1 has the exact tag_name 0.24.99. However, the actual tag for the release is 0.24.1.",
+      "neg_regex_match": true,
+      "required_detail": "0.24.1",
+      "detail_present": true
+    },
+    "cr1": {
+      "correct": false,
+      "confidence": 0.0,
+      "note": "The claim states that the GitHub release named 0.24.1 has the exact tag_name 0.24.99, but the actual tag found is 0.24.1.",
+      "neg_regex_match": false,
+      "required_detail": "0.24.1",
+      "detail_present": true
+    }
+  },
+  {
+    "case": "W04",
+    "repeat": 1,
+    "category": "wrong_version",
+    "baseline": {
+      "correct": true,
+      "confidence": 0.0,
+      "note": "The release named v2.0 in pydantic/pydantic has the actual tag v2.0, but the claim asserts that the tag_name is 2.0.99 which does not exist.",
+      "neg_regex_match": true,
+      "required_detail": "v2.0",
+      "detail_present": true
+    },
+    "cr1": {
+      "correct": false,
+      "confidence": 0.0,
+      "note": "The claimed tag '2.0.99' was not found; the latest versions were 'v2.13.5' which was published on '2026-08-28' and 'v2.14.0a1' released on '2026-05-22'.",
+      "neg_regex_match": true,
+      "required_detail": "v2.0",
+      "detail_present": false
+    }
+  }
+]

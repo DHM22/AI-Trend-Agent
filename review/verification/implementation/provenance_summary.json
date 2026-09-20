@@ -1,0 +1,219 @@
+{
+  "runs": 102,
+  "cases": 34,
+  "repeats": 3,
+  "metrics": {
+    "correct": {
+      "n": 80,
+      "d": 102,
+      "rate": 0.7843137254901961
+    },
+    "provenance": {
+      "n": 60,
+      "d": 102,
+      "rate": 0.5882352941176471
+    },
+    "proved_correct": {
+      "n": 22,
+      "d": 102,
+      "rate": 0.21568627450980393
+    },
+    "score_without_successful_tools": {
+      "n": 10,
+      "d": 102,
+      "rate": 0.09803921568627451
+    },
+    "false_confidence": {
+      "n": 3,
+      "d": 102,
+      "rate": 0.029411764705882353
+    },
+    "actionable_without_tools": {
+      "n": 0,
+      "d": 102,
+      "rate": 0.0
+    },
+    "native_tool_result_ids": {
+      "n": 0,
+      "d": 102,
+      "rate": 0.0
+    },
+    "fabrication": {
+      "n": 0,
+      "d": 18,
+      "rate": 0.0
+    },
+    "wrong_detail_detection": {
+      "n": 18,
+      "d": 24,
+      "rate": 0.75
+    },
+    "stale_detection": {
+      "n": 5,
+      "d": 12,
+      "rate": 0.4166666666666667
+    },
+    "half_true_detection": {
+      "n": 12,
+      "d": 12,
+      "rate": 1.0
+    },
+    "correct_refusal": {
+      "n": 27,
+      "d": 27,
+      "rate": 1.0
+    },
+    "clarification": {
+      "n": 1,
+      "d": 9,
+      "rate": 0.1111111111111111
+    },
+    "false_refusal": {
+      "n": 1,
+      "d": 18,
+      "rate": 0.05555555555555555
+    },
+    "wrong_detail_safe_abstention": {
+      "n": 23,
+      "d": 24
+    }
+  },
+  "categories": {
+    "ambiguous": {
+      "n": 1,
+      "d": 9,
+      "rate": 0.1111111111111111
+    },
+    "fabricated": {
+      "n": 18,
+      "d": 18,
+      "rate": 1.0
+    },
+    "half_true": {
+      "n": 12,
+      "d": 12,
+      "rate": 1.0
+    },
+    "stale": {
+      "n": 5,
+      "d": 12,
+      "rate": 0.4166666666666667
+    },
+    "true": {
+      "n": 17,
+      "d": 18,
+      "rate": 0.9444444444444444
+    },
+    "unreachable": {
+      "n": 9,
+      "d": 9,
+      "rate": 1.0
+    },
+    "wrong_api": {
+      "n": 5,
+      "d": 6,
+      "rate": 0.8333333333333334
+    },
+    "wrong_date": {
+      "n": 3,
+      "d": 6,
+      "rate": 0.5
+    },
+    "wrong_publisher": {
+      "n": 4,
+      "d": 6,
+      "rate": 0.6666666666666666
+    },
+    "wrong_version": {
+      "n": 6,
+      "d": 6,
+      "rate": 1.0
+    }
+  },
+  "repeat_correct": {
+    "1": {
+      "n": 28,
+      "d": 34,
+      "rate": 0.8235294117647058
+    },
+    "2": {
+      "n": 25,
+      "d": 34,
+      "rate": 0.7352941176470589
+    },
+    "3": {
+      "n": 27,
+      "d": 34,
+      "rate": 0.7941176470588235
+    }
+  },
+  "consistency": {
+    "same_derived_verdict_cases": 26,
+    "same_correctness_cases": 24,
+    "same_confidence_cases": 21,
+    "mean_confidence_population_variance": 0.012058823529411766,
+    "per_case_variance": {
+      "T01": 0.0,
+      "F01": 0.0,
+      "T02": 0.0,
+      "F02": 0.0,
+      "T03": 0.04499999999999999,
+      "F03": 0.0,
+      "T04": 0.005000000000000002,
+      "F04": 0.0,
+      "T05": 0.020000000000000007,
+      "F05": 0.0,
+      "T06": 0.0,
+      "F06": 0.0,
+      "W01": 0.03555555555555556,
+      "W02": 0.03555555555555556,
+      "W03": 0.03555555555555556,
+      "W04": 0.0,
+      "W05": 0.03555555555555556,
+      "W06": 0.01999999999999999,
+      "W07": 0.0,
+      "W08": 0.0,
+      "S01": 0.03555555555555556,
+      "S02": 0.0,
+      "S03": 0.0,
+      "S04": 0.0,
+      "H01": 0.0,
+      "H02": 0.0,
+      "H03": 0.0,
+      "H04": 0.0,
+      "Q01": 0.0,
+      "Q02": 0.03555555555555556,
+      "Q03": 0.03555555555555556,
+      "E01": 0.03555555555555556,
+      "E02": 0.0,
+      "E03": 0.03555555555555556
+    }
+  },
+  "tokens": {
+    "input": 627063,
+    "cached_input": 426240,
+    "output": 16821,
+    "total": 643884
+  },
+  "estimated_usd": 0.07218405,
+  "model_calls": 324,
+  "models": [
+    "gpt-4o-mini-2024-07-18"
+  ],
+  "latency_s": {
+    "mean": 3.640159071892769,
+    "median": 3.428268041992851,
+    "p95": 5.009824042004766,
+    "max": 6.4414890829939395,
+    "sum_case_latency": 371.29622533306247
+  },
+  "tool_calls": 248,
+  "tool_names": {
+    "github_lookup": 152,
+    "verify_release": 94,
+    "search_curriculum": 2
+  },
+  "exceptions": [],
+  "failed_runs_with_decisive_evidence": 4,
+  "failed_runs_without_decisive_evidence": 18
+}
