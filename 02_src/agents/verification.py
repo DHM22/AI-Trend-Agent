@@ -42,6 +42,7 @@ import os
 import re
 import sys
 from dataclasses import dataclass, field
+from datetime import date, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -92,51 +93,97 @@ def _apply_injection_cap(cluster: TrendCluster, confidence: float,
 # it was the newest.
 # ---------------------------------------------------------------------------
 
-_RECENCY_RE = re.compile(
-    r"\b(?:latest|newest|most\s+recent|current|currently|up[\s-]?to[\s-]?date|"
-    r"still|remains?|no\s+newer|no\s+later|nothing\s+newer|nothing\s+later)\b",
-    re.IGNORECASE,
-)
 _CLAIMED_VERSION_RE = re.compile(r"\bv?\d+\.\d+(?:\.\d+)?\b")
 _AS_OF_RE = re.compile(r"\bas\s+of\b[,]?\s*(\d{4}-\d{2}-\d{2})", re.IGNORECASE)
 _REPO_URL_RE = re.compile(r"github\.com/([^/\s]+/[^/\s]+)")
-# A publisher/maintainer claim -- deliberately narrow so it never matches
-# "published release" or "published on <date>", only an actual authorship claim.
-_PUBLISHER_RE = re.compile(
-    r"\b(?:publisher|maintainer|published\s+by|release\s+author|author\.login|"
-    r"author\s+account|maintainer\s+account)\b",
+_LOGIN_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$")
+# A tag that denotes a pre-release (alpha/beta/rc/dev), so a stale check never
+# treats one as a newer STABLE release even if its prerelease flag is missing.
+_PRERELEASE_TAG_RE = re.compile(r"(?:a|b|c|rc|alpha|beta|dev|pre|preview)\d*$", re.IGNORECASE)
+
+# An AFFIRMATIVE assertion that some release/version is the newest/current one.
+# Bare keywords are deliberately NOT enough (see CR-01): "still available",
+# "current documentation" and "remains a published release" must not match.
+_RECENCY_ASSERT_RE = re.compile(
+    r"(?:latest|newest|most\s+recent|current)\s+(?:stable\s+)?(?:release|version)\b"
+    r"|(?:\bis\b|\bare\b|remains?|stays?|\bstill\b)\s+(?:the\s+|its\s+)?"
+    r"(?:latest|newest|most\s+recent|current|up[\s-]?to[\s-]?date)\b"
+    r"|\bno\s+(?:newer|later)\s+(?:stable\s+)?(?:release|version)\b"
+    r"|\bnewest\s+stable\b",
     re.IGNORECASE,
 )
+_NEGATION_NEAR_RE = re.compile(
+    r"\bnot\b|\bnever\b|\bno\b|\bwithout\b|n['’]t\b|\bno\s+longer\b",
+    re.IGNORECASE,
+)
+# A publisher claim that actually names an account: "published by X",
+# "publisher/maintainer/author ... is/was X". A bare keyword or a question
+# ("who is the publisher of ...?") names no account and must NOT fire (CR-02).
+_PUBLISHER_CLAIM_RE = re.compile(
+    r"published\s+by\s+[\"']?(?P<a>[A-Za-z0-9][A-Za-z0-9-]{1,38})"
+    r"|(?P<kw>publisher|maintainer|author)(?:\.login|\s+account)?"
+    r"(?:\s+\S+){0,7}?\s+(?:is|was|=)\s+[\"']?(?P<b>[A-Za-z0-9][A-Za-z0-9-]{1,38})",
+    re.IGNORECASE,
+)
+# Words that follow "... is/was" but are descriptions, not account logins.
+_NON_ACCOUNT = {
+    "the", "a", "an", "not", "no", "it", "its", "this", "that", "by", "of", "on",
+    "from", "unknown", "unclear", "unspecified", "unverified", "unconfirmed",
+    "listed", "shown", "correct", "incorrect", "verified", "anonymous", "missing",
+    "absent", "provided", "available", "asserted", "review", "someone", "nobody",
+    "valid", "invalid", "present", "confirmed", "different", "same",
+}
 
 
-def _extract_json_object(text: str) -> str | None:
-    """Return the first balanced {...} object in text, or None. Lets a verdict
-    survive when the model wraps its JSON in prose, instead of that prose
-    silently collapsing to a rule-based fallback."""
-    start = text.find("{")
-    if start < 0:
+def _parse_iso(value) -> "date | None":
+    """A calendar date from an ISO timestamp, or None. Never raises."""
+    if not isinstance(value, str) or not value:
         return None
-    depth = 0
-    in_str = False
-    esc = False
-    for i in range(start, len(text)):
-        ch = text[i]
-        if in_str:
-            if esc:
-                esc = False
-            elif ch == "\\":
-                esc = True
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).date()
+    except ValueError:
+        return None
+
+
+def _norm_version(v: str) -> str:
+    v = (v or "").strip()
+    return v[1:] if v[:1].lower() == "v" else v
+
+
+def _extract_json_objects(text: str) -> list[str]:
+    """Every TOP-LEVEL balanced {...} object in text, in order. Used only when
+    the whole response is not itself valid JSON, to recover a wrapped verdict --
+    but the caller must choose the authoritative object, not the first one."""
+    objs: list[str] = []
+    i, n = 0, len(text)
+    while i < n:
+        if text[i] != "{":
+            i += 1
+            continue
+        depth = 0
+        in_str = esc = False
+        j = i
+        while j < n:
+            ch = text[j]
+            if in_str:
+                if esc:
+                    esc = False
+                elif ch == "\\":
+                    esc = True
+                elif ch == '"':
+                    in_str = False
             elif ch == '"':
-                in_str = False
-        elif ch == '"':
-            in_str = True
-        elif ch == "{":
-            depth += 1
-        elif ch == "}":
-            depth -= 1
-            if depth == 0:
-                return text[start:i + 1]
-    return None
+                in_str = True
+            elif ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    objs.append(text[i:j + 1])
+                    break
+            j += 1
+        i = j + 1
+    return objs
 
 
 def _claim_text(cluster: TrendCluster) -> str:
@@ -157,6 +204,41 @@ def _repo_from_cluster(cluster: TrendCluster) -> str | None:
         m = _REPO_URL_RE.search(s.url or "")
         if m:
             return m.group(1).rstrip("/")
+    return None
+
+
+def _recency_target(text: str) -> str | None:
+    """The version a claim AFFIRMATIVELY asserts is the latest/current, or None.
+    Conservative by design (CR-01/CR-03): a negated assertion ("not the latest"),
+    a non-release subject ("still available", "current documentation"), or an
+    assertion with no version clearly bound to it yields None -- a missed stale
+    detection is cheaper than a false refusal."""
+    versions = [(m.start(), m.group(0)) for m in _CLAIMED_VERSION_RE.finditer(text)]
+    if not versions:
+        return None
+    for m in _RECENCY_ASSERT_RE.finditer(text):
+        span = m.group(0)
+        is_no_newer = bool(re.match(r"\s*no\s+(?:newer|later)", span, re.IGNORECASE))
+        if not is_no_newer and _NEGATION_NEAR_RE.search(text[max(0, m.start() - 30):m.start()]):
+            continue                            # negated affirmative -> not a claim of currency
+        dist, nearest = min((abs(pos - m.start()), ver) for pos, ver in versions)
+        if is_no_newer and dist > 40:
+            continue                            # "no newer release" with no nearby version -> ambiguous
+        return nearest
+    return None
+
+
+def _claimed_publisher(text: str) -> str | None:
+    """The account a claim asserts published the release, or None. Requires a
+    named account, not a bare keyword or a question (CR-02)."""
+    for m in _PUBLISHER_CLAIM_RE.finditer(text):
+        kw_start = m.start("kw") if m.group("kw") is not None else m.start()
+        if _NEGATION_NEAR_RE.search(text[max(0, kw_start - 12):kw_start]):
+            continue                            # "no publisher identity is asserted" etc.
+        acct = m.group("a") or m.group("b")
+        if not acct or not _LOGIN_RE.match(acct) or acct.lower() in _NON_ACCOUNT:
+            continue
+        return acct
     return None
 
 
@@ -375,91 +457,121 @@ class VerificationAgent:
     # -----------------------------------------------------------------
     def _staleness_gate(self, cluster: TrendCluster, result: VerifiedTrend,
                         trace: VerificationTrace) -> VerifiedTrend:
-        """Deterministic freshness check -- see CR-1 note above. Fires only when
-        the claim text asserts recency AND a newer non-prerelease release is
-        actually present in the release history."""
-        text = _claim_text(cluster)
-        if not _RECENCY_RE.search(text):
-            return result                       # not a recency claim
-        repo = _repo_from_cluster(cluster)
-        vm = _CLAIMED_VERSION_RE.search(text)
-        if not repo or not vm:
-            return result                       # cannot pin the claimed release
-        claimed = vm.group(0)
-        am = _AS_OF_RE.search(text)
-        as_of = am.group(1) if am else None
+        """Deterministic freshness check. Fires ONLY when the claim affirmatively
+        asserts that a specific version is the newest/current release AND a newer
+        stable release, whose date is validated, actually exists in the history.
+        Any unusable tool payload is a no-op that returns the model's result
+        untouched -- never grounds for a contradiction (CR-01/CR-03/CR-04)."""
+        try:
+            text = _claim_text(cluster)
+            claimed = _recency_target(text)     # affirmative + version-bound, or None
+            repo = _repo_from_cluster(cluster)
+            if not claimed or not repo:
+                return result
+            am = _AS_OF_RE.search(text)
+            as_of = _parse_iso(am.group(1)) if am else None
+            # A release published after the claim's as-of date (or after today
+            # when none is given) cannot supersede it.
+            upper = as_of or date.today()
 
-        matched = call_tool("verify_release", {"repo": repo, "version": claimed})
-        listing = call_tool("verify_release", {"repo": repo, "version": ""})
-        trace.steps.append(Step(len(trace.steps) + 1, "verify_release",
-                                {"repo": repo, "version": claimed}, _summarise_result(matched)))
-        trace.steps.append(Step(len(trace.steps) + 1, "verify_release",
-                                {"repo": repo, "version": ""}, _summarise_result(listing)))
+            matched = call_tool("verify_release", {"repo": repo, "version": claimed})
+            listing = call_tool("verify_release", {"repo": repo, "version": ""})
+            trace.steps.append(Step(len(trace.steps) + 1, "verify_release",
+                                    {"repo": repo, "version": claimed}, _summarise_result(matched)))
+            trace.steps.append(Step(len(trace.steps) + 1, "verify_release",
+                                    {"repo": repo, "version": ""}, _summarise_result(listing)))
 
-        mr = matched.get("matched_release") if isinstance(matched, dict) else None
-        if "error" in matched or not isinstance(mr, dict):
-            return result                       # cannot confirm the claimed release
-        claimed_date = mr.get("published_at", "")
-        releases = listing.get("releases") if isinstance(listing, dict) else None
-        if "error" in listing or not isinstance(releases, list) or not claimed_date:
-            return result                       # cannot read history -> do not refuse
+            if not isinstance(matched, dict) or "error" in matched:
+                return result
+            mr = matched.get("matched_release")
+            claimed_date = _parse_iso(mr.get("published_at")) if isinstance(mr, dict) else None
+            if claimed_date is None:
+                return result                   # cannot confirm the claimed release's date
+            if not isinstance(listing, dict) or "error" in listing:
+                return result
+            releases = listing.get("releases")
+            if not isinstance(releases, list):
+                return result
 
-        newer = [r for r in releases
-                 if isinstance(r, dict) and not r.get("prerelease")
-                 and r.get("published_at", "") > claimed_date
-                 and (as_of is None or r.get("published_at", "")[:10] <= as_of)]
-        if not newer:
-            return result                       # nothing newer -> recency claim stands
+            newer = []
+            for r in releases:
+                if not isinstance(r, dict) or r.get("prerelease"):
+                    continue
+                tag = r.get("tag")
+                if not isinstance(tag, str) or not tag or _PRERELEASE_TAG_RE.search(tag):
+                    continue
+                d = _parse_iso(r.get("published_at"))
+                if d is None or not (claimed_date < d <= upper):
+                    continue
+                newer.append((d, r))
+            if not newer:
+                return result                   # nothing validly newer -> claim stands
 
-        newest = max(newer, key=lambda r: r.get("published_at", ""))
-        ndate = (newest.get("published_at") or "")[:10]
-        note = (f"The claim that {claimed} is the newest/current release is contradicted: "
-                f"a newer stable release {newest.get('tag', '?')} was published on {ndate}, "
-                f"so {claimed} is superseded and is no longer the latest.")
-        conf, note = _apply_injection_cap(cluster, 0.0, note)
-        ev = [Evidence(source=repo, tier="primary", url=newest.get("url", ""),
-                       note=f"{newest.get('tag', '')} published {ndate}")]
-        return VerifiedTrend(cluster=cluster, confidence=conf, verification_note=note,
-                             evidence=ev, status="contradicted")
+            d, newest = max(newer, key=lambda x: x[0])
+            ndate = d.isoformat()
+            note = (f"The claim that {claimed} is the newest/current release is contradicted: "
+                    f"a newer stable release {newest.get('tag', '?')} was published on {ndate}, "
+                    f"so {claimed} is superseded and is no longer the latest.")
+            conf, note = _apply_injection_cap(cluster, 0.0, note)
+            url = newest.get("url") if isinstance(newest.get("url"), str) else ""
+            ev = [Evidence(source=repo, tier="primary", url=url,
+                           note=f"{newest.get('tag', '')} published {ndate}")]
+            return VerifiedTrend(cluster=cluster, confidence=conf, verification_note=note,
+                                 evidence=ev, status="contradicted")
+        except Exception:
+            return result                       # never let a gate turn a payload into a crash
 
     # -----------------------------------------------------------------
     def _capture_author(self, name: str, args: dict, result: dict) -> None:
         """Record the publisher login the model's own verify_release already
-        returned, so the publisher gate needs no extra lookup."""
-        if name != "verify_release" or not isinstance(result, dict):
+        returned, keyed by (repo, version) so it can only be used to judge the
+        SAME release the claim pins (CR-03), and only when it is a valid login."""
+        if name != "verify_release" or not isinstance(result, dict) or "error" in result:
             return
         mr = result.get("matched_release")
-        if isinstance(mr, dict) and mr.get("author"):
-            repo = str(args.get("repo", "")).lower()
-            if repo:
-                self._seen_authors[repo] = {"author": mr["author"], "url": mr.get("url", "")}
+        if not isinstance(mr, dict):
+            return
+        author = mr.get("author")
+        if not (isinstance(author, str) and _LOGIN_RE.match(author)):
+            return
+        repo = str(args.get("repo", "")).lower()
+        ver = _norm_version(str(args.get("version", "")))
+        if repo and ver:
+            url = mr.get("url") if isinstance(mr.get("url"), str) else ""
+            self._seen_authors[(repo, ver)] = {"author": author, "url": url}
 
     def _publisher_gate(self, cluster: TrendCluster, result: VerifiedTrend,
                         trace: VerificationTrace) -> VerifiedTrend:
-        """Deterministic publisher check -- mirrors the staleness gate. Fires
-        ONLY when the claim explicitly names a publisher/maintainer AND the
-        actual author login (already returned by the model's pinned
-        verify_release) is known and is NOT the account the claim names. Never
-        makes an extra lookup, so a false refusal is structurally impossible on
-        claims that assert no publisher."""
-        text = _claim_text(cluster)
-        if not _PUBLISHER_RE.search(text):
+        """Deterministic publisher check. Fires ONLY when the claim names a
+        specific publisher account AND the validated author of the SAME pinned
+        release (repo, version) is known AND differs from the claimed account.
+        A bare keyword, a question, a negated/unasserted mention, an unmatched
+        release, or an invalid author is a no-op (CR-02/CR-03/CR-04)."""
+        try:
+            text = _claim_text(cluster)
+            acct = _claimed_publisher(text)
+            repo = _repo_from_cluster(cluster)
+            vm = _CLAIMED_VERSION_RE.search(text)
+            if not acct or not repo or not vm:
+                return result
+            ver = _norm_version(vm.group(0))
+            rec = getattr(self, "_seen_authors", {}).get((repo.lower(), ver))
+            author = rec.get("author") if isinstance(rec, dict) else None
+            if not (isinstance(author, str) and _LOGIN_RE.match(author)):
+                return result                   # no validated author for the pinned release
+            if acct.lower() == author.lower():
+                return result                   # claim names the real author -> correct
+            note = (f"The claimed publisher account '{acct}' does not match the actual "
+                    f"author of release {vm.group(0)}: it was published by {author}, so the "
+                    f"claimed publisher is incorrect.")
+            conf, note = _apply_injection_cap(cluster, 0.0, note)
+            url = rec.get("url") if isinstance(rec.get("url"), str) else ""
+            ev = [Evidence(source=repo, tier="primary", url=url,
+                           note=f"actual author: {author}")]
+            return VerifiedTrend(cluster=cluster, confidence=conf, verification_note=note,
+                                 evidence=ev, status="contradicted")
+        except Exception:
             return result
-        repo = _repo_from_cluster(cluster)
-        seen = getattr(self, "_seen_authors", {})
-        rec = seen.get(repo.lower()) if repo else None
-        author = rec.get("author", "") if isinstance(rec, dict) else ""
-        if not author:
-            return result                       # no pinned author payload -> no action
-        if re.search(r"\b" + re.escape(author) + r"\b", text, re.IGNORECASE):
-            return result                       # claim names the real author -> correct
-        note = (f"The claimed publisher account does not match the actual author: the "
-                f"release was published by {author}, so the claimed publisher is incorrect.")
-        conf, note = _apply_injection_cap(cluster, 0.0, note)
-        ev = [Evidence(source=repo, tier="primary", url=rec.get("url", ""),
-                       note=f"actual author: {author}")]
-        return VerifiedTrend(cluster=cluster, confidence=conf, verification_note=note,
-                             evidence=ev, status="contradicted")
 
     # -----------------------------------------------------------------
     def _parse(self, cluster: TrendCluster, text: str,
@@ -474,15 +586,24 @@ class VerificationAgent:
         try:
             data = json.loads(cleaned)
         except json.JSONDecodeError:
-            # Face 1: the model may wrap valid JSON in prose. Recover the object
-            # rather than silently dropping the verdict into the rule-based
-            # fallback. Only genuinely non-JSON text falls back.
-            obj = _extract_json_object(cleaned)
-            if obj is None:
-                return self._fallback(cluster, "model did not return valid JSON", trace)
-            try:
-                data = json.loads(obj)
-            except json.JSONDecodeError:
+            # Face 1: the model may wrap JSON in prose or emit several objects
+            # (e.g. a superseded draft before the final verdict). Recover the
+            # AUTHORITATIVE verdict -- the single verdict-shaped object (one with
+            # a "confidence" key). Competing verdicts are ambiguous, not
+            # "first-object-wins"; non-verdict metadata objects are ignored (CR-05).
+            verdicts = []
+            for obj in _extract_json_objects(cleaned):
+                try:
+                    d = json.loads(obj)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(d, dict) and "confidence" in d:
+                    verdicts.append(d)
+            if len(verdicts) == 1:
+                data = verdicts[0]
+            elif len(verdicts) > 1:
+                return self._unverified(cluster, "multiple competing verdict objects in the response", trace)
+            else:
                 return self._fallback(cluster, "model did not return valid JSON", trace)
 
         # Face 3: valid JSON of the wrong shape (e.g. a top-level list) must not
@@ -498,14 +619,15 @@ class VerificationAgent:
             return self._unverified(cluster, "confidence was a boolean, not a number", trace)
         try:
             confidence = float(raw)
-        except (TypeError, ValueError):
-            return self._unverified(cluster, "confidence was not a number", trace)
+        except (TypeError, ValueError, OverflowError):
+            return self._unverified(cluster, "confidence was not a usable number", trace)
         if not math.isfinite(confidence):
             return self._unverified(cluster, "confidence was not a finite number", trace)
         confidence = max(0.0, min(1.0, confidence))
 
         evidence = []
-        for e in data.get("evidence", []):
+        raw_evidence = data.get("evidence")
+        for e in raw_evidence if isinstance(raw_evidence, list) else []:
             if not isinstance(e, dict):
                 continue
             tier = e.get("tier", "secondary")
