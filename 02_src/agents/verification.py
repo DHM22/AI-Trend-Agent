@@ -99,6 +99,13 @@ _RECENCY_RE = re.compile(
 _CLAIMED_VERSION_RE = re.compile(r"\bv?\d+\.\d+(?:\.\d+)?\b")
 _AS_OF_RE = re.compile(r"\bas\s+of\b[,]?\s*(\d{4}-\d{2}-\d{2})", re.IGNORECASE)
 _REPO_URL_RE = re.compile(r"github\.com/([^/\s]+/[^/\s]+)")
+# A publisher/maintainer claim -- deliberately narrow so it never matches
+# "published release" or "published on <date>", only an actual authorship claim.
+_PUBLISHER_RE = re.compile(
+    r"\b(?:publisher|maintainer|published\s+by|release\s+author|author\.login|"
+    r"author\s+account|maintainer\s+account)\b",
+    re.IGNORECASE,
+)
 
 
 def _claim_text(cluster: TrendCluster) -> str:
@@ -165,9 +172,9 @@ Checking details, and what to do when you cannot:
   read a repository's source code, so you CANNOT confirm such a claim. Confirming
   that the release exists does NOT confirm its breaking changes. Do not endorse
   it: name the specific API/change from the claim and state it is unverified.
-- publisher: the release tool does not return the author account, so you CANNOT
-  confirm who published a release. Name the claimed account and state it is
-  unverified.
+- publisher: a claimed publisher/maintainer account is verified separately; do
+  not fetch or infer a publisher yourself. Name the claimed account and state it
+  is unverified here.
 - If the claim is too vague to pin to a single event (no version, no specific
   change, or the named project does not match the described one), do not guess:
   say the claim is ambiguous / underspecified and name what detail is missing.
@@ -268,8 +275,12 @@ class VerificationAgent:
     def run(self, cluster: TrendCluster,
             trace: VerificationTrace | None = None) -> VerifiedTrend:
         trace = trace if trace is not None else VerificationTrace()
+        # Author logins observed in the model's own (pinned) verify_release
+        # results this run, so the publisher gate needs no extra lookup.
+        self._seen_authors: dict[str, str] = {}
         result = self._verify(cluster, trace)
-        return self._staleness_gate(cluster, result, trace)
+        result = self._staleness_gate(cluster, result, trace)
+        return self._publisher_gate(cluster, result, trace)
 
     # -----------------------------------------------------------------
     def _verify(self, cluster: TrendCluster,
@@ -306,6 +317,7 @@ class VerificationAgent:
                     args = {}
 
                 result = call_tool(name, args)
+                self._capture_author(name, args, result)
                 trace.steps.append(Step(step, name, args, _summarise_result(result)))
 
                 messages.append({
@@ -376,6 +388,45 @@ class VerificationAgent:
         conf, note = _apply_injection_cap(cluster, 0.0, note)
         ev = [Evidence(source=repo, tier="primary", url=newest.get("url", ""),
                        note=f"{newest.get('tag', '')} published {ndate}")]
+        return VerifiedTrend(cluster=cluster, confidence=conf, verification_note=note,
+                             evidence=ev, status="contradicted")
+
+    # -----------------------------------------------------------------
+    def _capture_author(self, name: str, args: dict, result: dict) -> None:
+        """Record the publisher login the model's own verify_release already
+        returned, so the publisher gate needs no extra lookup."""
+        if name != "verify_release" or not isinstance(result, dict):
+            return
+        mr = result.get("matched_release")
+        if isinstance(mr, dict) and mr.get("author"):
+            repo = str(args.get("repo", "")).lower()
+            if repo:
+                self._seen_authors[repo] = {"author": mr["author"], "url": mr.get("url", "")}
+
+    def _publisher_gate(self, cluster: TrendCluster, result: VerifiedTrend,
+                        trace: VerificationTrace) -> VerifiedTrend:
+        """Deterministic publisher check -- mirrors the staleness gate. Fires
+        ONLY when the claim explicitly names a publisher/maintainer AND the
+        actual author login (already returned by the model's pinned
+        verify_release) is known and is NOT the account the claim names. Never
+        makes an extra lookup, so a false refusal is structurally impossible on
+        claims that assert no publisher."""
+        text = _claim_text(cluster)
+        if not _PUBLISHER_RE.search(text):
+            return result
+        repo = _repo_from_cluster(cluster)
+        seen = getattr(self, "_seen_authors", {})
+        rec = seen.get(repo.lower()) if repo else None
+        author = rec.get("author", "") if isinstance(rec, dict) else ""
+        if not author:
+            return result                       # no pinned author payload -> no action
+        if re.search(r"\b" + re.escape(author) + r"\b", text, re.IGNORECASE):
+            return result                       # claim names the real author -> correct
+        note = (f"The claimed publisher account does not match the actual author: the "
+                f"release was published by {author}, so the claimed publisher is incorrect.")
+        conf, note = _apply_injection_cap(cluster, 0.0, note)
+        ev = [Evidence(source=repo, tier="primary", url=rec.get("url", ""),
+                       note=f"actual author: {author}")]
         return VerifiedTrend(cluster=cluster, confidence=conf, verification_note=note,
                              evidence=ev, status="contradicted")
 
