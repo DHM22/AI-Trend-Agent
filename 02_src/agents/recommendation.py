@@ -467,7 +467,8 @@ def main():
     import json
     from clustering import cluster_signals, load_signals
     from agents.verification import VerificationAgent
-    from agents.curriculum import CurriculumAgent, CurriculumTrace
+    from agents.curriculum import (CurriculumAgent, CurriculumTrace,
+                                   search_curriculum_checked)
     from agents.evaluation import EvaluationAgent
 
     try:
@@ -513,13 +514,12 @@ def main():
         # Both must yield curriculum_checked=False, or the tier logic reads
         # "no match" as "no coverage" and recommends a new lesson for
         # material we may already teach.
-        checked = trend.confidence >= 0.4
+        checked = False
         match = None
-        if checked:
+        if trend.confidence >= 0.4:
             ctrace = CurriculumTrace()
-            match = curriculum.run(trend, ctrace)
-            if ctrace.search_failed:
-                checked = False
+            match, checked = search_curriculum_checked(curriculum, trend, ctrace)
+            if not checked:
                 print(f"  ! curriculum search failed for "
                       f"{c.representative_title[:45]}: {ctrace.reason[:90]}")
 

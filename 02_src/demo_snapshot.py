@@ -107,7 +107,8 @@ def capture(signals_path: str, snapshot_path: str, limit: int,
             offset: int = 0) -> dict:
     from clustering import cluster_signals, load_signals
     from agents.verification import VerificationAgent, VerificationTrace
-    from agents.curriculum import CurriculumAgent, CurriculumTrace
+    from agents.curriculum import (CurriculumAgent, CurriculumTrace,
+                                   search_curriculum_checked)
     from agents.evaluation import EvaluationAgent
     from agents.recommendation import RecommendationAgent, collapse_duplicates
 
@@ -135,13 +136,12 @@ def capture(signals_path: str, snapshot_path: str, limit: int,
         # when a search was attempted and failed -- keep them separate, or a
         # failure gets recorded as "never tried".
         searched = trend.confidence >= 0.4
-        checked = searched
+        checked = False
         ctrace = CurriculumTrace()
         match = None
         if searched:
-            match = curriculum.run(trend, ctrace)
-            if ctrace.search_failed:
-                checked = False
+            match, checked = search_curriculum_checked(curriculum, trend, ctrace)
+            if not checked:
                 print(f"      ! curriculum search failed: {ctrace.reason[:80]}")
 
         ev = evaluator.run(trend, match)
