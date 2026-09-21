@@ -23,7 +23,9 @@ object schemas; the benefit is that a schemas.py change reaches the API for
 free. Do not "fix" this by re-declaring the fields.
 """
 
+import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import get_args
@@ -235,6 +237,42 @@ def tiers():
     return [{"tier": t, "label": TIER_LABEL.get(t, t)} for t in TIER_ORDER]
 
 
+DEFAULT_WALKTHROUGH = "01_data/walkthrough.json"
+_RESULTS_DIR = Path(__file__).resolve().parent / "04_eval" / "results"
+_RESULT_NAME = re.compile(r"^[A-Za-z0-9_.-]+\.json$")
+
+
+@app.get("/walkthrough", tags=["presentation"])
+def walkthrough():
+    """
+    The presenter walkthrough's AUTHORED content: narration, which
+    recommendation to feature, and the review findings. Every fact about the
+    featured recommendation is read from the snapshot by the page, never from
+    this file. Point elsewhere with WALKTHROUGH_PATH.
+    """
+    p = Path(os.environ.get("WALKTHROUGH_PATH", DEFAULT_WALKTHROUGH))
+    if not p.is_file():
+        raise HTTPException(404, f"no walkthrough file at {p} -- the walkthrough page "
+                                 f"needs it (see 01_data/walkthrough.json)")
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise HTTPException(500, f"{p} is not valid JSON: {e}")
+
+
+@app.get("/eval/results/{name}", tags=["presentation"])
+def eval_result(name: str):
+    """One saved eval run from 04_eval/results/, by exact file name. Read-only;
+    names are restricted to plain file names so nothing outside that folder
+    can be requested."""
+    if not _RESULT_NAME.match(name):
+        raise HTTPException(400, "result name must be a plain *.json file name")
+    p = _RESULTS_DIR / name
+    if not p.is_file():
+        raise HTTPException(404, f"no eval result named {name}")
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
 @app.get("/signals", tags=["pipeline"])
 def signals():
     """
@@ -257,7 +295,8 @@ def signals():
     return {
         "source": src.as_posix(),
         "signals": [{"title": s.title, "source": s.source,
-                     "source_tier": s.source_tier, "published": s.published}
+                     "source_tier": s.source_tier, "published": s.published,
+                     "url": s.url, "summary": s.summary}
                     for s in raw],
         "clusters": [{"title": c.representative_title,
                       "members": [index[id(s)] for s in c.signals]}
