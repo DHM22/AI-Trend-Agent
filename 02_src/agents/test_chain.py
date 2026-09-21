@@ -745,6 +745,85 @@ def test_verification_publisher_gate():
 
 
 # ===========================================================================
+# 11. THE PRODUCTION PATH -- demo_snapshot.capture() end to end
+# Sections 9-10 test the pieces. This runs the real capture() loop -- the one
+# that writes the snapshot the UI serves -- with every model replaced, and
+# checks a failed curriculum search comes out the far end as watch, with the
+# trace saying "searched, and failed" rather than "no match". The snapshot is
+# written to a temp directory, never 01_data/.
+# ===========================================================================
+
+class _AlwaysFails:
+    """A client whose every call raises: agents must fall back to templates."""
+    def __init__(self):
+        self.chat = types.SimpleNamespace(completions=types.SimpleNamespace(
+            create=lambda **_k: (_ for _ in ()).throw(RuntimeError("offline test"))))
+
+
+def test_capture_failed_search_end_to_end():
+    import json, os, tempfile
+    import demo_snapshot as D
+    import agents.verification as V
+    import agents.curriculum as C
+    import agents.evaluation as E
+    import agents.recommendation as R
+
+    title = "Organizing Context in a Multi-Agent Harness"   # in-domain, not a version bump
+
+    class FixedVerifier:
+        def __init__(self, *a, **k): pass
+        def run(self, cluster, trace=None):
+            return VerifiedTrend(cluster=cluster, confidence=0.9,
+                                 verification_note="offline", evidence=[], status="verified")
+
+    def curriculum_agent(outcome):
+        class Agent:
+            def __init__(self, *a, **k): pass
+            def run(self, trend, trace):
+                if outcome == "fail":
+                    trace.search_failed = True
+                    trace.reason = "curriculum search could not run: 429 spend limit"
+                else:
+                    trace.reason = "no slide teaches this"
+                return None
+        return Agent
+
+    saved = (V.VerificationAgent, C.CurriculumAgent, E.EvaluationAgent, R.RecommendationAgent)
+    real_eval, real_rec = E.EvaluationAgent, R.RecommendationAgent
+    results = {}
+    try:
+        V.VerificationAgent = FixedVerifier
+        E.EvaluationAgent = lambda *a, **k: real_eval(client=_AlwaysFails())
+        R.RecommendationAgent = lambda *a, **k: real_rec(client=_AlwaysFails())
+        with tempfile.TemporaryDirectory() as tmp:
+            sig = os.path.join(tmp, "signals.json")
+            with open(sig, "w", encoding="utf-8") as f:
+                json.dump([{"title": title, "source": "langchain_blog",
+                            "source_tier": "primary", "summary": "", "url": ""}], f)
+            for outcome in ("fail", "nomatch"):
+                C.CurriculumAgent = curriculum_agent(outcome)
+                out = os.path.join(tmp, f"snap_{outcome}.json")
+                import contextlib, io
+                with contextlib.redirect_stdout(io.StringIO()):
+                    D.capture(sig, out, limit=5)
+                with open(out, encoding="utf-8") as f:
+                    results[outcome] = json.load(f)["recommendations"][0]
+    finally:
+        V.VerificationAgent, C.CurriculumAgent, E.EvaluationAgent, R.RecommendationAgent = saved
+
+    failed, nomatch = results["fail"], results["nomatch"]
+    check("capture: failed search -> watch", failed["recommended_action"], "watch",
+          "the production path must not turn a failed search into a lesson")
+    check("capture: trace says search_failed", failed["trace"]["curriculum"]["search_failed"], True)
+    check("capture: trace says it WAS searched", failed["trace"]["curriculum"]["searched"], True,
+          "failed and never-searched must stay distinguishable in the snapshot")
+    check_true("capture: failed plan never claims 'no existing coverage'",
+               not any("no existing coverage" in s.lower() for s in failed["action_plan"]))
+    check("capture: same trend genuinely searched -> add_new_lesson",
+          nomatch["recommended_action"], "add_new_lesson")
+
+
+# ===========================================================================
 
 TESTS = [
     ("verification scoring", test_verification_scoring),
@@ -761,6 +840,7 @@ TESTS = [
     ("verification parser and status", test_verification_parser_and_status),
     ("verification staleness gate", test_verification_staleness_gate),
     ("verification publisher gate", test_verification_publisher_gate),
+    ("capture: failed search end to end", test_capture_failed_search_end_to_end),
 ]
 
 
