@@ -1,0 +1,190 @@
+{
+  "manifest_version": "2.0.0",
+  "label": "vectorstore_v2_hybrid_ocr",
+  "implementation": "Hybrid OCR V2",
+  "created_at": "2026-09-20T20:28:00.6102615+03:00",
+  "mode": "offline_local_only",
+  "corpus_path": "01_data/curriculum",
+  "vector_store_path": "vectorstore_v2_hybrid_ocr",
+  "collection_name": "wecloud_curriculum",
+  "embedding": {
+    "provider": "Chroma built-in local embedding function",
+    "offline_flags": {
+      "HF_HUB_OFFLINE": "1",
+      "TRANSFORMERS_OFFLINE": "1",
+      "ANONYMIZED_TELEMETRY": "False"
+    }
+  },
+  "ocr_engine": {
+    "name": "Tesseract",
+    "version": "5.5.0.20241111",
+    "language": "eng",
+    "resolution_dpi": 300,
+    "region_page_segmentation_modes": [6, 11],
+    "full_page_segmentation_mode": 6
+  },
+  "hybrid_behavior": {
+    "native_text_preserved": true,
+    "significant_embedded_image_area_ratio": {
+      "minimum": 0.03,
+      "maximum": 0.92
+    },
+    "sparse_native_text_threshold_characters": 200,
+    "vector_mark_threshold": 24,
+    "region_overlap_iou_deduplication_threshold": 0.85,
+    "native_ocr_line_deduplication": true,
+    "unicode_normalization": "NFC plus explicit known-mojibake and punctuation repairs",
+    "technical_identifier_rewriting": false,
+    "content_type_compatible": true,
+    "provenance_metadata_field": "extraction_provenance",
+    "provenance_values": ["native", "ocr", "hybrid"]
+  },
+  "corpus_inventory": {
+    "pdf_files": 18,
+    "pdf_pages": 863,
+    "notebook_files": 88,
+    "source_files": 106,
+    "ocr_triggered_pages": 659,
+    "region_ocr_pages": 476,
+    "full_page_ocr_pages": 183
+  },
+  "ingestion_results": {
+    "raw_items": 3165,
+    "dropped_thin_items": 592,
+    "document_count": 2912,
+    "counts_by_week": {
+      "2": 955,
+      "3": 1176,
+      "4": 781
+    },
+    "counts_by_content_type": {
+      "lab": 2031,
+      "slides": 881
+    },
+    "counts_by_extraction_provenance": {
+      "native": 2241,
+      "hybrid": 667,
+      "ocr": 4
+    },
+    "unique_source_files": 106,
+    "missing_document_payloads": 0
+  },
+  "quality_validation": {
+    "comparison_report": "evals/results/hybrid_ocr_v2_comparison.md",
+    "comparison_report_sha256": "AF3C73CEAD621B0E8683D5F32365B51B504ED4F5D8129D942ECD7D3350CE4E6E",
+    "cases": [
+      {
+        "source_file": "Introduction to Langchain.pdf",
+        "page": 17,
+        "case_type": "established_ocr",
+        "expected_key_terms": ["User", "Prompt Template", "Retriever", "Vector Store", "LLM", "Output Parser", "Answer"],
+        "recovered_key_terms": ["User", "Prompt Template", "Retriever", "Vector Store", "LLM", "Output Parser", "Answer"],
+        "missing_key_terms": [],
+        "key_term_recovery_percent": 100.0,
+        "corrupted_symbol_count": 0,
+        "duplicate_line_count": 0,
+        "stored_provenance": "hybrid"
+      },
+      {
+        "source_file": "RAG.pdf",
+        "page": 21,
+        "case_type": "established_ocr",
+        "expected_key_terms": ["Fixed Chunking", "Hierarchical Chunking", "Semantic Chunking", "LLM Parsing", "Parent and child chunks"],
+        "recovered_key_terms": ["Fixed Chunking", "Hierarchical Chunking", "Semantic Chunking", "LLM Parsing", "Parent and child chunks"],
+        "missing_key_terms": [],
+        "key_term_recovery_percent": 100.0,
+        "corrupted_symbol_count": 0,
+        "duplicate_line_count": 0,
+        "stored_provenance": "hybrid"
+      },
+      {
+        "source_file": "Agents for Real Tasks.pptx.pdf",
+        "page": 43,
+        "case_type": "established_ocr",
+        "expected_key_terms": ["get_stock_price", "NVDA", "Calls financial API", "ticker", "price", "timestamp", "Agent Observes Result", "Agent Responds"],
+        "recovered_key_terms": ["get_stock_price", "NVDA", "Calls financial API", "ticker", "price", "timestamp", "Agent Observes Result", "Agent Responds"],
+        "missing_key_terms": [],
+        "key_term_recovery_percent": 100.0,
+        "corrupted_symbol_count": 0,
+        "duplicate_line_count": 0,
+        "stored_provenance": "hybrid"
+      },
+      {
+        "source_file": "Introduction to Langchain.pdf",
+        "page": 10,
+        "case_type": "mixed_native_and_image",
+        "expected_key_terms": ["Models", "LangChain", "Prompt", "GPT", "Claude", "Gemini", "Llama", "Response"],
+        "recovered_key_terms": ["Models", "LangChain", "Prompt", "GPT", "Claude", "Gemini", "Llama", "Response"],
+        "missing_key_terms": [],
+        "key_term_recovery_percent": 100.0,
+        "corrupted_symbol_count": 0,
+        "duplicate_line_count": 0,
+        "stored_provenance": "hybrid"
+      },
+      {
+        "source_file": "Agents for Real Tasks.pptx.pdf",
+        "page": 17,
+        "case_type": "mixed_native_and_image",
+        "expected_key_terms": ["Pipeline Pattern", "Router Pattern", "Aggregator Pattern", "Loop Pattern", "Hierarchical Pattern", "Sub-agent A", "Sub-agent B", "Sub-agent C"],
+        "recovered_key_terms": ["Pipeline Pattern", "Router Pattern", "Aggregator Pattern", "Loop Pattern", "Hierarchical Pattern", "Sub-agent A", "Sub-agent B", "Sub-agent C"],
+        "missing_key_terms": [],
+        "key_term_recovery_percent": 100.0,
+        "corrupted_symbol_count": 0,
+        "duplicate_line_count": 0,
+        "stored_provenance": "hybrid"
+      }
+    ],
+    "whole_store_residual_marker_note": "Two literal â characters and one literal Â character occur only in a notebook code cell that intentionally demonstrates replacement of malformed weather-service characters; PDF OCR validation cases contain none.",
+    "whole_store_repeated_decorative_runs_4plus": 0
+  },
+  "tests": {
+    "syntax_compilation": "passed",
+    "focused_test_file": "evals/test_hybrid_ocr_v2.py",
+    "focused_test_count": 9,
+    "focused_test_result": "passed",
+    "coverage": [
+      "sparse-page OCR trigger",
+      "embedded-image OCR trigger with dense native text",
+      "tiny-logo and full-background exclusion",
+      "vector-heavy OCR trigger",
+      "overlapping-region deduplication",
+      "native/OCR text merging",
+      "line deduplication",
+      "Unicode and mojibake cleaning",
+      "technical identifier preservation",
+      "provenance and content_type compatibility"
+    ]
+  },
+  "implementation_files": [
+    {
+      "path": "02_src/curriculum_ingest.py",
+      "sha256": "CD3723BD4F877D30510A04126CA0B1DB50BB866E965D5C046C582300E7F1519C"
+    },
+    {
+      "path": "evals/test_hybrid_ocr_v2.py",
+      "sha256": "A1EFDC50885A194AA767ADDE7D8227C0DAE672D8397B54DD7C1EFEBE2F0F7B3C"
+    }
+  ],
+  "store_identity": {
+    "method": "Sort relative persistent paths; hash each path, NUL separator, raw file SHA-256 bytes, and newline; exclude SQLite WAL/SHM/lock files.",
+    "identity_sha256": "9168F1F04C1879DC07F7E564B3CE947B32DDCA2CF1036614AEB7460A92F01C9D",
+    "excluded_transient_suffixes": ["-shm", "-wal", ".lock", ".shm", ".wal"],
+    "persistent_files": [
+      {"path": "95eb324a-7c61-4040-a3ee-6cfff86a53bc/data_level0.bin", "size": 4880512, "sha256": "9C58C825558F7B018DA6A5DC2DC156C16324A2BC4877FA6775CFCC530E5D4338"},
+      {"path": "95eb324a-7c61-4040-a3ee-6cfff86a53bc/header.bin", "size": 100, "sha256": "59A219D1AA37831B39BB4B8701F3C1525C0FE090903625DD59404965EDA0F077"},
+      {"path": "95eb324a-7c61-4040-a3ee-6cfff86a53bc/index_metadata.pickle", "size": 151560, "sha256": "EC9981758C77255A6B980EF6E6D0036BF2D8118223C3420C62B0CE675788EFE7"},
+      {"path": "95eb324a-7c61-4040-a3ee-6cfff86a53bc/length.bin", "size": 11648, "sha256": "F43DD7DA39EDEE4D1001FCB3BB5BB29338E533F786E0D233143BD6A9CD4AB651"},
+      {"path": "95eb324a-7c61-4040-a3ee-6cfff86a53bc/link_lists.bin", "size": 24704, "sha256": "BE472284DFFA82EC5B5133402D581995A3E34503370B385D1D01DFF55D77EE04"},
+      {"path": "chroma.sqlite3", "size": 24743936, "sha256": "41F8EE7609833931AC0F3ED0F53B1D3959A785DE8DA19A4BCE291369A325844C"}
+    ]
+  },
+  "preservation": {
+    "vectorstore_v1_after_ocr_modified": false,
+    "vectorstore_v1_after_ocr_identity_revalidated": "65B0A25A6A4BC8F8A86CB6B96BC5BCCC80613102015868A63B2D0E1128B1B06A",
+    "frozen_benchmarks_modified": false,
+    "historical_results_modified": false,
+    "production_agents_run": false,
+    "end_to_end_evaluator_run": false,
+    "external_api_calls": 0
+  }
+}

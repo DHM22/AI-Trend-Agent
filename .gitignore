@@ -1,15 +1,27 @@
 vectorstore/
-__pycache__/
+vectorstore_v*/
+**/__pycache__/
 *.pyc
 *.py[cod]
 .venv/
 venv/
 env/
 .env
+.env.*
 *.log
+chroma.sqlite3*
 
 # local run outputs and caches
 01_data/.tool_cache/
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+**/.tool_cache/
+tmp/
+temp/
+evals/tmp_*.py
+evals/temp_*.py
 01_data/recommendations.json
 01_data/recs*.json
 
