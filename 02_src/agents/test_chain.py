@@ -974,6 +974,59 @@ def test_trace_built_from_reasoning():
     check("trace: hitting max_tool_rounds sets stopped_early", trace.stopped_early, True)
 
 
+def test_verifier_real_data_fixes():
+    """The four fixes found by running the restored verifier on the gold set."""
+    import agents.verification as V
+
+    def cluster(title, source, tier):
+        return TrendCluster(title, [RawSignal(title, source, tier, "")])
+
+    # FIX 1: a monorepo tag is confirmed verbatim, not as its bare number
+    asked = []
+    def tags(name, args):
+        if name == "github_lookup":
+            return {"found": 1, "results": [{"full_name": "langchain-ai/langchain"}]}
+        asked.append(args.get("version"))
+        ok = args.get("version") == "langchain==1.4.0"
+        return {"release_found": ok, "matched_release": {"tag": "langchain==1.4.0"} if ok else None}
+    t = _verifier(None, tags).run(cluster(LANGCHAIN_TITLE, "github", "primary"))
+    check("fix 1: verify_release is asked for the tag verbatim", asked, ["langchain==1.4.0"])
+    check("fix 1: the monorepo release is confirmed", t.claim_verified, True)
+
+    # FIX 2: a first-party post mentioning an org/concept is not a missing repo
+    none_found = lambda n, a: {"found": 0, "results": [{"full_name": "someone/else"}]}
+    t = _verifier(None, none_found).run(cluster(
+        "OpenAI expands initiatives to support journalism", "openai_blog", "primary"))
+    check("fix 2: first-party bare mention with no such repo is not 'missing'",
+          t.confidence > V.MISSING_REPO_CEILING, True, f"got {t.confidence}")
+    t = _verifier(None, none_found).run(cluster(
+        "NeuroForgeX 2.0 ships agent memory", "tech_blog", "secondary"))
+    check_true("fix 2: a secondary claim naming a product that does not exist still caps",
+               t.confidence <= V.MISSING_REPO_CEILING)
+
+    # FIX 3: a same-named (squatter) repo never confirms a secondary-only claim
+    squatter = lambda n, a: {"found": 1, "results": [
+        {"full_name": "someone/velocityagent", "stars": 0}]}
+    t = _verifier(None, squatter).run(cluster(
+        "VelocityAgent claims 12x faster tool calling", "tweet", "secondary"))
+    check("fix 3: bare-name match does not establish a repo for a secondary claim",
+          (t.repo_exists, t.confidence), (False, 0.40))
+    t = _verifier(None, lambda n, a: {"found": 1, "results": [
+        {"full_name": "langchain-ai/langgraph"}]}).run(cluster(
+        "Announcing LangGraph v0.1", "langchain_blog", "primary"))
+    check("fix 3: ...but still does for a first-party post", t.repo_exists, True)
+
+    # FIX 4: a first-party post with nothing checkable is weakly positive, never actionable
+    from agents.evaluation import _maturity_score
+    from agents.recommendation import MATURE_FLOOR
+    t = _verifier(None, lambda n, a: {"error": "offline"}).run(cluster(
+        "An Alien Mind", "openai_blog", "primary"))
+    check("fix 4: first-party unchecked post scores above a bare unchecked source",
+          t.confidence > 0.50, True)
+    check("fix 4: ...and stays below the action floor",
+          _maturity_score(t.confidence) < MATURE_FLOOR, True)
+
+
 # ===========================================================================
 
 TESTS = [
@@ -997,6 +1050,7 @@ TESTS = [
     ("verifier: repo guard through the agent", test_repo_guard_through_the_agent),
     ("verifier: _describe input", test_describe_carries_url_and_version),
     ("verifier: trace from reasoning", test_trace_built_from_reasoning),
+    ("verifier: real-data fixes", test_verifier_real_data_fixes),
 ]
 
 
