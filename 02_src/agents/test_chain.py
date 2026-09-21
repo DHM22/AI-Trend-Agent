@@ -428,14 +428,22 @@ def test_trace_backward_compatibility():
           ct.get("search_failed") is True, False)
     check("back-compat: steps default to empty", ct.get("steps") or [], [])
 
-    # and the committed snapshot -- which predates traces -- must still load
-    snap = Path(__file__).resolve().parents[2] / "01_data" / "demo_snapshot.json"
+    # the committed demo snapshot must load; the v1 backup is the snapshot that
+    # predates traces, so it is the fixture for "an old snapshot still works"
+    data_dir = Path(__file__).resolve().parents[2] / "01_data"
+    snap = data_dir / "demo_snapshot.json"
     if snap.exists():
         data = json.loads(snap.read_text(encoding="utf-8"))
         recs = data.get("recommendations", [])
         check_true("back-compat: committed snapshot still loads", len(recs) > 0)
-        check_true("back-compat: committed snapshot has no traces (pre-feature)",
-                   all("trace" not in r for r in recs))
+        check_true("current demo snapshot: every card carries a trace",
+                   len(recs) > 0 and all("trace" in r for r in recs),
+                   "the live capture recorded traces for all cards")
+    v1 = data_dir / "demo_snapshot_v1_backup.json"
+    if v1.exists():
+        old = json.loads(v1.read_text(encoding="utf-8")).get("recommendations", [])
+        check_true("back-compat: pre-trace snapshot (v1 backup) has no traces",
+                   all("trace" not in r for r in old))
 
 
 # ===========================================================================
@@ -1027,6 +1035,47 @@ def test_verifier_real_data_fixes():
           _maturity_score(t.confidence) < MATURE_FLOOR, True)
 
 
+def test_model_invented_repo_is_not_missing():
+    """Live bug, demo snapshot v2: for the OpenAI blog post "How V7 gives AI
+    agents institutional memory" the MODEL invented the lookup 'openai/openai';
+    it was not found, and the post was scored 0.15 as 'named repository not
+    found'. Only an owner/repo the signal itself names may be missing."""
+    import agents.verification as V
+
+    none_found = lambda n, a: {"found": 0, "results": [{"full_name": "someone/else"}]}
+
+    def model_queries(*queries):
+        replies = [_fake_reply(tool_calls=[types.SimpleNamespace(
+            id=f"c{i}", function=types.SimpleNamespace(
+                name="github_lookup", arguments='{"query": "%s"}' % q))])
+            for i, q in enumerate(queries)]
+        return _ScriptedClient(*replies, _fake_reply("done"))
+
+    v7 = TrendCluster("How V7 gives AI agents institutional memory", [RawSignal(
+        "How V7 gives AI agents institutional memory", "openai_blog", "primary", "",
+        url="https://openai.com/index/v7")])
+    t = _verifier(model_queries("openai_blog", "V7", "openai", "GPT-5.6", "openai/openai"),
+                  none_found).run(v7)
+    check("invented repo: the V7 replay is not 'repo missing'", t.repo_exists, False)
+    check_true("invented repo: V7 is not scored as fabricated",
+               t.confidence > V.MISSING_REPO_CEILING, f"got {t.confidence}")
+    check_true("invented repo: note never claims the repository was not found",
+               "not found" not in t.verification_note)
+
+    # contrast 1: the signal NAMES the repo in its GitHub title -> missing counts
+    t = _verifier(model_queries("langchain-ai/langchain"), none_found).run(_lc_cluster())
+    check_true("signal-named repo (title) that is not found still caps",
+               t.confidence <= V.MISSING_REPO_CEILING)
+
+    # contrast 2: the signal names the repo only through a github.com URL
+    url_named = TrendCluster("Acme agents ship memory", [RawSignal(
+        "Acme agents ship memory", "tech_blog", "primary", "",
+        url="https://github.com/acme-labs/agent-memory")])
+    t = _verifier(model_queries("acme-labs/agent-memory"), none_found).run(url_named)
+    check_true("signal-named repo (URL) that is not found still caps",
+               t.confidence <= V.MISSING_REPO_CEILING)
+
+
 # ===========================================================================
 # 14. TRACE DISPLAY -- what the trace panel shows (demo_snapshot.trace_view)
 # Hand-written fixtures only: a live capture needs the API. Covers the four
@@ -1080,9 +1129,9 @@ def test_trace_view():
 
     # ---- absent (old snapshot) -------------------------------------------
     check("trace view: no trace key -> None (render nothing)", D.trace_view({"trend": "t"}), None)
-    snap = json.load(open(Path(__file__).resolve().parents[2] / "01_data" / "demo_snapshot.json",
+    snap = json.load(open(Path(__file__).resolve().parents[2] / "01_data" / "demo_snapshot_v1_backup.json",
                           encoding="utf-8"))
-    check("trace view: every committed (pre-trace) recommendation -> None",
+    check("trace view: every pre-trace snapshot (v1 backup) recommendation -> None",
           {D.trace_view(r) is None for r in snap["recommendations"]}, {True})
 
     # ---- search failed: distinct, and never a "no match" -------------------
@@ -1193,6 +1242,7 @@ TESTS = [
     ("verifier: _describe input", test_describe_carries_url_and_version),
     ("verifier: trace from reasoning", test_trace_built_from_reasoning),
     ("verifier: real-data fixes", test_verifier_real_data_fixes),
+    ("verifier: model-invented repo", test_model_invented_repo_is_not_missing),
     ("trace view", test_trace_view),
     ("capture: verifier mode + reasoning", test_capture_records_verifier_mode_and_reasoning),
 ]
