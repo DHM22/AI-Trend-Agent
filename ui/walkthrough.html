@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Walkthrough — AI Trend Agent</title>
+<!--
+  Presenter walkthrough: ONE real recommendation, end to end, in six steps.
+
+  Content comes from two places and is kept strictly apart:
+    /walkthrough      authored narration + which card to feature + review
+                      findings (01_data/walkthrough.json)
+    /recommendations/{i}, /signals, /tiers, /eval/results/{file}
+                      every fact about the featured card and every number,
+                      read from the snapshot and result files at render time.
+  The featured card is identified by index AND title; if they disagree (the
+  snapshot was re-captured) the page stops with a warning instead of
+  narrating the wrong card. Zero API calls to any model.
+
+  Steps 3 and 4 render with cards.js -- the same traceBlock() and card() the
+  dashboard uses -- so the card here is exactly the card on the dashboard.
+-->
+<link rel="stylesheet" href="theme.css">
+<style>
+  body { font-size: 20px; }
+  .wt { max-width: 980px; margin: 0 auto; padding: 28px 24px 120px; }
+
+  .wt-top { display: flex; align-items: center; gap: 18px; margin-bottom: 28px; }
+  .wt-top .grow { flex: 1; min-width: 0; }
+  .wt-top a { color: var(--accent); text-decoration: none; font-size: 0.8rem; }
+  .wt-top a:hover { text-decoration: underline; }
+  .progress { display: flex; gap: 8px; align-items: center; }
+  .dot { width: 34px; height: 6px; border-radius: 3px; background: var(--gridline); border: 0; padding: 0; cursor: pointer; }
+  .dot[aria-current="step"] { background: var(--accent); }
+  .dot.done { background: var(--baseline); }
+  .stepno { font-size: 0.8rem; color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 92px; text-align: right; }
+
+  .eyebrow { font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 8px; }
+  h2.wt-title { font-size: 2.4rem; letter-spacing: -0.025em; line-height: 1.12; margin: 0 0 14px; font-weight: 660; }
+  .lead { font-size: 1.35rem; color: var(--text-secondary); margin: 0 0 26px; line-height: 1.45; }
+  .wt-body p { font-size: 1.15rem; line-height: 1.6; margin: 0 0 16px; max-width: 46em; }
+
+  .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
+           padding: 22px 26px; box-shadow: var(--shadow); margin-top: 8px; }
+  .kv { display: grid; grid-template-columns: 150px 1fr; gap: 10px 20px; font-size: 1rem; }
+  .kv dt { color: var(--text-muted); }
+  .kv dd { margin: 0; overflow-wrap: anywhere; }
+  .kv code, .excerpt code { font-size: 0.92em; }
+  .summary-txt { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.55; margin-top: 14px; }
+
+  /* the reused card/trace, scaled up a notch for projection */
+  .reuse { font-size: 1.05rem; }
+  .reuse .rec { padding: 22px 26px; }
+  .matched-block { margin-top: 18px; }
+  .matched-block .matched { font-size: 0.88rem; }
+
+  /* REVIEW is visibly not agent output */
+  .review-badge { display: inline-block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em;
+                  text-transform: uppercase; padding: 5px 11px; border-radius: 6px;
+                  border: 1.5px solid var(--text-primary); color: var(--text-primary); margin-bottom: 14px; }
+  .finding { border-left: 4px solid var(--text-primary); padding: 4px 0 4px 20px; margin: 0 0 26px; }
+  .finding h3 { font-size: 1.45rem; margin: 0 0 12px; }
+  .finding p { font-size: 1.08rem; line-height: 1.55; margin: 0 0 10px; }
+  .verdict { font-weight: 680; }
+  .excerpt { font-size: 0.92rem; color: var(--text-secondary); margin: 6px 0 12px; }
+  .excerpt q { font-style: italic; }
+  .pending { display: inline-block; font-size: 0.8rem; padding: 4px 10px; border-radius: 999px;
+             border: 1px dashed var(--warning); color: var(--text-secondary); margin: 2px 0 12px; }
+  .sub { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin: 26px 0 10px; }
+  ul.points { margin: 0; padding-left: 22px; font-size: 1.05rem; line-height: 1.55; }
+  ul.points li { margin-bottom: 8px; }
+  .fail-list { display: grid; gap: 10px; }
+  .fail-item { font-size: 0.98rem; line-height: 1.5; }
+  .fail-item b { margin-right: 6px; }
+  .fail-item .cite-src { display: block; font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+  table.evalt { width: 100%; border-collapse: collapse; font-size: 0.95rem; margin-top: 6px; }
+  table.evalt th, table.evalt td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--gridline); }
+  table.evalt th { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  table.evalt td.n { font-variant-numeric: tabular-nums; }
+  .closing { font-size: 1.5rem; font-weight: 640; margin: 30px 0 8px; letter-spacing: -0.01em; }
+  .closing-note { font-size: 1rem; color: var(--text-secondary); }
+
+  .roadmap li { font-size: 1.1rem; }
+  .bigbtn { display: inline-block; margin-top: 18px; font-size: 1.05rem; padding: 12px 18px;
+            border-radius: 10px; background: var(--accent); color: #fff; text-decoration: none; }
+
+  .alert { border: 1px solid var(--critical); border-left: 5px solid var(--critical); border-radius: 12px;
+           padding: 22px 26px; background: var(--surface-1); }
+  .alert h2 { margin: 0 0 10px; font-size: 1.5rem; color: var(--critical); }
+  .alert p { margin: 0 0 8px; font-size: 1.05rem; }
+
+  .nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--page);
+         border-top: 1px solid var(--gridline); }
+  .nav-in { max-width: 980px; margin: 0 auto; padding: 14px 24px; display: flex; gap: 12px; align-items: center; }
+  .nav button { font-size: 1.05rem; padding: 12px 22px; border-radius: 10px; }
+  .nav .next { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .nav button:disabled { opacity: 0.35; cursor: default; }
+  .nav .hint { flex: 1; text-align: center; font-size: 0.78rem; color: var(--text-muted); }
+  @media (max-width: 700px) { body { font-size: 17px; } h2.wt-title { font-size: 1.8rem; } .kv { grid-template-columns: 1fr; } .nav .hint { display: none; } }
+</style>
+</head>
+<body>
+<div class="wt">
+  <div class="wt-top">
+    <div class="grow"><a href="advanced.html">← Dashboard</a></div>
+    <div class="progress" id="progress" aria-label="Walkthrough progress"></div>
+    <div class="stepno" id="stepno"></div>
+  </div>
+  <main id="stage" aria-live="polite"><p class="lead">Loading the walkthrough…</p></main>
+</div>
+
+<nav class="nav" aria-label="Walkthrough navigation">
+  <div class="nav-in">
+    <button type="button" id="back">← Back</button>
+    <span class="hint">Arrow keys also work</span>
+    <button type="button" class="next" id="next">Next →</button>
+  </div>
+</nav>
+
+<script src="cards.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const W = { story: null, rec: null, tiers: [], signal: null, evals: [], actionable: [], onboarding: false, step: 0 };
+
+try {                                   // same per-viewer theme as the other pages
+  const saved = localStorage.getItem("ata-theme");
+  if (saved) document.documentElement.dataset.theme = saved;
+} catch (_) {}
+
+async function getJSON(path) {
+  const r = await fetch(path);
+  if (!r.ok) {
+    let detail = r.statusText;
+    try { detail = (await r.json()).detail || detail; } catch (_) {}
+    const e = new Error(detail); e.status = r.status; throw e;
+  }
+  return r.json();
+}
+
+function stop(title, lines) {
+  $("stage").innerHTML = `<div class="alert"><h2>${esc(title)}</h2>${lines.map((l) => `<p>${l}</p>`).join("")}</div>`;
+  $("progress").innerHTML = ""; $("stepno").textContent = "";
+  $("back").disabled = true; $("next").disabled = true;
+}
+
+async function load() {
+  // 1. the authored story -- without it there is nothing to present
+  try {
+    W.story = await getJSON("/walkthrough");
+  } catch (e) {
+    return stop("The walkthrough content is missing",
+      [esc(e.message), "Restore <code>01_data/walkthrough.json</code> (or set <code>WALKTHROUGH_PATH</code>) and reload."]);
+  }
+  const f = W.story.featured || {};
+
+  // 2. the featured card, by index AND title -- never narrate the wrong one
+  try {
+    W.rec = await getJSON(`/recommendations/${encodeURIComponent(f.index)}`);
+  } catch (e) {
+    return stop("The featured recommendation was not found",
+      [`walkthrough.json features index <b>${esc(f.index)}</b>, but the snapshot says: ${esc(e.message)}`,
+       "The snapshot may have been re-captured. Update <code>featured</code> in walkthrough.json."]);
+  }
+  if (W.rec.trend !== f.title) {
+    return stop("Featured recommendation mismatch — not narrating",
+      [`walkthrough.json expects <b>${esc(f.title)}</b> at index ${esc(f.index)}.`,
+       `The snapshot has <b>${esc(W.rec.trend)}</b> there.`,
+       "The snapshot was probably re-captured. Fix <code>featured</code> in walkthrough.json so index and title agree."]);
+  }
+
+  // 3. supporting reads; each degrades to a note, never a broken step
+  const [tiers, sig, act] = await Promise.all([
+    getJSON("/tiers").catch(() => []),
+    getJSON("/signals").catch(() => null),
+    getJSON("/recommendations?actionable=true").catch(() => null),
+  ]);
+  W.tiers = tiers;
+  W.signal = sig ? (sig.signals || []).find((s) => s.title === W.rec.trend) || null : null;
+  W.signalSource = sig ? sig.source : "";
+  W.actionable = act ? act.recommendations : [];
+  W.evals = await Promise.all((W.story.eval_results || []).map((e) =>
+    getJSON(`/eval/results/${encodeURIComponent(e.file)}`).then((d) => ({ ...e, data: d }))
+      .catch((err) => ({ ...e, error: err.message }))));
+  const ob = (W.story.roadmap || {}).onboarding_url;
+  if (ob) { try { W.onboarding = (await fetch(ob, { method: "HEAD" })).ok; } catch (_) {} }
+
+  const fromHash = parseInt((location.hash || "").replace("#", ""), 10);
+  go(Number.isFinite(fromHash) ? fromHash - 1 : 0, false);
+}
+
+// ---------------------------------------------------------------------------
+// STEPS
+// ---------------------------------------------------------------------------
+function head(s, i) {
+  return `<p class="eyebrow">Step ${i + 1} of ${W.story.steps.length}</p>
+          <h2 class="wt-title">${esc(s.title)}</h2>
+          ${s.lead ? `<p class="lead">${esc(s.lead)}</p>` : ""}
+          <div class="wt-body">${(s.body || []).map((p) => `<p>${esc(p)}</p>`).join("")}</div>`;
+}
+
+const RENDER = {
+  problem: () => "",
+
+  signal: () => {
+    const s = W.signal;
+    if (!s) return `<div class="panel"><p class="summary-txt">The raw signal for this card is not in
+      ${esc(W.signalSource || "the snapshot's signals file")}, so it cannot be shown here.</p></div>`;
+    const summary = (s.summary || "").replace(/\s+/g, " ").trim();
+    return `<div class="panel"><dl class="kv">
+        <dt>Title</dt><dd><b>${esc(s.title)}</b></dd>
+        <dt>Source</dt><dd>${esc(s.source)} · ${esc(s.source_tier)}</dd>
+        <dt>Published</dt><dd>${esc((s.published || "").replace("T", " ").replace("Z", " UTC"))}</dd>
+        <dt>Link</dt><dd><code>${esc(s.url || "—")}</code></dd>
+      </dl>
+      ${summary ? `<div class="summary-txt">${esc(summary.slice(0, 420))}${summary.length > 420 ? "…" : ""}</div>` : ""}
+      <p class="summary-txt">From <code>${esc(W.signalSource)}</code>.</p></div>`;
+  },
+
+  agent: () => {
+    const m = W.rec.match;
+    const trace = traceBlock(W.rec);
+    return `<div class="reuse">${trace || `<div class="panel"><p class="summary-txt">This snapshot
+        carries no agent trace for this card.</p></div>`}
+      ${m ? `<div class="panel matched-block"><p class="sub" style="margin-top:0">What it matched</p>
+        <p style="margin:0 0 10px"><code>${esc(m.citation || "")}</code></p>
+        ${m.matched_text ? `<div class="matched">${esc(m.matched_text)}</div>` : ""}</div>` : ""}</div>`;
+  },
+
+  card: () => `<div class="reuse">${card(W.rec, W.tiers)}</div>`,
+
+  review: () => {
+    const R = W.story.review || {};
+    const F = R.featured || {};
+    const P = R.pattern || {};
+    const pending = F.verified === true ? ""
+      : `<span class="pending">Pending presenter check — confirm against the release note and cell 36</span>`;
+    const featured = `<section class="finding">
+        <h3>${esc(F.headline || "")}</h3>${pending}
+        <p><span class="verdict">The agent said:</span> ${esc(F.agent_claim || "")}</p>
+        <p><span class="verdict">Review:</span> ${esc(F.finding_claim || "")}</p>
+        ${F.release_excerpt ? `<p class="excerpt">Release note: <q>${esc(F.release_excerpt)}</q>
+          ${F.pr_excerpt ? ` · PR: <q>${esc(F.pr_excerpt)}</q>` : ""}</p>` : ""}
+        ${F.cell_excerpt ? `<p class="excerpt">Cell 36: <code>${esc(F.cell_excerpt)}</code></p>` : ""}
+        <p>${esc(F.finding_real || "")}</p>
+      </section>`;
+
+    const pattern = `<p class="sub">${esc(P.headline || "")}</p>
+      <ul class="points">${(P.points || []).map((p) => `<li>${esc(p)}</li>`).join("")}</ul>`;
+
+    const fails = `<p class="sub">Other failures evaluation caught</p><div class="fail-list">${
+      (R.other_failures || []).map((x) => `<div class="fail-item"><b>${esc(x.name)}</b>${esc(x.text)}
+        ${x.citation ? `<span class="cite-src">${esc(x.citation)}</span>` : ""}</div>`).join("")}</div>`;
+
+    const rows = W.evals.map((e) => {
+      if (e.error || !e.data) return `<tr><td>${esc(e.label)}</td><td colspan="4">not available (${esc(e.error || "missing")})</td></tr>`;
+      const v = ((e.data.aggregate || {}).layers || {}).verification || {};
+      const mt = v.metrics || {};
+      const f = (x, d = 2) => (x && x.mean != null ? x.mean.toFixed(d) : "—");
+      const pm = (x, d = 2) => (x && x.mean != null ? `${x.mean.toFixed(d)} ± ${(x.std || 0).toFixed(d)}` : "—");
+      return `<tr><td>${esc(e.label)}</td><td class="n">${pm(v.score)}</td>
+        <td class="n">${f(mt.truth_confidence_gap, 3)}</td><td class="n">${f(mt.confidence_mae, 3)}</td>
+        <td class="n">${pm((e.data.aggregate || {}).composite_score)}</td></tr>`;
+    }).join("");
+    const evals = W.evals.length ? `<p class="sub">Evaluation, read from 04_eval/results</p>
+      <table class="evalt"><tr><th>Run</th><th>Verification</th><th>Gap</th><th>MAE</th><th>Composite</th></tr>${rows}</table>` : "";
+
+    // computed from the snapshot, not authored: what confidence actually says
+    const confs = [...new Set(W.actionable.map((r) => r.confidence))];
+    const confNote = !W.actionable.length ? "" : confs.length === 1
+      ? `Every one of the ${W.actionable.length} actionable cards has confidence ${Number(confs[0]).toFixed(2)}: confidence says the release is real, not that the recommendation is right.`
+      : `The ${W.actionable.length} actionable cards range from confidence ${Math.min(...confs).toFixed(2)} to ${Math.max(...confs).toFixed(2)}: confidence says the release is real, not that the recommendation is right.`;
+
+    return `<span class="review-badge">Review — not agent output</span>${featured}${pattern}${fails}${evals}
+      <p class="closing">${esc(R.closing || "")}</p><p class="closing-note">${esc(confNote)}</p>`;
+  },
+
+  next: () => {
+    const rm = W.story.roadmap || {};
+    return `<ul class="points roadmap">${(rm.static || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+      ${W.onboarding ? `<a class="bigbtn" href="${esc(rm.onboarding_url)}">${esc(rm.onboarding_label || "Onboarding")} →</a>` : ""}
+      <p style="margin-top:26px"><a href="advanced.html" style="color:var(--accent)">Open the full dashboard →</a></p>`;
+  },
+};
+
+function go(i, push = true) {
+  const steps = W.story.steps;
+  W.step = Math.max(0, Math.min(steps.length - 1, i));
+  const s = steps[W.step];
+  const render = RENDER[s.id] || (() => "");
+  $("stage").innerHTML = head(s, W.step) + render();
+  if (s.id === "agent")      // the trace IS step 3; step 4 shows the card exactly as the dashboard does
+    $("stage").querySelectorAll("details.rec-trace").forEach((d) => { d.open = true; });
+  $("progress").innerHTML = steps.map((x, k) =>
+    `<button class="dot${k < W.step ? " done" : ""}" ${k === W.step ? 'aria-current="step"' : ""}
+      aria-label="Step ${k + 1}: ${esc(x.title)}" data-k="${k}"></button>`).join("");
+  $("stepno").textContent = `Step ${W.step + 1} / ${steps.length}`;
+  $("back").disabled = W.step === 0;
+  $("next").disabled = W.step === steps.length - 1;
+  if (push) history.replaceState(null, "", `#${W.step + 1}`);
+  window.scrollTo(0, 0);
+}
+
+$("back").addEventListener("click", () => go(W.step - 1));
+$("next").addEventListener("click", () => go(W.step + 1));
+$("progress").addEventListener("click", (e) => { const k = e.target.dataset && e.target.dataset.k; if (k !== undefined) go(+k); });
+document.addEventListener("keydown", (e) => {
+  if (!W.story || e.altKey || e.ctrlKey || e.metaKey) return;
+  if (["INPUT", "TEXTAREA", "SELECT"].includes((e.target.tagName || ""))) return;
+  if (e.key === "ArrowRight" || e.key === "PageDown") { e.preventDefault(); go(W.step + 1); }
+  if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); go(W.step - 1); }
+});
+
+load();
+</script>
+</body>
+</html>
