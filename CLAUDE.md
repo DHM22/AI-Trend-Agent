@@ -150,11 +150,11 @@ demo_ui.py                             Older Streamlit dashboard over the same s
                                         malformed reply -> "unverified" 0.0. Sets VerifiedTrend.status (unread so far).
                                         API-failure _fallback still scores up to 0.8 from source tiers alone — the
                                         verification analogue of the curriculum silent-failure bug, not yet fixed
-02_src/tests/test_verification.py      Teammate's 19 offline VerificationAgent tests (plain script: run it directly)
 02_src/agents/curriculum.py            RAG search agent; has search_failed flag + curriculum_checked() tri-state
 02_src/agents/evaluation.py            Deterministic _maturity_score / _relevance_score; model only writes rationale
 02_src/agents/recommendation.py        Orchestrator; tier-selection gates (see Key Decisions)
-02_src/agents/test_chain.py            Offline test suite — 0 API calls. Currently 69/69 passing.
+02_src/agents/test_chain.py            Offline test suite — 0 API calls. Currently 113 passed, 2 skipped (the skips
+                                        test a verification _score() that does not exist)
 04_eval/run_eval.py                    Golden-dataset harness — clustering/verification/curriculum/evaluation/
                                         recommendation layer scores
 04_eval/GOLD_LABELS.md                 Labeling spec: is_genuine, confidence, stale_presented_as_new, rank,
@@ -289,7 +289,7 @@ script, before trusting a validation run on a non-default dataset.
      flag that `VerifiedTrend` does not have. `curriculum.precision_at_3` needs the agent's top-3 candidates, but
      `CurriculumAgent` exposes only the one selected match. Both require a code change first.
 - **Promptfoo behavioral suite (`04_eval/promptfooconfig.yaml`) has never been run** — blocked by Node version
-  (need 22.22+, machine has 21.6.1). Decided to accept this gap given time constraints; test_chain.py (69/69) +
+  (need 22.22+, machine has 21.6.1). Decided to accept this gap given time constraints; test_chain.py (113 passed, 2 skipped) +
   the written config + gold-set eval numbers are the evaluation answer for now.
 - **Content-Type Agent (proposed, not built):** would classify a signal as release/announcement/case_study/
   self_promotion/opinion before it reaches the tier gates. Would fix false positives from Show HN self-promotion
