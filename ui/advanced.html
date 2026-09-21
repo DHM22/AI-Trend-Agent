@@ -540,7 +540,7 @@ function traceBlock(r) {
   const v = r.trace.verification || {};
   const cSteps = c.steps || [];
   const vSteps = v.steps || [];
-  const n = cSteps.length + vSteps.length;
+  const n = cSteps.length + ((v.reasoning && v.reasoning.length) || vSteps.length);
 
   let body = "";
 
@@ -557,12 +557,24 @@ function traceBlock(r) {
       ${esc(c.skipped_reason || "it did not clear the confidence gate.")}</p>`;
   }
 
-  body += group("Verification &mdash; is this trend real?", vSteps.map((s, i) => {
+  // Newer traces carry the verifier's whole loop (`reasoning`, including steps
+  // with no tool call) and which loop ran it (`mode`); older ones only `steps`.
+  const vRows = (v.reasoning && v.reasoning.length) ? v.reasoning.map((s, i) => {
+    const args = Object.entries(s.tool_args || {})
+      .map(([k, val]) => `${esc(k)}=${esc(JSON.stringify(val))}`).join(", ");
+    const ask = s.tool ? `Checked <code>${esc(s.tool)}</code>` : esc(s.thought || "");
+    const why = s.tool && s.thought
+      ? `<div class="tr" style="color:var(--text-muted)">Why: ${esc(s.thought)}</div>` : "";
+    return step(i + 1, ask + why, s.observation, args);
+  }) : vSteps.map((s, i) => {
     const args = Object.entries(s.arguments || {})
       .map(([k, val]) => `${esc(k)}=${esc(JSON.stringify(val))}`).join(", ");
     return step(i + 1, `Checked <code>${esc(s.tool || "")}</code>`,
                 s.result_summary, args);
-  }), "No verification steps were recorded.");
+  });
+  const mode = modeText(v.mode);
+  body += group("Verification &mdash; is this trend real?", vRows,
+                "No verification steps were recorded.", mode);
 
   body += group("Curriculum &mdash; does it affect what we teach?", cSteps.map((s, i) => {
     const f = Object.entries(s.filters || {})
@@ -602,8 +614,21 @@ function traceBlock(r) {
   </details>`;
 }
 
-function group(title, steps, emptyText) {
-  return `<p class="tgroup">${title}</p>` + (steps.length
+// Plain words for the verifier's mode. Mirrors demo_snapshot.verification_mode_text
+// (the page cannot import Python); keep the two in step.
+function modeText(mode) {
+  const m = String(mode || "").toLowerCase();
+  if (!m) return "";
+  if (m.includes("llm loop failed")) return "The model call failed, so the same checks ran from a fixed script instead — scored exactly the same way.";
+  if (m.startsWith("deterministic")) return "No model was used: the checks ran from a fixed script. The score comes from what the checks found, as always.";
+  if (m.startsWith("agentic")) return "The model chose which checks to run. The score was computed from what those checks found, not by the model.";
+  return mode;
+}
+
+function group(title, steps, emptyText, note) {
+  return `<p class="tgroup">${title}</p>`
+    + (note ? `<p class="tnote" style="margin-top:0">${esc(note)}</p>` : "")
+    + (steps.length
     ? steps.join("")
     : `<p class="tnote">${emptyText}</p>`);
 }
