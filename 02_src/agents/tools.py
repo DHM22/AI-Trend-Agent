@@ -227,6 +227,13 @@ def _rate_limited(r) -> dict | None:
     return None
 
 
+def _release_author(release: dict) -> str:
+    """Only expose the account supplied by the release API; never infer it."""
+    author = release.get("author")
+    login = author.get("login") if isinstance(author, dict) else None
+    return login if isinstance(login, str) else ""
+
+
 def verify_release(repo: str, version: str = "", max_results: int = 8) -> dict:
     """
     Confirm a project's release record via the GitHub Releases API.
@@ -243,8 +250,20 @@ def verify_release(repo: str, version: str = "", max_results: int = 8) -> dict:
     # entry -- the model and the deterministic path spell versions differently.
     key_args = {"repo": repo.lower(),
                 "version": version[1:] if version[:1].lower() == "v" else version}
-    return _with_cache("verify_release", key_args,
-                       lambda: _verify_release_uncached(repo, version, max_results))
+    result = _with_cache("verify_release", key_args,
+                         lambda: _verify_release_uncached(repo, version, max_results))
+    # Old disk entries remain usable offline. Missing author means unknown,
+    # not permission to infer a publisher or fetch while TOOL_CACHE_ONLY is set.
+    if isinstance(result, dict):
+        matched = result.get("matched_release")
+        if isinstance(matched, dict):
+            result = {**result, "matched_release": {"author": "", **matched}}
+        if isinstance(result.get("releases"), list):
+            result = {**result, "releases": [
+                {"author": "", **release} if isinstance(release, dict) else release
+                for release in result["releases"]
+            ]}
+    return result
 
 
 def _verify_release_uncached(repo: str, version: str = "", max_results: int = 8) -> dict:
@@ -266,6 +285,7 @@ def _verify_release_uncached(repo: str, version: str = "", max_results: int = 8)
                 return {"repo": repo, "version": version, "release_found": True,
                         "matched_release": {
                             "tag": it.get("tag_name", ""),
+                            "author": _release_author(it),
                             "name": (it.get("name") or "")[:120],
                             "published_at": it.get("published_at", ""),
                             "url": it.get("html_url", ""),
@@ -294,6 +314,7 @@ def _verify_release_uncached(repo: str, version: str = "", max_results: int = 8)
 
     releases = [{
         "tag": it.get("tag_name", ""),
+        "author": _release_author(it),
         "name": (it.get("name") or "")[:120],
         "published_at": it.get("published_at", ""),
         "url": it.get("html_url", ""),
