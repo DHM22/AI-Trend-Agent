@@ -154,7 +154,7 @@ demo_ui.py                             Older Streamlit dashboard over the same s
 02_src/agents/curriculum.py            RAG search agent; has search_failed flag + curriculum_checked() tri-state
 02_src/agents/evaluation.py            Deterministic _maturity_score / _relevance_score; model only writes rationale
 02_src/agents/recommendation.py        Orchestrator; tier-selection gates (see Key Decisions)
-02_src/agents/test_chain.py            Offline test suite — 0 API calls. Currently 113 passed, 2 skipped (the skips
+02_src/agents/test_chain.py            Offline test suite — 0 API calls. Currently 118 passed, 2 skipped (the skips
                                         test a verification _score() that does not exist)
 02_src/tests/test_verification.py      19 offline VerificationAgent tests (from PR #1). Plain script, run directly
 04_eval/run_eval.py                    Golden-dataset harness — clustering/verification/curriculum/evaluation/
@@ -226,9 +226,9 @@ search had actually run.
 an explicit contradiction of the plan text, instead of the innocuous "no curriculum match" it used to show.
 
 **Fix:** `CurriculumTrace.search_failed` bool set on all three failure paths with a reason string;
-`search_curriculum_checked()` helper returns `(match, curriculum_checked)`; all callers set
-`curriculum_checked=False` on failure; CLI prints `!! SEARCH FAILED -- this is NOT a finding of 'no match'`.
-Verified via unit test. **Not yet verified at scale** — needs a full re-run once API quota allows.
+`search_curriculum_checked()` helper returns `(match, curriculum_checked)` and is what BOTH pipelines
+(`recommendation.py` main, `demo_snapshot.capture`) call; CLI prints `!! SEARCH FAILED -- this is NOT a finding of 'no match'`.
+Verified offline end to end through `capture()` (test_chain section 11). **Not yet verified at scale** — needs a full re-run once API quota allows.
 
 ## Gold dataset: which file (three exist, they are NOT interchangeable)
 
@@ -291,7 +291,7 @@ script, before trusting a validation run on a non-default dataset.
      flag that `VerifiedTrend` does not have. `curriculum.precision_at_3` needs the agent's top-3 candidates, but
      `CurriculumAgent` exposes only the one selected match. Both require a code change first.
 - **Promptfoo behavioral suite (`04_eval/promptfooconfig.yaml`) has never been run** — blocked by Node version
-  (need 22.22+, machine has 21.6.1). Decided to accept this gap given time constraints; test_chain.py (113 passed, 2 skipped) +
+  (need 22.22+, machine has 21.6.1). Decided to accept this gap given time constraints; test_chain.py (118 passed, 2 skipped) +
   the written config + gold-set eval numbers are the evaluation answer for now.
 - **Content-Type Agent (proposed, not built):** would classify a signal as release/announcement/case_study/
   self_promotion/opinion before it reaches the tier gates. Would fix false positives from Show HN self-promotion
