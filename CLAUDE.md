@@ -145,17 +145,23 @@ demo_ui.py                             Older Streamlit dashboard over the same s
                                         shows 41 clusters but 15 evaluated. The committed snapshot predates trace
                                         capture: it has NO "trace" keys, so failed searches can't be shown until re-captured
 02_src/agents/tools.py                 Tool implementations: github_lookup, search_curriculum, verify_release
-02_src/agents/verification.py          Confidence is MODEL-REPORTED (clamped) — there is NO deterministic _score() or
-                                        _repo_matches() (never existed in git history). Deterministic code bounds it:
-                                        injection cap (<=0.1), staleness + publisher gates (-> 0.0, "contradicted"),
-                                        malformed reply -> "unverified" 0.0. Sets VerifiedTrend.status (unread so far).
-                                        API-failure _fallback still scores up to 0.8 from source tiers alone — the
-                                        verification analogue of the curriculum silent-failure bug, not yet fixed
+02_src/agents/verification.py          COMMITTED version: the MODEL sets confidence (parsed, clamped); code only caps it
+                                        — injection cap (<=0.1), staleness + publisher gates (-> 0.0 "contradicted"),
+                                        malformed reply -> "unverified" 0.0, API-failure _fallback capped at
+                                        FALLBACK_CEILING 0.65 (below maturity 4). Sets VerifiedTrend.status (unread).
+                                        NO repo guard: github_lookup results are never checked against the repo queried
+                                        (the langchain -> microsoft/markitdown bug is unguarded). See reference/ below
+02_src/agents/reference/               The team's DETERMINISTIC verifier (_score, Facts, _repo_matches, _match_result),
+                                        recovered lines 1-500 of 571 — it was reviewed in chat but NEVER COMMITTED
+                                        anywhere. Reference only: nothing imports it, and it would not load against the
+                                        current schemas.py. RESTORING IT (merged with PR #1's gates) IS PENDING AND MUST
+                                        HAPPEN BEFORE THE NEXT CAPTURE RUN. Do not edit it; restore from it
 02_src/agents/curriculum.py            RAG search agent; has search_failed flag + curriculum_checked() tri-state
 02_src/agents/evaluation.py            Deterministic _maturity_score / _relevance_score; model only writes rationale
 02_src/agents/recommendation.py        Orchestrator; tier-selection gates (see Key Decisions)
-02_src/agents/test_chain.py            Offline test suite — 0 API calls. Currently 118 passed, 2 skipped (the skips
-                                        test a verification _score() that does not exist)
+02_src/agents/test_chain.py            Offline test suite — 0 API calls. Currently 126 passed, 2 skipped. The skips
+                                        (sections 1-2) target the uncommitted deterministic verifier; run in memory
+                                        against the recovered reference file they pass 13/13
 02_src/tests/test_verification.py      19 offline VerificationAgent tests (from PR #1). Plain script, run directly
 04_eval/run_eval.py                    Golden-dataset harness — clustering/verification/curriculum/evaluation/
                                         recommendation layer scores
@@ -181,9 +187,9 @@ promptfooconfig.yaml (12 behavioral cases) is not in the tree; never run (see Kn
   cause false merges at MAX_DOC_FREQUENCY's ceiling — add them to STOP_IDENTIFIERS as found.
 - **Deterministic scoring over model-reported confidence — in the EVALUATION agent.** The model writes rationale
   text; Python computes maturity/relevance from structured facts. Verification does NOT follow this: its
-  confidence is model-reported, bounded by deterministic gates (see verification.py above). An earlier note here
-  claimed a deterministic verification `_score()`; it does not exist, and the test_chain sections written for it
-  report SKIPPED, not passed.
+  confidence is currently model-reported, with code caps (see verification.py above). That is a regression
+  from the design, not a decision: the team's deterministic verifier was never committed and survives only as
+  `02_src/agents/reference/`. Until it is restored, test_chain sections 1-2 report SKIPPED, not passed.
 - **In-domain gate checks the signal TITLE only, not the summary.** Deliberate: vendor names in summaries (e.g.
   "OpenAI, Anthropic...") leak into `add_new_lesson` if the summary is checked too.
 - **`content_type` distinguishes notebook cells from slide pages** — a broken lab cell is more urgent than an
@@ -291,7 +297,7 @@ script, before trusting a validation run on a non-default dataset.
      flag that `VerifiedTrend` does not have. `curriculum.precision_at_3` needs the agent's top-3 candidates, but
      `CurriculumAgent` exposes only the one selected match. Both require a code change first.
 - **Promptfoo behavioral suite (`04_eval/promptfooconfig.yaml`) has never been run** — blocked by Node version
-  (need 22.22+, machine has 21.6.1). Decided to accept this gap given time constraints; test_chain.py (118 passed, 2 skipped) +
+  (need 22.22+, machine has 21.6.1). Decided to accept this gap given time constraints; test_chain.py (126 passed, 2 skipped) +
   the written config + gold-set eval numbers are the evaluation answer for now.
 - **Content-Type Agent (proposed, not built):** would classify a signal as release/announcement/case_study/
   self_promotion/opinion before it reaches the tier gates. Would fix false positives from Show HN self-promotion
@@ -301,6 +307,11 @@ script, before trusting a validation run on a non-default dataset.
   Roadmap item.
 
 ## Current blocker
+
+**Before the next capture run:** restore the deterministic verifier from `02_src/agents/reference/` (merged with
+PR #1's gates). The committed verifier lets the model set confidence and has no repo guard, so a capture now
+would bake model-reported scores into the snapshot.
+
 
 OpenAI project spend limit was hit mid-testing (the team's OpenAI project), blocking any live agent
 run (curriculum-search-failure fix verification at scale, Week 6 update-tier search, full eval re-run). Someone
