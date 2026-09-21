@@ -130,6 +130,20 @@ class CurriculumTrace:
     reason: str = ""
     stopped_early: bool = False
 
+    # THE IMPORTANT ONE. run() returns None both when the search found
+    # nothing AND when the search could not run at all. Downstream those look
+    # identical, and "no match" drives add_new_lesson.
+    #
+    # Observed live: an API spend limit made every LLM call fail. Fifteen
+    # trends came back "no curriculum match" and three produced
+    # "ADD_NEW_LESSON -- curriculum search found no existing coverage of this
+    # topic." That sentence was false; no search ever ran. The output looked
+    # like a normal run.
+    #
+    # Callers MUST check this and pass curriculum_checked=False when it is
+    # true, so an unsearchable trend cannot claim a curriculum gap.
+    search_failed: bool = False
+
 
 def _describe(trend: VerifiedTrend) -> str:
     c = trend.cluster
@@ -190,7 +204,8 @@ class CurriculumAgent:
                     tools=CURRICULUM_TOOLS, tool_choice="auto",
                 )
             except Exception as e:
-                trace.reason = f"LLM call failed: {e}"
+                trace.search_failed = True
+                trace.reason = f"curriculum search could not run: {e}"
                 return None
 
             msg = reply.choices[0].message
@@ -228,7 +243,9 @@ class CurriculumAgent:
             trace.raw_reply = reply.choices[0].message.content or ""
             return self._parse(trace.raw_reply, trace)
         except Exception as e:
-            trace.reason = f"LLM call failed after {self.max_steps} steps: {e}"
+            trace.search_failed = True
+            trace.reason = (f"curriculum search could not run after "
+                            f"{self.max_steps} steps: {e}")
             return None
 
     # -----------------------------------------------------------------
@@ -242,7 +259,8 @@ class CurriculumAgent:
         try:
             data = json.loads(cleaned)
         except json.JSONDecodeError:
-            trace.reason = "model did not return valid JSON"
+            trace.search_failed = True
+            trace.reason = "curriculum search could not run: model did not return valid JSON"
             return None
 
         trace.reason = str(data.get("reason", "")).strip()
@@ -270,6 +288,21 @@ class CurriculumAgent:
             exact_match=hit.get("exact_match"),
             content_type=hit.get("content_type", "slides"),
         )
+
+
+def search_curriculum_checked(agent: "CurriculumAgent", trend: VerifiedTrend,
+                              trace: CurriculumTrace | None = None
+                              ) -> tuple[CurriculumMatch | None, bool]:
+    """
+    Run the agent and report whether the curriculum was ACTUALLY searched.
+
+    Returns (match, curriculum_checked). Pass the second value straight to
+    RecommendationAgent.run(). Preferred over calling agent.run() directly,
+    because it makes the distinction impossible to drop by accident.
+    """
+    trace = trace if trace is not None else CurriculumTrace()
+    match = agent.run(trend, trace)
+    return match, not trace.search_failed
 
 
 # ---------------------------------------------------------------------------
@@ -329,6 +362,9 @@ def main():
             print(f"  AFFECTED [{kind}]: {match.citation}")
             print(f"  reason  : {trace.reason}")
             print(f"  evidence: {match.matched_text[:150]}")
+        elif trace.search_failed:
+            print(f"  !! SEARCH FAILED -- this is NOT a finding of 'no match'")
+            print(f"     {trace.reason}")
         else:
             print(f"  not affected: {trace.reason}")
 

@@ -467,7 +467,7 @@ def main():
     import json
     from clustering import cluster_signals, load_signals
     from agents.verification import VerificationAgent
-    from agents.curriculum import CurriculumAgent
+    from agents.curriculum import CurriculumAgent, CurriculumTrace
     from agents.evaluation import EvaluationAgent
 
     try:
@@ -507,10 +507,21 @@ def main():
     for c in batch:
         trend = verifier.run(c)
 
-        # only search the curriculum for trends worth acting on -- and record
-        # whether we actually looked, because that changes the tier
+        # Two separate reasons the curriculum may not have been searched:
+        #   1. we chose not to (low confidence -- not worth the API call)
+        #   2. we tried and the search failed (API error, bad JSON)
+        # Both must yield curriculum_checked=False, or the tier logic reads
+        # "no match" as "no coverage" and recommends a new lesson for
+        # material we may already teach.
         checked = trend.confidence >= 0.4
-        match = curriculum.run(trend) if checked else None
+        match = None
+        if checked:
+            ctrace = CurriculumTrace()
+            match = curriculum.run(trend, ctrace)
+            if ctrace.search_failed:
+                checked = False
+                print(f"  ! curriculum search failed for "
+                      f"{c.representative_title[:45]}: {ctrace.reason[:90]}")
 
         ev = evaluator.run(trend, match)
         recs.append(recommender.run(ev, curriculum_checked=checked))

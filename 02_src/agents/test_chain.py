@@ -335,6 +335,109 @@ def test_tool_contract():
 
 
 # ===========================================================================
+# 8. AGENT TRACES -- observability, not decisions
+# The trace is what makes the agent's reasoning visible in the UI. The case
+# that earns its own tests is search_failed: "we tried and could not run" has
+# to stay distinguishable from "we looked and found nothing", because reading
+# the second as the first is what produced confident, false ADD_NEW_LESSON
+# recommendations during a live run.
+# ===========================================================================
+
+def test_trace_capture():
+    import demo_snapshot as D
+    from agents.curriculum import CurriculumTrace, Step as CStep
+    from agents.verification import VerificationTrace, Step as VStep
+
+    # ---- curriculum: searched and found something ----------------------
+    t = CurriculumTrace()
+    t.steps.append(CStep(1, "langgraph agents", {"week": 5, "type": "lab"},
+                         "2 hit(s): Week 5 / Lab: X / cell 3 (0.71)"))
+    t.reason = "cell 3 calls the deprecated prebuilt"
+    d = D.curriculum_trace_dict(t, searched=True)
+
+    check("trace: searched flag set", d["searched"], True)
+    check("trace: step count preserved", len(d["steps"]), 1)
+    check("trace: query preserved", d["steps"][0]["query"], "langgraph agents")
+    check("trace: filters preserved", d["steps"][0]["filters"], {"week": 5, "type": "lab"})
+    check_true("trace: result summary preserved", d["steps"][0]["result_summary"])
+    check("trace: no false failure", d["search_failed"], False)
+
+    # ---- curriculum: attempted, then FAILED ----------------------------
+    f = CurriculumTrace()
+    f.search_failed = True
+    f.reason = "curriculum search could not run: 429 spend limit"
+    df = D.curriculum_trace_dict(f, searched=True)
+
+    check("trace: failure flag survives", df["search_failed"], True,
+          "if this is False the UI shows an innocuous 'no match' for a failed search")
+    check("trace: failed search still counts as searched", df["searched"], True,
+          "a failure is NOT the same as never having looked")
+    check_true("trace: failure reason carried on `reason`", df["reason"])
+
+    # ---- curriculum: never searched (confidence gate) ------------------
+    sk = D.curriculum_trace_dict(CurriculumTrace(), searched=False,
+                                 skipped_reason="confidence 0.2 is below 0.4")
+    check("trace: skipped is not searched", sk["searched"], False)
+    check("trace: skipped is not a failure", sk["search_failed"], False,
+          "skipped and failed are different states and must not collapse")
+    check_true("trace: skip reason recorded", sk["skipped_reason"])
+    check("trace: skipped has no steps", sk["steps"], [])
+
+    # ---- curriculum: empty step list -----------------------------------
+    e = D.curriculum_trace_dict(CurriculumTrace(), searched=True)
+    check("trace: empty step list stays a list", e["steps"], [])
+
+    # ---- verification --------------------------------------------------
+    v = VerificationTrace()
+    v.steps.append(VStep(1, "github_lookup", {"repo": "langchain-ai/langchain"},
+                         "1 result(s), top: langchain-ai/langchain, 146000 stars"))
+    dv = D.verification_trace_dict(v)
+    check("trace: verification step count", len(dv["steps"]), 1)
+    check("trace: verification tool name", dv["steps"][0]["tool"], "github_lookup")
+    check("trace: verification arguments preserved",
+          dv["steps"][0]["arguments"], {"repo": "langchain-ai/langchain"})
+    check("trace: verification empty trace is safe",
+          D.verification_trace_dict(VerificationTrace())["steps"], [])
+
+    # ---- the whole thing must be JSON, or it never reaches the UI ------
+    import json
+    try:
+        json.dumps({"curriculum": d, "verification": dv})
+        ok = True
+    except (TypeError, ValueError):
+        ok = False
+    check_true("trace: serialises to JSON", ok)
+
+
+def test_trace_backward_compatibility():
+    """
+    Old snapshots have no 'trace' key. Reading one must be silent -- not an
+    error, and not an empty trace box in the UI.
+    """
+    import json
+    from pathlib import Path
+
+    old_rec = {"trend": "x", "confidence": 0.8, "verification_note": "",
+               "evidence": [], "recommended_action": "watch", "action_plan": []}
+
+    check("back-compat: absent trace reads as None", old_rec.get("trace"), None)
+    # the UI's guard, in Python form: (r.trace || {}).curriculum || {}
+    ct = (old_rec.get("trace") or {}).get("curriculum") or {}
+    check("back-compat: search_failed is falsy, not an error",
+          ct.get("search_failed") is True, False)
+    check("back-compat: steps default to empty", ct.get("steps") or [], [])
+
+    # and the committed snapshot -- which predates traces -- must still load
+    snap = Path(__file__).resolve().parents[2] / "01_data" / "demo_snapshot.json"
+    if snap.exists():
+        data = json.loads(snap.read_text(encoding="utf-8"))
+        recs = data.get("recommendations", [])
+        check_true("back-compat: committed snapshot still loads", len(recs) > 0)
+        check_true("back-compat: committed snapshot has no traces (pre-feature)",
+                   all("trace" not in r for r in recs))
+
+
+# ===========================================================================
 
 TESTS = [
     ("verification scoring", test_verification_scoring),
@@ -344,6 +447,8 @@ TESTS = [
     ("injection defence", test_injection_defence),
     ("is_reliable / FAISS", test_is_reliable),
     ("tool contract", test_tool_contract),
+    ("agent trace capture", test_trace_capture),
+    ("trace backward compatibility", test_trace_backward_compatibility),
 ]
 
 

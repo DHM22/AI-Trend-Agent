@@ -317,7 +317,7 @@ def main():
     import argparse
     from clustering import cluster_signals, load_signals
     from agents.verification import VerificationAgent
-    from agents.curriculum import CurriculumAgent
+    from agents.curriculum import CurriculumAgent, CurriculumTrace
 
     try:
         from dotenv import load_dotenv
@@ -339,7 +339,12 @@ def main():
 
     for c in clusters[:args.limit]:
         trend = verifier.run(c)
-        match = curriculum.run(trend) if trend.confidence >= 0.4 else None
+        match = None
+        if trend.confidence >= 0.4:
+            ctrace = CurriculumTrace()
+            match = curriculum.run(trend, ctrace)
+            if ctrace.search_failed:
+                print(f"  ! curriculum search failed: {ctrace.reason[:90]}")
         result = evaluator.run(trend, match)
 
         print(f"\n{'='*72}\n{c.representative_title[:70]}")
