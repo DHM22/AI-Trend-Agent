@@ -1,0 +1,17 @@
+{
+  "modified_file": "02_src/agents/curriculum.py",
+  "prompt_version": "V3",
+  "purpose": "Require concrete causal curriculum-impact analysis, exact-identifier-first search, evidence comparison, and conservative abstention while resisting prompt injection.",
+  "benchmark_sha256": "8B86D00DB775569FDE67BD2DF8CF08412C2FE2C64E12F64C65FE6FA02EF1962E",
+  "retrieval_version_held_constant": "Retrieval V2 in 02_src/curriculum_ingest.py",
+  "vector_store": "vectorstore_v1_after_ocr",
+  "vector_store_sha256": "16440FC4A5D8A9B414428AD97AC47042E84D3F0185D6BEB3129E5947658ECCC8",
+  "validation_performed": [
+    "Python syntax compilation",
+    "Prompt contract checks for causal-impact, exact-identifier search, abstention, and prompt-injection resistance",
+    "Deterministic offline prompt contract validation"
+  ],
+  "benchmark_specific_answers_added": false,
+  "benchmark_run": false,
+  "api_calls": false
+}

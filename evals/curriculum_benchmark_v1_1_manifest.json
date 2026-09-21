@@ -1,0 +1,19 @@
+{
+  "benchmark_version": "1.1",
+  "frozen": true,
+  "case_count": 24,
+  "positive_count": 12,
+  "negative_count": 12,
+  "ocr_case_ids": [
+    "CURR-009",
+    "CURR-014",
+    "CURR-018"
+  ],
+  "acceptable_match_count": 20,
+  "creation_date": "2026-09-19",
+  "sha256": "8b86d00db775569fde67bd2df8cf08412c2fe2c64e12f64c65fe6fa02ef1962e",
+  "parent_v1_sha256": "E055FCBEDF2E7EE716353DB73F23B181FF7BD4EF8785AC8D6648317448D08DE8",
+  "model_intended_for_v0": "gpt-4o-mini",
+  "temperature": 0,
+  "note": "v1.1 only expands human-verified acceptable structured matches; labels, trends, titles, descriptions, and 12/12 case balance are unchanged. Cases are frozen."
+}
