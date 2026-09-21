@@ -824,6 +824,44 @@ def test_capture_failed_search_end_to_end():
 
 
 # ===========================================================================
+# 12. A FALLBACK VERDICT CAN NEVER BE ACTED ON
+# When the verification API fails, _fallback() scores from source tiers alone.
+# The cap lives in verification.py, the maturity bands in evaluation.py, and
+# the action floor in recommendation.py -- three files that can drift apart.
+# So this deliberately does NOT restate any threshold: it runs the fallback
+# through evaluation's real mapping and compares with the real floor.
+# ===========================================================================
+
+def test_fallback_never_actionable():
+    import agents.verification as V
+    from agents.evaluation import EvaluationAgent
+    from agents.recommendation import MATURE_FLOOR, select_tier
+
+    strong_sources = [
+        ("primary + 2 sources", [RawSignal("t", "github", "primary", ""),
+                                 RawSignal("t", "langchain_blog", "primary", ""),
+                                 RawSignal("t", "hackernews", "secondary", "")]),
+        ("primary only", [RawSignal("t", "github", "primary", "")]),
+    ]
+    causes = [("API error", _AlwaysFails),
+              ("invalid JSON", lambda: _ScriptedClient(_fake_reply("not json at all")))]
+
+    for src_label, signals in strong_sources:
+        for cause, make_client in causes:
+            trend = V.VerificationAgent(client=make_client()).run(TrendCluster("t", signals))
+            ev = EvaluationAgent(client=_AlwaysFails()).run(trend, None)
+            check(f"fallback ({cause}, {src_label}): maturity below the action floor",
+                  ev.maturity_score < MATURE_FLOOR, True,
+                  f"confidence {trend.confidence} -> maturity {ev.maturity_score}; "
+                  f"FALLBACK_CEILING has drifted above evaluation's band for "
+                  f"maturity {MATURE_FLOOR}")
+            # and the consequence: even a perfect curriculum match stays watch
+            check(f"fallback ({cause}, {src_label}): tiers as watch despite a strong match",
+                  _tier(select_tier, ev.maturity_score, 5,
+                        CurriculumMatch(3, "t", "f.ipynb", 1, "x", 0.9), True), "watch")
+
+
+# ===========================================================================
 
 TESTS = [
     ("verification scoring", test_verification_scoring),
@@ -841,6 +879,7 @@ TESTS = [
     ("verification staleness gate", test_verification_staleness_gate),
     ("verification publisher gate", test_verification_publisher_gate),
     ("capture: failed search end to end", test_capture_failed_search_end_to_end),
+    ("fallback never actionable", test_fallback_never_actionable),
 ]
 
 
