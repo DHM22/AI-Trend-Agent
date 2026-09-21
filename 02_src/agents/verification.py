@@ -560,6 +560,15 @@ class _Accumulator:
         # conclude "missing" (see record); a bare mention is not a repo claim
         self.named_missing = False
         self.secondary_only = "primary" not in cluster.source_tiers
+        # owner/repo names the SIGNALS themselves carry (GitHub "owner/repo: tag"
+        # titles, github.com URLs). In the agentic loop the MODEL writes the
+        # queries and can invent one ("openai/openai" for an OpenAI blog post);
+        # a repo nobody claimed cannot be "missing".
+        self.signal_repos = {q for q in (_claim_query(s) for s in cluster.signals)
+                             if q and "/" in q}
+        self.signal_repos |= {m.group(1).rstrip("/").lower()
+                              for s in cluster.signals
+                              for m in [_REPO_URL_RE.search(s.url or "")] if m}
         self.seen_authors: dict = {}                 # (repo, version) -> author
         self.stopped_early = False
         self._it = 0
@@ -585,7 +594,8 @@ class _Accumulator:
                 match = None
             elif match:
                 self.confirmed_repos.add(match["full_name"].lower())
-            elif not failed and (not bare or self.secondary_only):
+            elif not failed and ((not bare and query.lower() in self.signal_repos)
+                                 or (bare and self.secondary_only)):
                 self.named_missing = True       # answered: no repo by that name
             url = (match or {}).get("url", "")
         elif tool == "verify_release":
