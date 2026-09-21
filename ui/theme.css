@@ -1,0 +1,251 @@
+/*
+  Shared design tokens and common components for the dashboard pages.
+  ===================================================================
+  index.html (the dashboard) and trace.html (one recommendation's reasoning)
+  both link this file. Anything used by BOTH pages belongs here; anything
+  used by one lives in that page's own <style> block.
+
+  The point is that there is exactly one copy of the palette. Two pages each
+  carrying their own token block is the stale-copy problem the rest of this
+  repo already warns about -- change a step in one and the pages quietly stop
+  matching.
+
+  COLOR: the tier and funnel scales are ORDINAL (ordered stages, not identity),
+  so they use one blue hue stepped light->dark. Every ramp was checked with the
+  dataviz validator in ordinal mode against BOTH surfaces. The in-segment label
+  inks (--tier-N-ink) are computed from each fill's luminance, not eyeballed:
+  white on --tier-5 is 2.11:1 and unreadable. Re-run the validator before
+  swapping any step.
+*/
+
+:root {
+  color-scheme: light;
+
+  --surface-1: #fcfcfb;
+  --page: #f9f9f7;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --gridline: #e1e0d9;
+  --baseline: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.10);
+  --shadow: 0 1px 2px rgba(11,11,11,0.04), 0 8px 24px -12px rgba(11,11,11,0.12);
+
+  /* Ordinal tier ramp, most urgent -> least. Validated light/ordinal. */
+  --tier-1: #0d366b;
+  --tier-2: #1c5cab;
+  --tier-3: #2a78d6;
+  --tier-4: #5598e7;
+  --tier-5: #86b6ef;
+
+  --tier-1-ink: #ffffff;
+  --tier-2-ink: #ffffff;
+  --tier-3-ink: #0b0b0b;
+  --tier-4-ink: #0b0b0b;
+  --tier-5-ink: #0b0b0b;
+
+  /* Ordinal funnel ramp, 4 stages. Validated light/ordinal. */
+  --stage-1: #0d366b;
+  --stage-2: #1c5cab;
+  --stage-3: #2a78d6;
+  --stage-4: #5598e7;
+
+  --accent: #2a78d6;
+  --good: #0ca30c;
+  --warning: #fab219;
+  --critical: #d03b3b;
+}
+
+/* Dark steps are selected for the dark surface, not an automatic flip.
+   Declared under both scopes: the media query covers the OS setting, the
+   data-theme scope covers the toggle, and the toggle must win both ways. */
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -12px rgba(0,0,0,0.6);
+    --tier-1: #b7d3f6; --tier-2: #86b6ef; --tier-3: #5598e7;
+    --tier-4: #2a78d6; --tier-5: #184f95;
+    --tier-1-ink: #0b0b0b; --tier-2-ink: #0b0b0b; --tier-3-ink: #0b0b0b;
+    --tier-4-ink: #0b0b0b; --tier-5-ink: #ffffff;
+    --stage-1: #86b6ef; --stage-2: #5598e7;
+    --stage-3: #2a78d6; --stage-4: #184f95;
+    --accent: #3987e5;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-1: #1a1a19;
+  --page: #0d0d0d;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #898781;
+  --gridline: #2c2c2a;
+  --baseline: #383835;
+  --border: rgba(255, 255, 255, 0.10);
+  --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -12px rgba(0,0,0,0.6);
+  --tier-1: #b7d3f6; --tier-2: #86b6ef; --tier-3: #5598e7;
+  --tier-4: #2a78d6; --tier-5: #184f95;
+  --tier-1-ink: #0b0b0b; --tier-2-ink: #0b0b0b; --tier-3-ink: #0b0b0b;
+  --tier-4-ink: #0b0b0b; --tier-5-ink: #ffffff;
+  --stage-1: #86b6ef; --stage-2: #5598e7;
+  --stage-3: #2a78d6; --stage-4: #184f95;
+  --accent: #3987e5;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 1120px; margin: 0 auto; padding: 32px 16px 120px; }
+
+header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 28px; }
+header .grow { flex: 1; min-width: 0; }
+h1 { font-size: 1.5rem; font-weight: 640; margin: 0 0 2px; letter-spacing: -0.015em; }
+.tagline { color: var(--text-secondary); font-size: 0.875rem; margin: 0; }
+.meta { color: var(--text-muted); font-size: 0.8125rem; margin: 10px 0 0; }
+.meta code {
+  font-size: 0.9em; background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px;
+}
+
+button {
+  font: inherit; color: inherit; cursor: pointer;
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 7px; padding: 7px 12px; transition: background 120ms;
+}
+button:hover { background: var(--page); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+  box-shadow: var(--shadow);
+}
+.card h2 {
+  font-size: 0.75rem; font-weight: 640; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-muted);
+  margin: 0 0 16px;
+}
+
+/* ---- tier tag ---------------------------------------------------------- */
+.tag {
+  font-size: 0.6875rem; font-weight: 680; letter-spacing: 0.05em;
+  padding: 4px 9px; border-radius: 5px; white-space: nowrap;
+}
+
+.pill { border: 1px solid currentColor; border-radius: 5px; padding: 1px 8px;
+        font-size: 0.75rem; font-weight: 620; }
+.score { font-variant-numeric: tabular-nums; }
+.score b { font-size: 1rem; color: var(--text-primary); }
+
+/* ---- citation ---------------------------------------------------------- */
+.cite {
+  font-size: 0.8125rem; padding: 9px 12px; border-radius: 7px;
+  background: var(--page); border: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+.cite code { font-weight: 620; color: var(--text-primary); }
+.cite .how { color: var(--text-muted); }
+.cite.none { color: var(--text-muted); font-style: italic; }
+
+/* A FAILED search is not a no-match, and the two must never look alike.
+   Confusing them is the exact bug this flag exists for: an API failure
+   produced confident 'no existing coverage' recommendations when no search
+   had run. So it gets ink, weight and a rule that 'no match' does not. */
+.cite.failed {
+  border-color: var(--critical); border-left-width: 3px;
+  color: var(--text-primary); font-style: normal;
+}
+.cite.failed b { color: var(--critical); letter-spacing: 0.02em; }
+.cite .why {
+  color: var(--text-secondary); font-size: 0.75rem; margin-top: 7px;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  word-break: break-word;
+}
+
+/* ---- disclosure -------------------------------------------------------- */
+details { margin-top: 12px; }
+summary {
+  cursor: pointer; font-size: 0.8125rem; color: var(--text-secondary);
+  padding: 6px 0; list-style: none; display: flex; align-items: center; gap: 7px;
+}
+summary::-webkit-details-marker { display: none; }
+summary::before { content: "▸"; color: var(--text-muted); transition: transform 140ms; }
+details[open] summary::before { transform: rotate(90deg); }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+/* ---- evidence ---------------------------------------------------------- */
+.ev { border-top: 1px solid var(--gridline); padding-top: 12px; font-size: 0.8125rem; }
+.ev-note { color: var(--text-secondary); font-style: italic; margin: 0 0 12px; }
+.ev-item { margin-bottom: 10px; }
+.ev-src { color: var(--text-primary); }
+.ev-url { color: var(--text-muted); font-size: 0.75rem; word-break: break-all; }
+.matched {
+  background: var(--page); border: 1px solid var(--border); border-radius: 7px;
+  padding: 10px 12px; margin-top: 10px;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.75rem; white-space: pre-wrap; max-height: 260px; overflow: auto;
+  color: var(--text-secondary);
+}
+
+/* ---- agent trace ------------------------------------------------------- */
+.trace { font-size: 0.8125rem; }
+.tgroup {
+  font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-muted); font-weight: 640; margin: 0 0 9px;
+}
+.tstep { display: grid; grid-template-columns: 20px 1fr; gap: 10px; margin-bottom: 11px; }
+.tn { color: var(--text-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; padding-top: 1px; }
+.tq { color: var(--text-primary); }
+.tq code { font-size: 0.9em; }
+.tr { color: var(--text-secondary); font-size: 0.75rem; margin-top: 3px; }
+.tnote { color: var(--text-secondary); font-style: italic; margin: 0 0 12px; }
+.tfail {
+  border-left: 3px solid var(--critical); padding: 9px 12px; border-radius: 0 6px 6px 0;
+  background: var(--page); margin-bottom: 12px;
+}
+.tfail b { color: var(--critical); }
+
+/* ---- plan -------------------------------------------------------------- */
+.plan { margin: 0; padding-left: 18px; font-size: 0.875rem; color: var(--text-secondary); }
+.plan li { margin-bottom: 5px; }
+.plan li::marker { color: var(--text-muted); }
+
+/* ---- states ------------------------------------------------------------ */
+[hidden] { display: none !important; }
+.empty { color: var(--text-muted); text-align: center; padding: 40px 0; font-size: 0.875rem; }
+.err {
+  background: var(--surface-1); border: 1px solid var(--critical);
+  border-left-width: 3px; border-radius: 9px; padding: 16px 18px;
+}
+.err h2 { color: var(--critical); text-transform: none; letter-spacing: 0;
+          font-size: 0.9375rem; margin-bottom: 8px; }
+.err pre { background: var(--page); border-radius: 6px; padding: 10px 12px;
+           font-size: 0.75rem; overflow-x: auto; margin: 10px 0 0; }
+.foot { color: var(--text-muted); font-size: 0.75rem; margin-top: 28px;
+        padding-top: 16px; border-top: 1px solid var(--gridline); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

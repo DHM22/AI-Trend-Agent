@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Course update suggestions</title>
+<!--
+  The plain-language view, for instructors and programme staff.
+
+  Same data, same endpoints, same origin as the detailed dashboard
+  (advanced.html) -- this page only decides what a non-technical reader needs
+  and what is noise TO THEM. It is not a simplified copy of the data; it is a
+  different presentation of all of it.
+
+  What is deliberately NOT shown here, and why:
+    similarity scores      a number between 0 and 1 means nothing to an
+                           instructor and invites false precision
+    total_score /5         same; the grouping already conveys priority
+    tool names, step logs  that is the detailed view's job (linked per item)
+    tier machine names     "update_existing_material" is a label for code
+
+  What is NOT simplified away, because removing it would make the page lie:
+    the failed-search state. A search that could not run is NOT a finding of
+    "nothing to update". That distinction is the whole reason this project
+    exists, so it gets the plainest, loudest wording on the page. Collapsing
+    it into "no changes needed" is the original bug, in friendlier clothes.
+
+  Palette and dark mode come from theme.css, the same file the other two pages
+  link. Type is larger here and the layout is single-column; those are this
+  page's own concerns and stay below.
+-->
+<link rel="stylesheet" href="theme.css">
+<style>
+  /* This page reads like a letter, not a console: one column, generous
+     measure, larger base type than the dashboard. */
+  .wrap { max-width: 760px; padding-bottom: 80px; }
+  body { font-size: 1rem; line-height: 1.6; }
+
+  .top { margin-bottom: 26px; }
+  .top h1 { font-size: 1.75rem; letter-spacing: -0.02em; margin: 0 0 8px; }
+  .top .said { color: var(--text-secondary); font-size: 1rem; margin: 0; }
+  .topbar { display: flex; align-items: flex-start; gap: 14px; }
+  .topbar .grow { flex: 1; min-width: 0; }
+  .btn {
+    border: 1px solid var(--border); background: var(--surface-1);
+    color: var(--text-secondary); border-radius: 8px; padding: 7px 12px;
+    font-size: 0.875rem; cursor: pointer; white-space: nowrap;
+  }
+  .btn:hover { color: var(--text-primary); }
+
+  /* The standing reminder that this page proposes and a person disposes.
+     It is not a footnote -- it sits above the first suggestion. */
+  .promise {
+    border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    background: var(--surface-1); border-radius: 0 10px 10px 0;
+    padding: 14px 18px; margin-bottom: 26px; font-size: 0.9375rem;
+    color: var(--text-secondary);
+  }
+  .promise b { color: var(--text-primary); }
+
+  .headline { font-size: 1.125rem; margin: 0 0 4px; font-weight: 640; }
+  .asof { color: var(--text-muted); font-size: 0.8125rem; margin: 0 0 26px; }
+
+  /* ---- sections -------------------------------------------------------- */
+  .sec { margin-bottom: 34px; }
+  .sec-head { margin: 0 0 4px; font-size: 1.0625rem; font-weight: 660;
+              letter-spacing: -0.01em; }
+  .sec-why { color: var(--text-secondary); font-size: 0.9375rem; margin: 0 0 16px; }
+
+  /* ---- one suggestion -------------------------------------------------- */
+  .item {
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 22px; margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .item.attention { border-left: 3px solid var(--critical); }
+
+  .what { font-size: 1.0625rem; font-weight: 640; margin: 0 0 2px;
+          letter-spacing: -0.01em; line-height: 1.4; }
+  /* The change that prompted this. Kept small and un-styled: it is the one
+     technical string on the card, and it is here so two cards about the same
+     week are still tellable apart. */
+  .because { color: var(--text-muted); font-size: 0.8125rem; margin: 0 0 12px;
+             word-break: break-word; }
+
+  /* "Where in your course" is the line an instructor actually navigates by,
+     so it is a labelled row, not a citation string. */
+  .where { display: flex; gap: 10px; align-items: baseline;
+           background: var(--page); border-radius: 8px;
+           padding: 11px 14px; margin-bottom: 14px; font-size: 0.9375rem; }
+  .where .lbl { color: var(--text-muted); font-size: 0.75rem;
+                text-transform: uppercase; letter-spacing: 0.05em;
+                white-space: nowrap; padding-top: 2px; }
+  .where .val { color: var(--text-primary); }
+  .where .val .sub { color: var(--text-secondary); display: block;
+                     font-size: 0.875rem; margin-top: 2px; }
+
+  .nowhere { color: var(--text-secondary); font-size: 0.9375rem;
+             background: var(--page); border-radius: 8px;
+             padding: 11px 14px; margin-bottom: 14px; }
+
+  /* The one thing this page must never soften. */
+  .couldnt {
+    border: 1px solid var(--critical); border-left-width: 4px;
+    border-radius: 0 10px 10px 0; background: var(--page);
+    padding: 14px 16px; margin-bottom: 14px; font-size: 0.9375rem;
+  }
+  .couldnt b { color: var(--critical); display: block; margin-bottom: 5px; }
+  .couldnt span { color: var(--text-secondary); }
+
+  .lead { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;
+          letter-spacing: 0.05em; font-weight: 640; margin: 16px 0 7px; }
+  .steps { margin: 0; padding-left: 20px; color: var(--text-secondary);
+           font-size: 0.9375rem; }
+  .steps li { margin-bottom: 7px; }
+  .steps li::marker { color: var(--text-muted); }
+
+  .trust { color: var(--text-secondary); font-size: 0.9375rem; margin: 0; }
+  .srcs { margin: 10px 0 0; padding-left: 20px; font-size: 0.875rem; }
+  .srcs li { margin-bottom: 6px; color: var(--text-secondary); word-break: break-word; }
+  .srcs a { color: var(--accent); }
+
+  .howsure { display: inline-block; font-size: 0.8125rem; border-radius: 999px;
+             padding: 2px 10px; border: 1px solid currentColor; margin-left: 8px;
+             vertical-align: 2px; }
+
+  .deeper { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px;
+            font-size: 0.875rem; color: var(--accent); text-decoration: none; }
+  .deeper:hover { text-decoration: underline; }
+
+  /* ---- the "no action" pile -------------------------------------------- */
+  .quiet { color: var(--text-secondary); font-size: 0.9375rem; }
+  .quiet li { margin-bottom: 8px; }
+
+  .none { color: var(--text-secondary); font-size: 0.9375rem; font-style: italic;
+          background: var(--surface-1); border: 1px solid var(--border);
+          border-radius: 10px; padding: 16px 18px; }
+
+  .foot-note { color: var(--text-muted); font-size: 0.8125rem; margin-top: 30px;
+               border-top: 1px solid var(--gridline); padding-top: 14px; }
+  .foot-note a { color: var(--accent); }
+
+  @media print {
+    .btn, .deeper, .topbar button { display: none; }
+    .item { break-inside: avoid; box-shadow: none; }
+    details { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar top">
+    <div class="grow">
+      <h1>Course update suggestions</h1>
+      <p class="said">Things that changed in the tools we teach, and what they might mean
+         for the course material.</p>
+    </div>
+    <button class="btn" id="theme" title="Switch between light and dark">◐</button>
+  </div>
+
+  <div class="promise">
+    <b>Nothing here has been changed for you.</b> These are suggestions from an
+    automated assistant that reads release notes and blog posts and compares them
+    against the course files. A person decides what actually happens.
+  </div>
+
+  <div id="error" hidden></div>
+  <main id="main" hidden></main>
+
+  <p class="foot-note" id="foot"></p>
+</div>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// Theme is shared with the other two pages so moving between them does not
+// flash a different mode. Guarded: localStorage throws in a private window.
+try {
+  const saved = localStorage.getItem("ata-theme");
+  if (saved) document.documentElement.dataset.theme = saved;
+} catch (_) {}
+
+$("theme").addEventListener("click", () => {
+  const now = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = now;
+  try { localStorage.setItem("ata-theme", now); } catch (_) {}
+});
+
+// ---------------------------------------------------------------------------
+// TRANSLATION LAYER
+//
+// Every string an instructor reads is decided here, in one place, so the
+// wording can be reviewed without reading the rendering code. The machine
+// tier name is never shown.
+// ---------------------------------------------------------------------------
+const SAYS = {
+  update_existing_material: {
+    // {place} is filled from the match, e.g. "Your Week 4 lab notebook".
+    withPlace: "{place} may be out of date",
+    noPlace:   "Something you teach may now be out of date",
+    group: "attention",
+  },
+  add_new_lesson: {
+    withPlace: "{place} may need a new section",
+    noPlace:   "This may deserve a lesson of its own",
+    group: "attention",
+  },
+  investigate_larger_change: {
+    withPlace: "{place} may need a wider review",
+    noPlace:   "This may affect more than one part of the course",
+    group: "attention",
+  },
+  add_optional_content: {
+    withPlace: "Optional material you could add to {place}",
+    noPlace:   "Optional extra material you could offer",
+    group: "optional",
+  },
+  watch: {
+    withPlace: "Worth knowing about — no change needed yet",
+    noPlace:   "Worth knowing about — no change needed yet",
+    group: "quiet",
+  },
+};
+
+// "Your Week 4 lab notebook" -- the phrase an instructor recognises as theirs.
+function placePhrase(m) {
+  if (!m) return null;
+  const kind = m.content_type === "lab" ? "lab notebook" : "slides";
+  return m.week != null ? `Your Week ${m.week} ${kind}` : `Your ${kind}`;
+}
+
+function howSure(c) {
+  if (typeof c !== "number") return null;
+  if (c >= 0.80) return ["var(--good)", "strong evidence"];
+  if (c >= 0.60) return ["var(--warning)", "reasonable evidence"];
+  return ["var(--critical)", "weak evidence — check before acting"];
+}
+
+// "Week 4 / Lab: Exercise Implement Tool Error Handling sol / cell 8" is a
+// citation. An instructor navigates by place and kind, so build it from the
+// parts instead of printing the machine-readable string.
+function whereLine(m) {
+  const week = m.week != null ? `Week ${m.week}` : "Uncategorised material";
+  const kind = m.content_type === "lab" ? "lab notebook" : "slide deck";
+  const spot = m.content_type === "lab"
+    ? `cell ${m.slide_number}`
+    : `slide ${m.slide_number}`;
+  return `<div class="where">
+    <span class="lbl">Where</span>
+    <span class="val"><b>${esc(week)}</b> &middot; ${esc(kind)} &middot; ${esc(spot)}
+      <span class="sub">${esc(m.topic || m.source_file || "")}</span></span>
+  </div>`;
+}
+
+// The three curriculum outcomes, in plain words. Two of them look identical
+// if you only read the conclusion, which is exactly the confusion that once
+// produced confident "no existing coverage" claims after no search had run.
+function coverage(r) {
+  const c = (r.trace || {}).curriculum || {};
+  if (r.match) return whereLine(r.match);
+
+  if (c.search_failed) {
+    return `<div class="couldnt">
+      <b>We could not check your course material for this one.</b>
+      <span>The check did not finish, so we do not know whether anything needs
+      updating. Please do not read this as &ldquo;nothing to change&rdquo; — nobody
+      has looked yet.</span>
+    </div>`;
+  }
+  if (c.searched === false) {
+    return `<div class="nowhere">We did not check the course material for this one,
+      because the finding was not strong enough to be worth checking.</div>`;
+  }
+  return `<div class="nowhere">We checked the course material and did not find
+    anything that this affects.</div>`;
+}
+
+function item(r) {
+  const say = SAYS[r.recommended_action] || SAYS.watch;
+  const place = placePhrase(r.match);
+  const headline = place
+    ? say.withPlace.replace("{place}", place)
+    : say.noPlace;
+  const sure = howSure(r.confidence);
+  const failed = ((r.trace || {}).curriculum || {}).search_failed === true;
+  const ev = (r.evidence || []).filter((e) => e && (e.source || e.url));
+
+  const sources = ev.length
+    ? `<ul class="srcs">${ev.map((e) => {
+        const href = e.url || e.source;
+        const looksLikeLink = /^https?:\/\//i.test(href || "");
+        return `<li>${looksLikeLink
+          ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(href)}</a>`
+          : esc(href)}${e.note ? `<br>${esc(e.note)}` : ""}</li>`;
+      }).join("")}</ul>`
+    : `<p class="trust" style="margin-top:8px">No sources were recorded.</p>`;
+
+  return `<article class="item${failed ? " attention" : ""}">
+    <p class="what">${esc(headline)}${
+      sure ? `<span class="howsure" style="color:${sure[0]}">${esc(sure[1])}</span>` : ""}</p>
+    <p class="because">Triggered by: ${esc(r.trend || "an update")}</p>
+
+    ${coverage(r)}
+
+    <p class="lead">What changed</p>
+    <p class="trust">${esc(r.verification_note || r.trend || "")}</p>
+
+    ${(r.action_plan || []).length ? `
+      <p class="lead">Suggested steps</p>
+      <ul class="steps">${r.action_plan.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>` : ""}
+
+    <details>
+      <summary>Where this came from (${ev.length} source${ev.length === 1 ? "" : "s"})</summary>
+      ${sources}
+    </details>
+
+    ${r.index !== undefined
+      ? `<a class="deeper" href="trace.html?i=${encodeURIComponent(r.index)}">See what the assistant checked →</a>`
+      : ""}
+  </article>`;
+}
+
+// A 'watch' item does not need a card each -- it needs to be findable if
+// someone asks "what else did it see?". One line apiece.
+function quietItem(r) {
+  return `<li>${esc(r.trend || "")}${
+    r.match ? ` <span style="color:var(--text-muted)">— relates to Week ${
+      esc(r.match.week)}</span>` : ""}</li>`;
+}
+
+function section(title, why, html) {
+  return `<section class="sec">
+    <h2 class="sec-head">${title}</h2>
+    <p class="sec-why">${why}</p>
+    ${html}
+  </section>`;
+}
+
+async function load() {
+  let recs, sum;
+  try {
+    const [a, b] = await Promise.all([fetch("/recommendations"), fetch("/summary")]);
+    if (!a.ok) throw new Error(`the server returned ${a.status} for the suggestions`);
+    if (!b.ok) throw new Error(`the server returned ${b.status} for the summary`);
+    recs = (await a.json()).recommendations || [];
+    sum = await b.json();
+  } catch (e) {
+    $("error").hidden = false;
+    $("error").className = "err";
+    $("error").innerHTML = `<h2>The suggestions could not be loaded.</h2>
+      <p style="margin:0;color:var(--text-secondary)">${esc(e.message)}.
+      If you are running this yourself, check that the server is started.</p>`;
+    return;
+  }
+
+  const of = (g) => recs.filter((r) => (SAYS[r.recommended_action] || SAYS.watch).group === g);
+  const attention = of("attention"), optional = of("optional"), quiet = of("quiet");
+
+  const when = sum.captured_at
+    ? new Date(sum.captured_at).toLocaleDateString(undefined,
+        { year: "numeric", month: "long", day: "numeric" })
+    : null;
+
+  // The chooser reports the API's `actionable` count, which is everything that
+  // is not 'watch' -- attention AND optional. Saying only the attention count
+  // here would read as a different number for the same run, one screen apart,
+  // so the optional remainder is named rather than quietly dropped.
+  const extra = optional.length
+    ? ` ${optional.length} more ${optional.length === 1 ? "is" : "are"} optional.`
+    : "";
+  let html = `<p class="headline">${
+    attention.length === 0
+      ? `Nothing needs your attention right now.${extra}`
+      : `${attention.length} thing${attention.length === 1 ? "" : "s"} may need your attention.${extra}`
+  }</p>
+  <p class="asof">Based on ${esc(sum.funnel ? sum.funnel.signals : "the")} updates
+     collected${when ? ` on ${esc(when)}` : ""}.</p>`;
+
+  html += section("Needs your attention",
+    "The course material may be teaching something that has since changed.",
+    attention.length ? attention.map(item).join("")
+                     : `<p class="none">Nothing in this group.</p>`);
+
+  if (optional.length) {
+    html += section("Optional additions",
+      "Not a correction — material you could add if you want to.",
+      optional.map(item).join(""));
+  }
+
+  if (quiet.length) {
+    html += section("Just keeping an eye on these",
+      `${quiet.length} update${quiet.length === 1 ? " was" : "s were"} logged that do
+       not affect the course material. No action needed.`,
+      `<details><summary>Show the list</summary>
+         <ul class="quiet">${quiet.map(quietItem).join("")}</ul>
+       </details>`);
+  }
+
+  $("main").innerHTML = html;
+  $("main").hidden = false;
+
+  $("foot").innerHTML = `This is a recorded run, not a live check &mdash;
+    it does not change on its own. <a href="advanced.html">Technical view</a>
+    for scores, sources and the agent's reasoning step by step, or
+    <a href="index.html">go back</a>.`;
+}
+
+load();
+</script>
+</body>
+</html>

@@ -98,6 +98,102 @@ python 02_src/clustering.py --signals 01_data/signals.json --check
 Clustering also accepts `--threshold`, `--strip-prefix`, `--no-identifiers`,
 `--max-freq`, `--frequencies`, `--min-shared`, and `--all`.
 
+## Dashboard and API
+
+One command serves both the dashboard and the JSON. Read-only, zero API calls:
+it reads a snapshot captured by `demo_snapshot.py --capture`.
+
+```powershell
+uvicorn app:app --reload
+```
+
+| URL | What |
+| --- | --- |
+| <http://127.0.0.1:8000/> | Chooser &mdash; pick a view (`ui/index.html`) |
+| <http://127.0.0.1:8000/ui/simple.html> | Plain-language view, for instructors |
+| <http://127.0.0.1:8000/ui/advanced.html> | Full dashboard, for the people who built it |
+| <http://127.0.0.1:8000/docs> | Interactive API docs |
+
+There are two views of the same run, because two audiences want different
+things from it. The front page asks which you are rather than guessing; both
+views are bookmarkable directly, and both read the same endpoints, so they
+cannot disagree.
+
+The **plain-language view** drops the scores, similarity values, tier machine
+names and tool logs, groups suggestions by what to do about them, and titles
+each one by the material it affects ("Your Week 4 lab notebook may be out of
+date"). It does *not* drop the failed-search warning &mdash; that is stated more
+plainly there than anywhere else, because an instructor is exactly the reader
+who would otherwise take it for "nothing to change".
+
+The dashboard shows the pipeline funnel, the action-tier breakdown, and a card
+per recommendation with its citation, plan, and evidence trail. It has a table
+view and a light/dark toggle, and it reads the same endpoints below, so the
+page and the API can never disagree.
+
+The tier and funnel scales are one blue hue stepped light-to-dark, because both
+are *ordered* scales rather than five unrelated categories. The steps and the
+label colours inside each filled segment were checked against both backgrounds
+rather than chosen by eye. Re-check them if you change a colour.
+
+The **Instructor companion** panel is present but not connected: it POSTs to
+`/chat`, which does not exist yet, and says so rather than pretending to answer.
+Adding that route to `app.py` is all it needs.
+
+### Agent traces
+
+Each card ends with its own **agent trace**, showing what the agents actually
+did: which sources verification checked, which curriculum searches ran with what
+filters, and what came back, in the order it happened. It sits in a collapsed
+section at the bottom of the card, so the dashboard still reads as conclusions
+until you ask for the reasoning.
+
+The warning for a failed search stays **above** that section, un-collapsed,
+because it must not require a click — and a failed search opens its own trace
+by default. `trace.html?i=<index>` remains as a full-width permalink for one
+trace, linked from the bottom of each block.
+
+A curriculum search has three outcomes, and the card distinguishes all three:
+
+| Outcome | Shown as |
+| --- | --- |
+| Searched, found a match | The citation |
+| Searched, found nothing | "no curriculum match" |
+| **Search failed** | A red rule and "this is NOT a finding of 'no match'" |
+| Never searched | "curriculum not searched" plus the reason |
+
+The failed case is called out because confusing it with a genuine no-match once
+produced confident `add_new_lesson` recommendations claiming no existing coverage
+when no search had run at all.
+
+Traces are captured by `demo_snapshot.py --capture`, so they appear only in
+snapshots taken after this feature. Older snapshots, including the committed one,
+render exactly as before with no trace section.
+
+| Route | Returns |
+| --- | --- |
+| `GET /health` | Service status and whether the snapshot was found |
+| `GET /summary` | Funnel counts and the tier breakdown |
+| `GET /run` | The full captured run |
+| `GET /recommendations` | Filtered list, plus `count` and `total` |
+| `GET /recommendations/{index}` | One recommendation |
+| `GET /tiers` | The five action tiers in display order |
+
+`/recommendations` accepts `tier`, `week`, `content_type` (`lab` or `slides`),
+`min_score`, `actionable` (drops `watch`), and `limit`. Filters combine with
+AND. Each item carries an `index` into the unfiltered snapshot, so
+`/recommendations/{index}` stays valid whatever the filter.
+
+Each recommendation is exactly `Recommendation.to_dict()` from
+`02_src/schemas.py`. The API does not redeclare that shape, so a schema change
+reaches the response without an edit here.
+
+Set `SNAPSHOT_PATH` to serve a different capture:
+
+```powershell
+$env:SNAPSHOT_PATH = "01_data/experiment.json"
+```
+
 ## Generated files
 
 `vectorstore/`, Python caches, virtual environments, logs, secrets, generated
