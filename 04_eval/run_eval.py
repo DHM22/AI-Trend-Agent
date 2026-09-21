@@ -137,10 +137,17 @@ def clustering_metrics(clusters, entries: list[dict[str, Any]]) -> dict[str, Any
     }, "score": mean(parts)}
 
 
-def verification_metrics(trends, entries):
-    truth = [(t.confidence, gold(e, "is_genuine")) for t, e in zip(trends, entries) if gold(e, "is_genuine") in (True, False)]
+def verification_metrics(clusters, trends, entries):
+    # Gold labels are per SIGNAL; the verifier runs per CLUSTER. Each signal is
+    # scored against the trend of the cluster that contains it, matched by
+    # title. (This used to zip(trends, entries) positionally: 11 clusters vs 12
+    # signals, so after the first merged cluster every trend was compared with
+    # the NEXT signal's label. All results before 2026-09-21 were misaligned.)
+    by_title = {s.title: t.confidence for c, t in zip(clusters, trends) for s in c.signals}
+    scored = [(by_title[e["title"]], e) for e in entries if e["title"] in by_title]
+    truth = [(conf, gold(e, "is_genuine")) for conf, e in scored if gold(e, "is_genuine") in (True, False)]
     genuine, fabricated = [c for c, label in truth if label], [c for c, label in truth if not label]
-    confidences = [(t.confidence, gold(e, "confidence")) for t, e in zip(trends, entries) if isinstance(gold(e, "confidence"), (int, float))]
+    confidences = [(conf, gold(e, "confidence")) for conf, e in scored if isinstance(gold(e, "confidence"), (int, float))]
     gap = mean(genuine) - mean(fabricated) if genuine and fabricated else None
     mae = mean([abs(c - float(target)) for c, target in confidences])
     # No VerifiedTrend field says whether an old claim was recognized as stale.
@@ -188,7 +195,7 @@ def score_repeat(signals, entries, model: str) -> tuple[dict[str, Any], int, set
         "off_by_one_tier_accuracy": metric(None, unavailable + " plus gold.action_tier and an agreed ordered-tier policy"),
         "over_recommendation_rate": metric(None, unavailable + " plus gold.action_tier and an agreed ordered-tier policy"),
     }, "score": None}
-    blocks = {"clustering": clustering_metrics(clusters, entries), "verification": verification_metrics(trends, entries),
+    blocks = {"clustering": clustering_metrics(clusters, entries), "verification": verification_metrics(clusters, trends, entries),
               "curriculum": curriculum, "evaluation": evaluation_block, "recommendation": recommendation_block}
     active = {name: block["score"] for name, block in blocks.items() if block["score"] is not None}
     composite = sum(WEIGHTS[n] * v for n, v in active.items()) / sum(WEIGHTS[n] for n in active) if active else None
