@@ -88,9 +88,25 @@ class TrendCluster:
 class Evidence:
     """One source consulted while verifying a claim. Powers the UI trail."""
     source: str
-    tier: SourceTier
+    # "tool" marks a verifier tool result (github_lookup / verify_release),
+    # which is evidence ABOUT sources, never a source itself. Widened here
+    # only -- RawSignal keeps the two-value SourceTier.
+    tier: SourceTier | Literal["tool"]
     url: str = ""
     note: str = ""           # what this source actually confirmed or failed to
+    kind: Literal["source", "tool"] = "source"
+    verified: bool = False   # a tool actually confirmed what this source names
+
+
+@dataclass
+class ReasoningStep:
+    """One step of the verifier's loop: the thought, the tool call (if any),
+    and what the RAW tool result showed. The audit trail, not the score."""
+    iteration: int
+    thought: str
+    observation: str
+    tool: str = ""
+    tool_args: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -100,6 +116,13 @@ class VerifiedTrend:
     verification_note: str
     evidence: list[Evidence] = field(default_factory=list)
     status: Literal["verified", "contradicted", "unverified", "needs_clarification"] = "unverified"
+    # Facts the deterministic scorer used (all defaulted, so older call sites
+    # and snapshots stay valid). Confidence is computed FROM these in code.
+    verified_source_count: int = 0
+    repo_exists: bool = False
+    claim_verified: bool = False
+    reasoning: list[ReasoningStep] = field(default_factory=list)
+    mode: str = ""           # which loop gathered the evidence (agentic / deterministic)
 
 
 # ---------------------------------------------------------------------------
