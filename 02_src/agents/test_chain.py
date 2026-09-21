@@ -597,6 +597,154 @@ def test_curriculum_cli_failure_message():
 
 
 # ===========================================================================
+# 10. VERIFICATION GATES AND PARSER (PR #1)
+# PR #1 shipped these without tests. Verification confidence is model-
+# reported, so these deterministic bounds are the only thing standing between
+# a wrong model number and the tier gates. Each gate is tested both ways: it
+# fires on the case it exists for, and stays silent on the near-miss -- a gate
+# that over-fires refuses genuine releases, which is worse than a miss.
+# call_tool is replaced for every test, so no tool reaches GitHub.
+# ===========================================================================
+
+REPO_URL = "https://github.com/openai/openai-python/releases/tag/v3.9.0"
+
+
+def _verif_cluster(title, summary=""):
+    return TrendCluster(title, [RawSignal(title, "github", "primary", summary, url=REPO_URL)])
+
+
+def _verdict(conf):
+    return _fake_reply('{"confidence": %s, "note": "checked", "evidence": []}' % conf)
+
+
+def _run_verifier(cluster, *script, tools=None):
+    import agents.verification as V
+    real = V.call_tool
+    V.call_tool = tools or (lambda name, args: {"error": "offline test"})
+    try:
+        return V.VerificationAgent(client=_ScriptedClient(*script)).run(cluster)
+    finally:
+        V.call_tool = real
+
+
+def _release_tools(newer_tag="v3.10.0", newer_prerelease=False, author="stainless-app"):
+    """verify_release fake: v3.9.0 on 2026-09-01, one newer release on 09-08."""
+    def call(name, args):
+        if name != "verify_release":
+            return {"error": "unexpected tool"}
+        if args.get("version"):
+            return {"release_found": True, "matched_release": {
+                "tag": "v3.9.0", "author": author, "published_at": "2026-09-01T00:00:00Z",
+                "url": REPO_URL}}
+        return {"releases": [
+            {"tag": newer_tag, "prerelease": newer_prerelease,
+             "published_at": "2026-09-08T00:00:00Z", "url": "https://example.invalid/new"},
+            {"tag": "v3.9.0", "prerelease": False, "published_at": "2026-09-01T00:00:00Z"}]}
+    return call
+
+
+def test_verification_parser_and_status():
+    from schemas import Recommendation
+
+    plain = _verif_cluster("openai/openai-python: v3.9.0")
+
+    # ---- V4: malformed replies become explicit "unverified" at 0.0 -------
+    wrapped = _run_verifier(plain, _fake_reply(
+        'Here is my verdict: {"confidence": 0.8, "note": "ok", "evidence": []} -- done'))
+    check("parser: single verdict wrapped in prose is recovered", wrapped.confidence, 0.8)
+
+    competing = _run_verifier(plain, _fake_reply(
+        '{"confidence": 0.9, "note": "a"} and then {"confidence": 0.2, "note": "b"}'))
+    check("parser: competing verdicts -> confidence 0.0", competing.confidence, 0.0,
+          "first-object-wins would silently pick a superseded draft")
+    check("parser: competing verdicts -> unverified", competing.status, "unverified")
+
+    for label, body in [("top-level list", "[0.9, 0.8]"),
+                        ("boolean confidence", '{"confidence": true}'),
+                        ("NaN confidence", '{"confidence": NaN}'),
+                        ("Infinity confidence", '{"confidence": Infinity}')]:
+        r = _run_verifier(plain, _fake_reply(body))
+        check(f"parser: {label} -> 0.0, never a usable band", r.confidence, 0.0)
+        check(f"parser: {label} -> unverified", r.status, "unverified")
+
+    # ---- V7: status follows the computed confidence ----------------------
+    check("status: 0.75 -> verified", _run_verifier(plain, _verdict(0.75)).status, "verified")
+    check("status: 0.5 -> unverified", _run_verifier(plain, _verdict(0.5)).status, "unverified")
+    fb = _run_verifier(plain, RuntimeError("429 spend limit"))
+    check("status: API-failure fallback is unverified", fb.status, "unverified",
+          "the fallback still scores from source tiers; status is the only marker")
+    check("status: dataclass default is unverified",
+          VerifiedTrend(cluster=plain, confidence=0.9, verification_note="").status, "unverified")
+
+    # status must not leak into the API contract the snapshot/UI read
+    rec = Recommendation(trend="t", confidence=0.9, verification_note="", evidence=[],
+                         recommended_action="watch", action_plan=[])
+    check("status: not part of Recommendation.to_dict()", "status" in rec.to_dict(), False)
+
+
+def test_verification_staleness_gate():
+    latest = _verif_cluster("openai/openai-python: v3.9.0 is the latest release as of 2026-09-15")
+
+    fired = _run_verifier(latest, _verdict(0.9), tools=_release_tools())
+    check("staleness: 'latest' claim + newer stable release -> contradicted",
+          fired.status, "contradicted")
+    check("staleness: contradicted claim scores 0.0", fired.confidence, 0.0)
+    check_true("staleness: note names the newer release", "v3.10.0" in fired.verification_note)
+
+    # near misses: every one must leave the model's verdict alone
+    existence = _verif_cluster("openai/openai-python: v3.9.0 released")
+    r = _run_verifier(existence, _verdict(0.9), tools=_release_tools())
+    check("staleness: plain existence claim is never refused for being old",
+          (r.status, r.confidence), ("verified", 0.9),
+          "a real release must not be contradicted because newer ones exist")
+
+    negated = _verif_cluster("openai/openai-python: v3.9.0 is not the latest release")
+    r = _run_verifier(negated, _verdict(0.9), tools=_release_tools())
+    check("staleness: negated 'not the latest' does not fire", r.status, "verified")
+
+    r = _run_verifier(latest, _verdict(0.9), tools=_release_tools(newer_tag="v3.10.0rc1"))
+    check("staleness: a newer PRE-release does not supersede", r.status, "verified")
+
+    r = _run_verifier(latest, _verdict(0.9), tools=_release_tools(newer_prerelease=True))
+    check("staleness: prerelease flag also respected", r.status, "verified")
+
+    r = _run_verifier(latest, _verdict(0.9))           # every tool call errors
+    check("staleness: tool error is a no-op, not a contradiction",
+          (r.status, r.confidence), ("verified", 0.9))
+
+
+def test_verification_publisher_gate():
+    lookup = types.SimpleNamespace(
+        id="call-1", function=types.SimpleNamespace(
+            name="verify_release",
+            arguments='{"repo": "openai/openai-python", "version": "v3.9.0"}'))
+
+    def run(title):
+        return _run_verifier(_verif_cluster(title),
+                             _fake_reply(tool_calls=[lookup]), _verdict(0.9),
+                             tools=_release_tools(author="stainless-app"))
+
+    wrong = run("openai/openai-python v3.9.0 published by octocat")
+    check("publisher: wrong claimed account -> contradicted", wrong.status, "contradicted")
+    check("publisher: contradicted claim scores 0.0", wrong.confidence, 0.0)
+    check_true("publisher: note names the real author",
+               "stainless-app" in wrong.verification_note)
+
+    right = run("openai/openai-python v3.9.0 published by stainless-app")
+    check("publisher: correct account -> untouched", (right.status, right.confidence),
+          ("verified", 0.9))
+
+    silent = run("openai/openai-python v3.9.0 released")
+    check("publisher: no account named -> gate does not fire", silent.status, "verified")
+
+    # the author is only known if the MODEL's own lookup returned it
+    no_lookup = _run_verifier(_verif_cluster("openai/openai-python v3.9.0 published by octocat"),
+                              _verdict(0.9), tools=_release_tools(author="stainless-app"))
+    check("publisher: no pinned lookup -> no contradiction", no_lookup.status, "verified",
+          "the gate must not fetch or guess a publisher on its own")
+
+
+# ===========================================================================
 
 TESTS = [
     ("verification scoring", test_verification_scoring),
@@ -610,6 +758,9 @@ TESTS = [
     ("trace backward compatibility", test_trace_backward_compatibility),
     ("curriculum search failure", test_curriculum_search_failure),
     ("curriculum CLI failure message", test_curriculum_cli_failure_message),
+    ("verification parser and status", test_verification_parser_and_status),
+    ("verification staleness gate", test_verification_staleness_gate),
+    ("verification publisher gate", test_verification_publisher_gate),
 ]
 
 
