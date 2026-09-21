@@ -82,10 +82,21 @@ def normalise(title: str, strip_prefix: bool = False) -> str:
 # matching missed, and merged nothing else. Same lesson as the FAISS case in
 # the curriculum RAG: rare technical tokens carry signal that fuzzy matching
 # destroys.
+#
+# A dotted identifier must be captured as its FULL path, not just its leading
+# segment. The GenAI spans expose attributes like "gen_ai.request.model" and
+# "gen_ai.usage.input_tokens"; splitting those into a bare "gen_ai" turns a
+# namespace ROOT into a matchable identifier, and a namespace is a topic, not
+# an event. A genuine signal describing gen_ai.* attributes and a fabricated
+# one merely name-dropping the gen_ai.* namespace then share "gen_ai" and
+# merge -- a claim collapsed into its topic. Keeping the whole path
+# ("gen_ai.request.model" != "gen_ai") requires the specific claim to match,
+# so the leading segment of the first pattern now allows underscores and the
+# dotted tail repeats to consume every segment.
 # ---------------------------------------------------------------------------
 
 IDENTIFIER = re.compile(
-    r"\b[a-z][a-z0-9]*\.[a-z_][a-z0-9_]*\b"      # langchain.mcp, openai.beta
+    r"\b[a-z][a-z0-9_]*(?:\.[a-z_][a-z0-9_]*)+\b"  # gen_ai.request.model, langchain.mcp
     r"|\b[a-z]+[-_][a-z]+(?:[-_][a-z]+)*\b"       # langchain-anthropic, create_agent
     r"|\b[A-Z][a-z]+(?:[A-Z][a-z]+)+\b"           # AgentExecutor, LangGraph
     r"|\b[A-Z]{3,}\b"                             # FAISS, GRPO
