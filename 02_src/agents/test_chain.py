@@ -860,6 +860,121 @@ def test_fallback_never_actionable():
 
 
 # ===========================================================================
+# 13. THE RESTORED DETERMINISTIC VERIFIER
+# Behaviours specific to restoring the team's verifier (agents/reference/):
+# an outage is "unchecked", never "fabricated"; the repo guard works through
+# the agent, not just as a helper; the prompt input carries what the model
+# needs; and the trace the snapshot stores is built from the real tool calls.
+# ===========================================================================
+
+LANGCHAIN_TITLE = "langchain-ai/langchain: langchain==1.4.0"
+
+
+def _lc_cluster():
+    return TrendCluster(LANGCHAIN_TITLE, [RawSignal(
+        LANGCHAIN_TITLE, "github", "primary", "",
+        url="https://github.com/langchain-ai/langchain/releases/tag/langchain%3D%3D1.4.0")])
+
+
+def _verifier(client, runner, **kw):
+    import agents.verification as V
+    return V.VerificationAgent(client=client, tool_runner=runner, **kw)
+
+
+def test_outage_is_unchecked_not_missing():
+    import agents.verification as V
+
+    down = lambda name, args: {"error": "network error: offline"}
+    none_found = lambda name, args: {"query": args.get("query"), "found": 0, "results": []}
+
+    # model unavailable AND every tool failing: nothing could be checked
+    t = _verifier(None, down).run(_lc_cluster())
+    check("outage: failed lookup is not 'repo missing'", t.repo_exists, False)
+    check_true("outage: scored as unchecked, not as fabricated (> missing-repo ceiling)",
+               t.confidence > V.MISSING_REPO_CEILING,
+               f"got {t.confidence}: an outage was read as 'repository not found'")
+    check_true("outage: note never claims the repository was not found",
+               "not found" not in t.verification_note)
+
+    # contrast: a lookup that ANSWERED with no such repo IS evidence
+    t = _verifier(None, none_found).run(_lc_cluster())
+    check_true("real 'no such repo' answer still caps at the missing-repo ceiling",
+               t.confidence <= V.MISSING_REPO_CEILING)
+
+
+def test_repo_guard_through_the_agent():
+    import agents.verification as V
+
+    markitdown_first = {"found": 2, "results": [
+        {"full_name": "microsoft/markitdown", "stars": 182060, "url": "u1"},
+        {"full_name": "langchain-ai/langchain", "stars": 145995, "url": "u2"}]}
+    markitdown_only = {"found": 1, "results": [
+        {"full_name": "microsoft/markitdown", "stars": 182060, "url": "u1"}]}
+    lookup_script = lambda: _ScriptedClient(
+        _fake_reply(tool_calls=[types.SimpleNamespace(id="c1", function=types.SimpleNamespace(
+            name="github_lookup", arguments='{"query": "langchain-ai/langchain"}'))]),
+        _fake_reply("done"))
+
+    t = _verifier(lookup_script(), lambda n, a: markitdown_first).run(_lc_cluster())
+    check("repo guard: the named repo is found even when a bigger one ranks first",
+          (t.repo_exists, t.verified_source_count), (True, 1))
+
+    t = _verifier(lookup_script(), lambda n, a: markitdown_only).run(_lc_cluster())
+    check("repo guard: an unrelated top result never confirms the claim",
+          (t.repo_exists, t.verified_source_count), (False, 0),
+          "the markitdown bug: results[0] 'confirmed' any claim sharing a token")
+    check_true("repo guard: unmatched lookup caps at the missing-repo ceiling",
+               t.confidence <= V.MISSING_REPO_CEILING)
+    check("repo guard: no source is marked verified",
+          any(e.verified for e in t.evidence), False)
+
+
+def test_describe_carries_url_and_version():
+    import agents.verification as V
+    text = V._describe(_lc_cluster())
+    check_true("describe: repo title verbatim (what _repo_matches compares)",
+               LANGCHAIN_TITLE in text)
+    check_true("describe: signal URL included", "url: https://github.com/langchain-ai" in text)
+    check_true("describe: claimed version called out", "claimed version: 1.4.0" in text)
+    check_true("describe: source and tier shown", "[github / primary]" in text)
+    check("describe: carries no score", "confidence" in text.lower(), False,
+          "the model must never be handed a number to anchor on")
+
+
+def test_trace_built_from_reasoning():
+    import agents.verification as V
+
+    runner = lambda n, a: ({"found": 1, "results": [{"full_name": "langchain-ai/langchain"}]}
+                           if n == "github_lookup" else {"error": "offline"})
+    trace = V.VerificationTrace()
+    t = _verifier(None, runner).run(_lc_cluster(), trace)   # deterministic loop
+    tool_steps = [r for r in t.reasoning if r.tool]
+    check("trace: one Step per tool call in the reasoning", len(trace.steps), len(tool_steps))
+    check("trace: steps keep tool name and arguments",
+          [(s.tool, s.arguments) for s in trace.steps],
+          [(r.tool, r.tool_args) for r in tool_steps])
+    check("trace: step numbers are the reasoning iterations",
+          [s.n for s in trace.steps], [r.iteration for r in tool_steps])
+    check("trace: a loop that finished normally is not 'stopped early'",
+          trace.stopped_early, False)
+
+    import demo_snapshot as D
+    import json
+    d = D.verification_trace_dict(trace)
+    json.dumps(d)
+    check("trace: serialises through demo_snapshot for the UI", len(d["steps"]), len(tool_steps))
+
+    # a model that never stops gets cut off -- and the trace says so
+    loop = _ScriptedClient(*[_fake_reply(tool_calls=[types.SimpleNamespace(
+        id=f"c{i}", function=types.SimpleNamespace(
+            name="github_lookup", arguments='{"query": "langchain-ai/langchain"}'))])
+        for i in range(2)])
+    trace = V.VerificationTrace()
+    _verifier(loop, runner, max_tool_rounds=2).run(_lc_cluster(), trace)
+    check("trace: hitting max_tool_rounds sets stopped_early", trace.stopped_early, True)
+
+
+# ===========================================================================
 
 TESTS = [
     ("verification scoring", test_verification_scoring),
@@ -878,6 +993,10 @@ TESTS = [
     ("verification publisher gate", test_verification_publisher_gate),
     ("capture: failed search end to end", test_capture_failed_search_end_to_end),
     ("fallback never actionable", test_fallback_never_actionable),
+    ("verifier: outage is unchecked", test_outage_is_unchecked_not_missing),
+    ("verifier: repo guard through the agent", test_repo_guard_through_the_agent),
+    ("verifier: _describe input", test_describe_carries_url_and_version),
+    ("verifier: trace from reasoning", test_trace_built_from_reasoning),
 ]
 
 
