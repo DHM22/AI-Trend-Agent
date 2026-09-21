@@ -144,8 +144,13 @@ demo_ui.py                             Older Streamlit dashboard over the same s
                                         shows 41 clusters but 15 evaluated. The committed snapshot predates trace
                                         capture: it has NO "trace" keys, so failed searches can't be shown until re-captured
 02_src/agents/tools.py                 Tool implementations: github_lookup, search_curriculum, verify_release
-02_src/agents/verification.py          Deterministic _score() from Facts (verified_source_count, repo_exists,
-                                        claim_verified) — NOT model-reported confidence (that saturates/is unreliable)
+02_src/agents/verification.py          Confidence is MODEL-REPORTED (clamped) — there is NO deterministic _score() or
+                                        _repo_matches() (never existed in git history). Deterministic code bounds it:
+                                        injection cap (<=0.1), staleness + publisher gates (-> 0.0, "contradicted"),
+                                        malformed reply -> "unverified" 0.0. Sets VerifiedTrend.status (unread so far).
+                                        API-failure _fallback still scores up to 0.8 from source tiers alone — the
+                                        verification analogue of the curriculum silent-failure bug, not yet fixed
+02_src/tests/test_verification.py      Teammate's 19 offline VerificationAgent tests (plain script: run it directly)
 02_src/agents/curriculum.py            RAG search agent; has search_failed flag + curriculum_checked() tri-state
 02_src/agents/evaluation.py            Deterministic _maturity_score / _relevance_score; model only writes rationale
 02_src/agents/recommendation.py        Orchestrator; tier-selection gates (see Key Decisions)
@@ -172,9 +177,11 @@ promptfooconfig.yaml (12 behavioral cases) is not in the tree; never run (see Kn
   merges. Two-pass (rare identifier match, then `threshold=0.75` title similarity, `MAX_DOC_FREQUENCY=0.08`) fixed
   it on real data. Watch out: maintainer handles (`@tiangolo`, `langchain-ai`) behave like identifiers and can
   cause false merges at MAX_DOC_FREQUENCY's ceiling — add them to STOP_IDENTIFIERS as found.
-- **Deterministic scoring over model-reported confidence**, in both verification and evaluation agents. The model
-  writes rationale text; Python computes the actual score from structured facts. This was the team's approach
-  (adopted over an earlier Claude-authored version where the model reported confidence directly and saturated).
+- **Deterministic scoring over model-reported confidence — in the EVALUATION agent.** The model writes rationale
+  text; Python computes maturity/relevance from structured facts. Verification does NOT follow this: its
+  confidence is model-reported, bounded by deterministic gates (see verification.py above). An earlier note here
+  claimed a deterministic verification `_score()`; it does not exist, and the test_chain sections written for it
+  report SKIPPED, not passed.
 - **In-domain gate checks the signal TITLE only, not the summary.** Deliberate: vendor names in summaries (e.g.
   "OpenAI, Anthropic...") leak into `add_new_lesson` if the summary is checked too.
 - **`content_type` distinguishes notebook cells from slide pages** — a broken lab cell is more urgent than an
