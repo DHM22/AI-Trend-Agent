@@ -1,0 +1,786 @@
+[
+  {
+    "title": "openai/openai-python: v3.14.0",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "## [3.14.0](https://github.com/openai/openai-python/compare/v3.13.0...v3.14.0) (2026-09-14) ### Features * **streaming:** normalize errors raised while reading streams ([#3827](https://github.com/openai/openai-python/issues/3827)) ([d7c41ef](https://github.com/openai/openai-python/commit/d7c41efee1b0802b79f3f88a678ef2052b06e9ce)) ### Bug Fixes * bound vector store file polling ([#3401](https://github.com/openai/openai-python/issues/3401)) ([ae41bc4](https://github.com/openai/openai-python/commit/ae41bc46cdd53d17e948ac8a73e16bdbf34123a1)) * **example:** refresh realtime push_to_talk_app session...",
+    "url": "https://github.com/openai/openai-python/releases/tag/v3.14.0",
+    "published": "2026-09-14T23:28:28Z"
+  },
+  {
+    "title": "langchain-ai/langchain: langchain-core==1.6.3",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "Changes since langchain-core==1.6.2 release(core): 1.6.3 (#40407) feat(core): Allow model name and provider tracing metadata override based on gateway response (#40406) test(core): cover the deprecated `.text()` access path (#40243) docs(core): remove stale Args/Raises entries from FileCallbackHandler._write and ChatGeneration.set_text (#40211)",
+    "url": "https://github.com/langchain-ai/langchain/releases/tag/langchain-core%3D%3D1.6.3",
+    "published": "2026-09-11T17:38:02Z"
+  },
+  {
+    "title": "openai/openai-python: v3.13.0",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "## [3.13.0](https://github.com/openai/openai-python/compare/v3.12.0...v3.13.0) (2026-09-10) ### Features * **api:** add Agents API ([1c4284a](https://github.com/openai/openai-python/commit/1c4284a08294f734d57047585ab82e2e09d3a5bc))",
+    "url": "https://github.com/openai/openai-python/releases/tag/v3.13.0",
+    "published": "2026-09-10T19:37:39Z"
+  },
+  {
+    "title": "langchain-ai/langchain: langchain-anthropic==1.7.2",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "Changes since langchain-anthropic==1.7.1 release(anthropic): 1.7.2 (#40387) fix(anthropic): preserve invalid tool use blocks (#40372)",
+    "url": "https://github.com/langchain-ai/langchain/releases/tag/langchain-anthropic%3D%3D1.7.2",
+    "published": "2026-09-10T19:13:10Z"
+  },
+  {
+    "title": "openai/openai-python: v3.12.0",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "## [3.12.0](https://github.com/openai/openai-python/compare/v3.11.0...v3.12.0) (2026-09-10) ### Features * **api:** Add Live API ([0e4bfef](https://github.com/openai/openai-python/commit/0e4bfef9c79251fcf4926fd732129627bde050f1)) ### Bug Fixes * add aclose() to AsyncStream for standard async cleanup ([#2854](https://github.com/openai/openai-python/issues/2854)) ([802b334](https://github.com/openai/openai-python/commit/802b334928d8f0c3e24e5fce15a0eaa1b28c61cd)) * handle bare `dict` and `list` annotations without type arguments ([#3760](https://github.com/openai/openai-python/issues/3760)) ([c7e...",
+    "url": "https://github.com/openai/openai-python/releases/tag/v3.12.0",
+    "published": "2026-09-10T17:28:42Z"
+  },
+  {
+    "title": "langchain-ai/langchain: langchain-openai==1.6.2",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "Changes since langchain-openai==1.6.1 release(openai): 1.6.2 (#40339) fix(openai): add GPT-6 Astra reasoning efforts (#40330) chore(deps): bump httpx2 from 2.10.0 to 2.12.0 in /libs/partners/openai (#40309)",
+    "url": "https://github.com/langchain-ai/langchain/releases/tag/langchain-openai%3D%3D1.6.2",
+    "published": "2026-09-09T21:22:00Z"
+  },
+  {
+    "title": "openai/openai-python: v3.11.0",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "## [3.11.0](https://github.com/openai/openai-python/compare/v3.10.0...v3.11.0) (2026-09-09) ### Features * **api:** Add expiration controls for service account keys ([#3825](https://github.com/openai/openai-python/issues/3825)) ([f348ec8](https://github.com/openai/openai-python/commit/f348ec87b934c98889102668913e0a3ae7fc303d))",
+    "url": "https://github.com/openai/openai-python/releases/tag/v3.11.0",
+    "published": "2026-09-09T15:31:33Z"
+  },
+  {
+    "title": "openai/openai-python: v3.10.0",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "## [3.10.0](https://github.com/openai/openai-python/compare/v3.9.0...v3.10.0) (2026-09-08) ### Features * **api:** add GPT Image 2.5 models and image options ([#3824](https://github.com/openai/openai-python/issues/3824)) ([5b39c45](https://github.com/openai/openai-python/commit/5b39c453ee5ee8f46fba0bd9cb4ae47fa5ee6d51)) * **api:** add service-account API key expiration fields ([#3802](https://github.com/openai/openai-python/issues/3802)) ([f1cd7f0](https://github.com/openai/openai-python/commit/f1cd7f020210ec3fc71699fc46d90320ddbb411c))",
+    "url": "https://github.com/openai/openai-python/releases/tag/v3.10.0",
+    "published": "2026-09-09T00:17:39Z"
+  },
+  {
+    "title": "openai/openai-python: v3.9.0",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "## [3.9.0](https://github.com/openai/openai-python/compare/v3.8.0...v3.9.0) (2026-09-05) ### Features * **api:** Add prompt cache diagnostics ([#3800](https://github.com/openai/openai-python/issues/3800)) ([8326784](https://github.com/openai/openai-python/commit/83267847a0219ea8b584c9d60f92c7a4dffd392a)) * **api:** correct function argument completion event fields (openapi-545) ([#3801](https://github.com/openai/openai-python/issues/3801)) ([2a98f6a](https://github.com/openai/openai-python/commit/2a98f6a1dee448c6410531c89c2de0af4383c6a7)) ### Bug Fixes * **api:** accept incomplete web search c...",
+    "url": "https://github.com/openai/openai-python/releases/tag/v3.9.0",
+    "published": "2026-09-08T16:42:27Z"
+  },
+  {
+    "title": "langchain-ai/langchain: langchain-openai==1.6.1",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "Changes since langchain-openai==1.6.0 fix(openai): bump `max_completion_tokens` in cache breakpoint integration test (#40284) release(openai): 1.6.1 (#40268) chore(model-profiles): refresh model profile data (#40217) fix(openai): support Azure AD auth with OpenAI 3.8 (#40190) feat(openai): support async tools (#40208) feat(openai): support `configuration_update` (#40201) chore(model-profiles): refresh model profile data (#40171) fix(openai): route `gpt-5.6-sol` to responses API (#40133) chore(openai): fix tests (#39972) fix(openai): correct `reasoning_effort_levels` for gpt-5 and gpt-5.1 profi...",
+    "url": "https://github.com/langchain-ai/langchain/releases/tag/langchain-openai%3D%3D1.6.1",
+    "published": "2026-09-08T14:20:40Z"
+  },
+  {
+    "title": "langchain-ai/langchain: langchain-core==1.6.2",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "Changes since langchain-core==1.6.1 release(core): 1.6.2 (#40209) feat(openai): support async tools (#40208) chore(deps): bump mistune from 3.3.0 to 3.3.3 in /libs/core (#40150) chore(deps): bump tornado from 6.5.7 to 6.5.8 in /libs/core (#40113) fix(core): avoid mutation in google-genai standard content (#40023) fix(core): avoid mutation in bedrock converse standard content (#40022)",
+    "url": "https://github.com/langchain-ai/langchain/releases/tag/langchain-core%3D%3D1.6.2",
+    "published": "2026-09-04T21:29:42Z"
+  },
+  {
+    "title": "openai/openai-python: v3.8.0",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "## [3.8.0](https://github.com/openai/openai-python/compare/v3.7.0...v3.8.0) (2026-09-03) ### Features * **api:** add gpt-6-astra and related features ([#3791](https://github.com/openai/openai-python/issues/3791)) ([09f446f](https://github.com/openai/openai-python/commit/09f446f5f8623d79464568dc91b9dc258e74bcae)) ### Documentation * add canonical SDK security model ([#3778](https://github.com/openai/openai-python/issues/3778)) ([2a097b9](https://github.com/openai/openai-python/commit/2a097b991bb23a26bde9da8ea286f850ac1329f1))",
+    "url": "https://github.com/openai/openai-python/releases/tag/v3.8.0",
+    "published": "2026-09-03T19:50:24Z"
+  },
+  {
+    "title": "langchain-ai/langchain: langchain==1.4.0",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "Changes since langchain==1.3.18 docs(langchain): runnable `langchain.mcp` examples (#39976) feat(langchain): `langchain.mcp` namespace, `MCPAdapter` (#39939) perf(anthropic,langchain): omit middleware trace inputs (#40098) fix(langchain): include model destination in agent tool routing (#38355) chore(langchain): bump vcrpy test dependency minimum to `>=8.2.0` (#39942)",
+    "url": "https://github.com/langchain-ai/langchain/releases/tag/langchain%3D%3D1.4.0",
+    "published": "2026-09-03T16:59:53Z"
+  },
+  {
+    "title": "langchain-ai/langchain: langchain-anthropic==1.7.1",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "Changes since langchain-anthropic==1.7.0 release(anthropic): 1.7.1 (#40181) perf(anthropic,langchain): omit middleware trace inputs (#40098) feat(anthropic): add Claude Fable 5.1 support (#40106)",
+    "url": "https://github.com/langchain-ai/langchain/releases/tag/langchain-anthropic%3D%3D1.7.1",
+    "published": "2026-09-03T15:42:00Z"
+  },
+  {
+    "title": "openai/openai-python: v3.7.0",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "## [3.7.0](https://github.com/openai/openai-python/compare/v3.6.0...v3.7.0) (2026-09-02) ### Features * **api:** update usage APIs and documentation ([#3779](https://github.com/openai/openai-python/issues/3779)) ([6f0da16](https://github.com/openai/openai-python/commit/6f0da16573086401a7b171f4bd14a78f22c9d0e9)) ### Bug Fixes * avoid repeated numpy checks for embeddings ([#3757](https://github.com/openai/openai-python/issues/3757)) ([b19c216](https://github.com/openai/openai-python/commit/b19c2161b1eac80fbf1f6f67a64a50af99c53356))",
+    "url": "https://github.com/openai/openai-python/releases/tag/v3.7.0",
+    "published": "2026-09-02T01:30:12Z"
+  },
+  {
+    "title": "openai/openai-python: v3.6.0",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "## [3.6.0](https://github.com/openai/openai-python/compare/v3.5.0...v3.6.0) (2026-08-27) ### Features * **api:** add compute_units to Responses and Chat Completions usage ([#3749](https://github.com/openai/openai-python/issues/3749)) ([52421d1](https://github.com/openai/openai-python/commit/52421d197e96b4480fcc16e78345578996452c79)) ### Bug Fixes * **auth:** harden X.509 workload identity integration ([#3740](https://github.com/openai/openai-python/issues/3740)) ([fc3ad6c](https://github.com/openai/openai-python/commit/fc3ad6c55a1a250e16707396e86d7373f690a0fc)) ### Chores * **deps-dev:** bump ...",
+    "url": "https://github.com/openai/openai-python/releases/tag/v3.6.0",
+    "published": "2026-08-28T22:28:31Z"
+  },
+  {
+    "title": "openai/openai-python: v3.5.0",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "## [3.5.0](https://github.com/openai/openai-python/compare/v3.4.0...v3.5.0) (2026-08-27) ### Features * **api:** make function call output call IDs optional ([#3738](https://github.com/openai/openai-python/issues/3738)) ([c74501d](https://github.com/openai/openai-python/commit/c74501d7dc6946633fead7883ad02d8a188cf605))",
+    "url": "https://github.com/openai/openai-python/releases/tag/v3.5.0",
+    "published": "2026-08-27T01:00:03Z"
+  },
+  {
+    "title": "fastapi/fastapi: 0.141.1",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "### Fixes * \ud83d\udc1b Fix support for background tasks and headers from dependencies in `app.frontend()`. PR [#16105](https://github.com/fastapi/fastapi/pull/16105) by [@tiangolo](https://github.com/tiangolo). ### Docs * \ud83d\udcdd Document `FASTAPI_ENV` in FastAPI CLI guide. PR [#16104](https://github.com/fastapi/fastapi/pull/16104) by [@tiangolo](https://github.com/tiangolo).",
+    "url": "https://github.com/fastapi/fastapi/releases/tag/0.141.1",
+    "published": "2026-07-29T17:17:26Z"
+  },
+  {
+    "title": "fastapi/fastapi: 0.141.0",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "### Features * \u2728 Add `app.frontend(check_dir=\"auto\")`, to make local development more convenient with `fastapi dev`. PR [#16102](https://github.com/fastapi/fastapi/pull/16102) by [@tiangolo](https://github.com/tiangolo).",
+    "url": "https://github.com/fastapi/fastapi/releases/tag/0.141.0",
+    "published": "2026-07-29T14:47:36Z"
+  },
+  {
+    "title": "fastapi/fastapi: 0.140.13",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "### Fixes * \ud83d\udc1b Fix `status_code` being ignored for SSE and JSONL streaming endpoints. PR [#15937](https://github.com/fastapi/fastapi/pull/15937) by [@SAURABHSALVE](https://github.com/SAURABHSALVE). ### Docs * \ud83d\udcdd Fix `format_sse_event` docstring rendering of `\\n\\n` terminator. PR [#15613](https://github.com/fastapi/fastapi/pull/15613) by [@AshNicolus](https://github.com/AshNicolus). * \ud83d\udcdd Add API reference page for fastapi.sse. PR [#15930](https://github.com/fastapi/fastapi/pull/15930) by [@SAURABHSALVE](https://github.com/SAURABHSALVE).",
+    "url": "https://github.com/fastapi/fastapi/releases/tag/0.140.13",
+    "published": "2026-07-28T15:36:47Z"
+  },
+  {
+    "title": "fastapi/fastapi: 0.140.12",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "### Fixes * \ud83d\udc1b Fix line splitting in `format_sse_event` to comply with SSE spec. PR [#15515](https://github.com/fastapi/fastapi/pull/15515) by [@Zawwarsami16](https://github.com/Zawwarsami16).",
+    "url": "https://github.com/fastapi/fastapi/releases/tag/0.140.12",
+    "published": "2026-07-28T15:04:48Z"
+  },
+  {
+    "title": "fastapi/fastapi: 0.140.11",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "### Fixes * \ud83d\udc1b Fix `response_model_*` params ignored for non-generator endpoints with `Iterable[..]` return type. PR [#15093](https://github.com/fastapi/fastapi/pull/15093) by [@YuriiMotov](https://github.com/YuriiMotov).",
+    "url": "https://github.com/fastapi/fastapi/releases/tag/0.140.11",
+    "published": "2026-07-28T14:33:49Z"
+  },
+  {
+    "title": "fastapi/fastapi: 0.140.10",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "### Fixes * \ud83d\udc1b Fix handling sequences with nested Annotated types. PR [#14874](https://github.com/fastapi/fastapi/pull/14874) by [@YuriiMotov](https://github.com/YuriiMotov). ### Internal * \ud83d\udc1b Accept any base test failure as regression. PR [#16092](https://github.com/fastapi/fastapi/pull/16092) by [@tiangolo](https://github.com/tiangolo). * \ud83d\udc1b Preserve pytest exit code in regression check. PR [#16091](https://github.com/fastapi/fastapi/pull/16091) by [@tiangolo](https://github.com/tiangolo). * \u2705 Test PR regressions against base code. PR [#16090](https://github.com/fastapi/fastapi/pull/16090) by [...",
+    "url": "https://github.com/fastapi/fastapi/releases/tag/0.140.10",
+    "published": "2026-07-28T14:21:00Z"
+  },
+  {
+    "title": "fastapi/fastapi: 0.140.9",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "### Fixes * \ud83d\udc1b Fix `exclude_defaults` not propagated to dict keys and values in `jsonable_encoder`. PR [#16043](https://github.com/fastapi/fastapi/pull/16043) by [@MBGrao](https://github.com/MBGrao). ### Internal * \u2b06 Bump gitpython from 3.1.50 to 3.1.54. PR [#16047](https://github.com/fastapi/fastapi/pull/16047) by [@dependabot[bot]](https://github.com/apps/dependabot). * \u2b06 Bump pymdown-extensions from 10.21.3 to 11.0. PR [#16048](https://github.com/fastapi/fastapi/pull/16048) by [@dependabot[bot]](https://github.com/apps/dependabot). * \u2b06 Bump pyasn1 from 0.6.3 to 0.6.4. PR [#16045](https://git...",
+    "url": "https://github.com/fastapi/fastapi/releases/tag/0.140.9",
+    "published": "2026-07-28T12:38:03Z"
+  },
+  {
+    "title": "fastapi/fastapi: 0.140.8",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "### Fixes * \ud83d\udc1b Fix stream item type lost when using `include_router()`. PR [#15077](https://github.com/fastapi/fastapi/pull/15077) by [@alex-raw](https://github.com/alex-raw).",
+    "url": "https://github.com/fastapi/fastapi/releases/tag/0.140.8",
+    "published": "2026-07-28T10:31:04Z"
+  },
+  {
+    "title": "fastapi/fastapi: 0.140.7",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "### Refactors * \u26a1\ufe0f Avoid flattening dependencies for OpenAPI. PR [#16076](https://github.com/fastapi/fastapi/pull/16076) by [@tiangolo](https://github.com/tiangolo). ### Internal * \u2b06\ufe0f Upgrade latest-changes to 0.7.1. PR [#16077](https://github.com/fastapi/fastapi/pull/16077) by [@tiangolo](https://github.com/tiangolo). * \ud83d\udc77 Add OpenAPI dependency benchmarks. PR [#16075](https://github.com/fastapi/fastapi/pull/16075) by [@tiangolo](https://github.com/tiangolo).",
+    "url": "https://github.com/fastapi/fastapi/releases/tag/0.140.7",
+    "published": "2026-07-27T17:33:02Z"
+  },
+  {
+    "title": "fastapi/fastapi: 0.140.6",
+    "source": "github",
+    "source_tier": "primary",
+    "summary": "### Refactors * \u26a1\ufe0f Avoid flattening dependencies for request parameters, mainly for OpenAPI. PR [#16073](https://github.com/fastapi/fastapi/pull/16073) by [@tiangolo](https://github.com/tiangolo).",
+    "url": "https://github.com/fastapi/fastapi/releases/tag/0.140.6",
+    "published": "2026-07-27T16:31:22Z"
+  },
+  {
+    "title": "Botcafe: Two AI agents share a curl board so they can talk",
+    "source": "hackernews_agents",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://botcafe.dev/ Comments URL: https://news.ycombinator.com/item?id=49710086 Points: 1 # Comments: 0",
+    "url": "https://botcafe.dev/",
+    "published": "2026-09-15T06:56:56+00:00"
+  },
+  {
+    "title": "Scaling Agents in Europe & The Middle East: Lessons from Schneider Electric, Vodafone, and monday.com",
+    "source": "langchain_blog",
+    "source_tier": "primary",
+    "summary": "A guide on scaling agents in Europe & the Middle East to see how Schneider Electric, Vodafone, and monday.com are approaching production AI at scale, from establishing shared agent platforms and LLMOps practices to designing multi-agent architectures with stronger observability, evaluation, and control.",
+    "url": "https://www.langchain.com/blog/scaling-agents-in-europe-the-middle-east-lessons-from-schneider-electric-vodafone-and-monday-com",
+    "published": "2026-09-15T01:52:58+00:00"
+  },
+  {
+    "title": "Open-source Python framework for AI agents, workflows, and automations",
+    "source": "hackernews_agents",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://github.com/BindBrain/BindAI Comments URL: https://news.ycombinator.com/item?id=49705864 Points: 2 # Comments: 0",
+    "url": "https://github.com/BindBrain/BindAI",
+    "published": "2026-09-14T20:51:55+00:00"
+  },
+  {
+    "title": "Show HN: An open-source control plane for your company's AI agents",
+    "source": "hackernews_agents",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://github.com/vstorm-co/agenticos Comments URL: https://news.ycombinator.com/item?id=49705577 Points: 3 # Comments: 0",
+    "url": "https://github.com/vstorm-co/agenticos",
+    "published": "2026-09-14T20:16:39+00:00"
+  },
+  {
+    "title": "AWS Open-Sources Pizza Bot, an Inbox for Background AI Agents",
+    "source": "hackernews_agents",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://techstrong.ai/articles/aws-open-sources-pizza-bot-an-inbox-for-background-ai-agents/ Comments URL: https://news.ycombinator.com/item?id=49705380 Points: 2 # Comments: 1",
+    "url": "https://techstrong.ai/articles/aws-open-sources-pizza-bot-an-inbox-for-background-ai-agents/",
+    "published": "2026-09-14T19:55:36+00:00"
+  },
+  {
+    "title": "A zero-dependency Python loop detector for AI agents",
+    "source": "hackernews_agents",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://github.com/data-gras/savi-loop-guard Comments URL: https://news.ycombinator.com/item?id=49704711 Points: 1 # Comments: 0",
+    "url": "https://github.com/data-gras/savi-loop-guard",
+    "published": "2026-09-14T18:54:39+00:00"
+  },
+  {
+    "title": "How We Built LangChain\u2019s Paid Media Agent",
+    "source": "langchain_blog",
+    "source_tier": "primary",
+    "summary": "How LangChain built a paid media agent to analyze campaign performance, optimize ads, propose changes, and turn marketing data into action.",
+    "url": "https://www.langchain.com/blog/paid-media-agent",
+    "published": "2026-09-14T16:42:20+00:00"
+  },
+  {
+    "title": "How We Built LangChain's Paid Media Agent",
+    "source": "hackernews_langchain",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://www.langchain.com/blog/paid-media-agent Comments URL: https://news.ycombinator.com/item?id=49702684 Points: 1 # Comments: 0",
+    "url": "https://www.langchain.com/blog/paid-media-agent",
+    "published": "2026-09-14T16:35:56+00:00"
+  },
+  {
+    "title": "Can AI agents conduct open-ended AI research?",
+    "source": "hackernews_agents",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://arxiv.org/abs/2607.27191 Comments URL: https://news.ycombinator.com/item?id=49700395 Points: 3 # Comments: 0",
+    "url": "https://arxiv.org/abs/2607.27191",
+    "published": "2026-09-14T14:10:50+00:00"
+  },
+  {
+    "title": "AI agents blew the whistle on their cheating colleagues",
+    "source": "hackernews_agents",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://www.technologyreview.com/2026/09/14/1144037/ai-agents-blew-whistle-o-cheating-colleagues/ Comments URL: https://news.ycombinator.com/item?id=49700236 Points: 7 # Comments: 1",
+    "url": "https://www.technologyreview.com/2026/09/14/1144037/ai-agents-blew-whistle-o-cheating-colleagues/",
+    "published": "2026-09-14T14:01:39+00:00"
+  },
+  {
+    "title": "Show HN: AgentDrive \u2013 persistent, versioned file storage for AI agents",
+    "source": "hackernews_agents",
+    "source_tier": "secondary",
+    "summary": "We\u2019re opening the private beta for AgentDrive, a persistent file/workspace layer for AI agents. AgentDrive gives agents: - Versioned artifacts and folders - Hosted MCP access for coding agents - Direct upload sessions for larger files - Share links and controlled public publishing - Workspace-scoped authorization and auditability - Many supported file formats such as MD, HTML, JSON, images, videos, and even spreadsheets The MCP surface is intentionally narrow and reviewed rather than exposing the entire storage API. It\u2019s a private beta, so some features are deliberately out of scope for now. S...",
+    "url": "https://tokencanopy.com/products/agentdrive",
+    "published": "2026-09-14T13:09:02+00:00"
+  },
+  {
+    "title": "Show HN: Botbin \u2013 A zero-login HTML pastebin for AI agents",
+    "source": "hackernews_agents",
+    "source_tier": "secondary",
+    "summary": "Article URL: http://botbin.io/ Comments URL: https://news.ycombinator.com/item?id=49698661 Points: 2 # Comments: 0",
+    "url": "http://botbin.io/",
+    "published": "2026-09-14T12:30:44+00:00"
+  },
+  {
+    "title": "The Memory That AI Agents Love",
+    "source": "hackernews_agents",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://medium.com/@majid.fekri/the-memory-that-ai-agents-love-b9ec0a708e7c Comments URL: https://news.ycombinator.com/item?id=49698555 Points: 2 # Comments: 0",
+    "url": "https://medium.com/@majid.fekri/the-memory-that-ai-agents-love-b9ec0a708e7c",
+    "published": "2026-09-14T12:25:01+00:00"
+  },
+  {
+    "title": "Transitions.dev: UI transitions for AI agents",
+    "source": "hackernews_agents",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://transitions.dev/ Comments URL: https://news.ycombinator.com/item?id=49698443 Points: 23 # Comments: 8",
+    "url": "https://transitions.dev/",
+    "published": "2026-09-14T12:18:58+00:00"
+  },
+  {
+    "title": "Andon Labs Puts AI Agents in Charge of Real Businesses",
+    "source": "hackernews_agents",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://spectrum.ieee.org/andon-labs-agentic-ai-businesses Comments URL: https://news.ycombinator.com/item?id=49698217 Points: 12 # Comments: 0",
+    "url": "https://spectrum.ieee.org/andon-labs-agentic-ai-businesses",
+    "published": "2026-09-14T12:08:02+00:00"
+  },
+  {
+    "title": "A fresh take on Code Intelligence for AI agents \u2013 publically benchmarked",
+    "source": "hackernews_agents",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://github.com/oooscoos/Benzi Comments URL: https://news.ycombinator.com/item?id=49697137 Points: 2 # Comments: 1",
+    "url": "https://github.com/oooscoos/Benzi",
+    "published": "2026-09-14T11:07:27+00:00"
+  },
+  {
+    "title": "Show HN: Vigilator \u2013 human-in-the-loop layer for AI agents",
+    "source": "hackernews_agents",
+    "source_tier": "secondary",
+    "summary": "Hi - I'm Noah, a student working out of the UK & I've been building Vigilator for the past couple of months, Vigilator provides an agnostic solution for handling interrupts and observing agents as they work. I was inspired to build Vigilator after I realised as teams roll out AI agents across organisations there's no consistent way to interrupt an agent mid-task, get a human decision, and resume - especially when multiple people can be responsible for weighing in on the decisions. Vigilator provides a dashboard, where you and your teammates can join a virtual organisation - from here you can u...",
+    "url": "https://vigilator.ai/",
+    "published": "2026-09-14T09:24:37+00:00"
+  },
+  {
+    "title": "PaperCut Attacker (Russian Linked) Uses AI Agents to Compromise 440 Instances",
+    "source": "hackernews_agents",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://www.swapupdate.in/papercut-attacker-uses-hundreds-of-ai-agents-to-compromise-440-instances/ Comments URL: https://news.ycombinator.com/item?id=49695605 Points: 2 # Comments: 0",
+    "url": "https://www.swapupdate.in/papercut-attacker-uses-hundreds-of-ai-agents-to-compromise-440-instances/",
+    "published": "2026-09-14T09:18:36+00:00"
+  },
+  {
+    "title": "How Fyxer built an AI executive assistant people trust",
+    "source": "openai_blog",
+    "source_tier": "primary",
+    "summary": "Fyxer uses OpenAI models, fine-tuning, memory, and real user feedback to organize inboxes and draft emails in each user\u2019s voice.",
+    "url": "https://openai.com/index/fyxer",
+    "published": "2026-09-14T09:00:00+00:00"
+  },
+  {
+    "title": "How Credit Genie keeps codebase docs fresh with OpenWiki",
+    "source": "langchain_blog",
+    "source_tier": "primary",
+    "summary": "See how Credit Genie uses OpenWiki to automate repo documentation, reduce tribal knowledge, and give engineers and coding agents searchable codebase context.",
+    "url": "https://www.langchain.com/blog/how-credit-genie-uses-openwiki-to-keep-codebase-knowledge-fresh-searchable-and-automated",
+    "published": "2026-09-13T22:53:59+00:00"
+  },
+  {
+    "title": "Connections: managed credentials and per-caller identity for Managed Deep Agents",
+    "source": "langchain_blog",
+    "source_tier": "primary",
+    "summary": "Learn how Connections in Managed Deep Agents securely manage credentials, support per-user OAuth, and let agents act with each caller\u2019s identity.",
+    "url": "https://www.langchain.com/blog/connections-managed-credentials-and-per-caller-identity-for-managed-deep-agents",
+    "published": "2026-09-13T22:53:59+00:00"
+  },
+  {
+    "title": "How we built LangChain\u2019s GTM Agent",
+    "source": "langchain_blog",
+    "source_tier": "primary",
+    "summary": "Learn how we built a GTM agent that increased lead conversion by 250% while saving each sales rep 40 hours per month",
+    "url": "https://www.langchain.com/blog/how-we-built-langchains-gtm-agent",
+    "published": "2026-09-13T22:53:59+00:00"
+  },
+  {
+    "title": "Perplexity trusts GPT-6 Astra with end-to-end systems",
+    "source": "openai_blog",
+    "source_tier": "primary",
+    "summary": "Perplexity uses Astra to write communications, change software, and monitor production systems, and checks in much less frequently than with earlier models.",
+    "url": "https://openai.com/index/perplexity-improving-accuracy-with-astra",
+    "published": "2026-09-13T21:00:00+00:00"
+  },
+  {
+    "title": "Cognition helps Devin test its own work with GPT\u20116 Astra",
+    "source": "openai_blog",
+    "source_tier": "primary",
+    "summary": "GPT\u20116 Astra improves Devin\u2019s ability to test software and show that it works, with the goal of helping engineers review less code and ship more.",
+    "url": "https://openai.com/index/cognition-devin-testing-with-astra",
+    "published": "2026-09-11T13:00:00+00:00"
+  },
+  {
+    "title": "A deep dive into LangChain and LangGraph",
+    "source": "hackernews_langchain",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://flaviocopes.com/langchain-langgraph/ Comments URL: https://news.ycombinator.com/item?id=49657460 Points: 3 # Comments: 0",
+    "url": "https://flaviocopes.com/langchain-langgraph/",
+    "published": "2026-09-11T09:42:18+00:00"
+  },
+  {
+    "title": "Rapidly scaling online storage to serve over 1 billion ChatGPT users",
+    "source": "openai_blog",
+    "source_tier": "primary",
+    "summary": "Learn how OpenAI evolved Habitat from a Python library into a globally distributed storage platform serving 1 billion ChatGPT users and 22M requests per second.",
+    "url": "https://openai.com/index/scaling-storage-one-billion-users-part-one",
+    "published": "2026-09-11T07:00:00+00:00"
+  },
+  {
+    "title": "How a researcher uses Codex and ChatGPT to search for new antimicrobial molecules",
+    "source": "openai_blog",
+    "source_tier": "primary",
+    "summary": "C\u00e9sar de la Fuente\u2019s lab uses Codex and ChatGPT to search living and extinct genomes for antimicrobial candidates to fight drug-resistant infections.",
+    "url": "https://openai.com/index/using-codex-chatgpt-to-search-for-new-antimicrobials",
+    "published": "2026-09-10T13:00:00+00:00"
+  },
+  {
+    "title": "Now everyone can put data to work",
+    "source": "openai_blog",
+    "source_tier": "primary",
+    "summary": "Meet the Data agent in ChatGPT Work. Connect company data, uncover insights, and build interactive dashboards with AI using natural language.",
+    "url": "https://openai.com/index/put-data-to-work",
+    "published": "2026-09-10T12:00:00+00:00"
+  },
+  {
+    "title": "Introducing ChatGPT for Financial Services",
+    "source": "openai_blog",
+    "source_tier": "primary",
+    "summary": "Introducing ChatGPT for Financial Services, combining built-in financial data and GPT-6 Astra for research, modeling, and client-ready materials.",
+    "url": "https://openai.com/index/introducing-chatgpt-financial-services",
+    "published": "2026-09-10T04:00:00+00:00"
+  },
+  {
+    "title": "Expanding AI access and cyber defense for federal, state, local, and tribal governments",
+    "source": "openai_blog",
+    "source_tier": "primary",
+    "summary": "OpenAI and GSA will offer eligible federal, state, local, and tribal governments $0 license fees, 50% off usage, and expanded cyber defense support.",
+    "url": "https://openai.com/index/expanding-ai-access-us-government",
+    "published": "2026-09-10T04:00:00+00:00"
+  },
+  {
+    "title": "Build more natural voice experiences with GPT\u2011Live\u20111 in the API",
+    "source": "openai_blog",
+    "source_tier": "primary",
+    "summary": "GPT\u2011Live\u20111 brings natural, full-duplex voice conversations to the API, with stronger instruction following, custom voices, and telephony support.",
+    "url": "https://openai.com/index/introducing-gpt-live-1-in-the-api",
+    "published": "2026-09-09T21:00:00+00:00"
+  },
+  {
+    "title": "Introducing the Agents API",
+    "source": "openai_blog",
+    "source_tier": "primary",
+    "summary": "Build and launch cloud agents with the Agents API, a managed service powered by the Codex harness for orchestration, long-running sessions, and tool use.",
+    "url": "https://openai.com/index/introducing-the-agents-api",
+    "published": "2026-09-09T21:00:00+00:00"
+  },
+  {
+    "title": "Async GRPO with LoRA across HF Jobs: a bucket, a proxy, and no NCCL",
+    "source": "huggingface_blog",
+    "source_tier": "primary",
+    "summary": "",
+    "url": "https://huggingface.co/blog/asyncgrpo-lora-hfjobs",
+    "published": "2026-09-09T21:00:00+00:00"
+  },
+  {
+    "title": "Rebuilding AUTOMATIC1111 with Gradio Workflow",
+    "source": "huggingface_blog",
+    "source_tier": "primary",
+    "summary": "",
+    "url": "https://huggingface.co/blog/gradio-workflow-1111",
+    "published": "2026-09-09T21:00:00+00:00"
+  },
+  {
+    "title": "Paul Christiano joins OpenAI Foundation Board",
+    "source": "openai_blog",
+    "source_tier": "primary",
+    "summary": "Paul Christiano joins the OpenAI Foundation Board and its Safety and Security Committee, bringing experience in AI alignment, safety, and standards.",
+    "url": "https://openai.com/index/paul-christiano-joins-openai-foundation-board",
+    "published": "2026-09-09T14:00:00+00:00"
+  },
+  {
+    "title": "IBM releases SOTA Granite Time Series PatchTST-FM-r2 model with commercial-friendly license",
+    "source": "huggingface_blog",
+    "source_tier": "primary",
+    "summary": "",
+    "url": "https://huggingface.co/blog/ibm-research/ibm-releases-sota-granite-time-series",
+    "published": "2026-09-09T12:36:24+00:00"
+  },
+  {
+    "title": "The AI policy window is open. We need to act.",
+    "source": "openai_blog",
+    "source_tier": "primary",
+    "summary": "Chris Lehane argues that stronger AI capabilities require stronger safety evidence, shared standards, and durable policy action while the policy window remains open.",
+    "url": "https://openai.com/index/ai-policy-window",
+    "published": "2026-09-09T10:00:00+00:00"
+  },
+  {
+    "title": "GPT-6 Astra: The next generation in intelligence for work",
+    "source": "openai_blog",
+    "source_tier": "primary",
+    "summary": "Meet GPT-6 Astra, OpenAI\u2019s most capable model for business, with advanced reasoning, computer use, and stronger writing and design judgment.",
+    "url": "https://openai.com/index/gpt-6-astra-next-generation-work",
+    "published": "2026-09-09T08:00:00+00:00"
+  },
+  {
+    "title": "Organizing Context in a Multi-Agent Harness",
+    "source": "langchain_blog",
+    "source_tier": "primary",
+    "summary": "Learn how context modes in deepagents help subagents fork a supervisor's context or start isolated \u2014 for faster, cheaper, more focused multi-agent work.",
+    "url": "https://www.langchain.com/blog/organizing-context-in-a-multi-agent-harness",
+    "published": "2026-09-08T15:07:23+00:00"
+  },
+  {
+    "title": "How GPT-5.6 Sol helps run quantum computing experiments",
+    "source": "openai_blog",
+    "source_tier": "primary",
+    "summary": "See how an MIT researcher uses GPT-5.6 Sol with Codex to autonomously run quantum computing experiments, analyze results, and calibrate qubits.",
+    "url": "https://openai.com/index/codex-quantum-computing-experiments",
+    "published": "2026-09-08T14:00:00+00:00"
+  },
+  {
+    "title": "Safety for Whom? Refusing the Right Subset of a Topic, Not the Whole Topic",
+    "source": "huggingface_blog",
+    "source_tier": "primary",
+    "summary": "",
+    "url": "https://huggingface.co/blog/MultiverseComputingCAI/safety-for-whom",
+    "published": "2026-09-08T11:23:07+00:00"
+  },
+  {
+    "title": "The Work Now Within Reach",
+    "source": "openai_blog",
+    "source_tier": "primary",
+    "summary": "Explore how more capable, affordable AI can expand the work people and businesses can accomplish\u2014and make growth more economical.",
+    "url": "https://openai.com/index/the-work-now-within-reach",
+    "published": "2026-09-08T10:00:00+00:00"
+  },
+  {
+    "title": "Show HN: RagLeap Core \u2013 46 AI Employees, open-source LangChain alt",
+    "source": "hackernews_langchain",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://github.com/antonyrag/ragleap-core Comments URL: https://news.ycombinator.com/item?id=49573630 Points: 2 # Comments: 3",
+    "url": "https://github.com/antonyrag/ragleap-core",
+    "published": "2026-09-05T03:24:29+00:00"
+  },
+  {
+    "title": "MCP in LangChain: Stateless Protocol, Elicitation, and More!",
+    "source": "langchain_blog",
+    "source_tier": "primary",
+    "summary": "MCP support now lives in langchain.mcp, built on FastMCP for the 2026-07-28 spec, with elicitation handled as a LangGraph interrupt and tool lists cached.",
+    "url": "https://www.langchain.com/blog/mcp-in-langchain-stateless-protocol-elicitation-and-more",
+    "published": "2026-09-04T03:13:59+00:00"
+  },
+  {
+    "title": "NeoMME: an efficient Multimodal-native and Multilingual Encoder",
+    "source": "huggingface_blog",
+    "source_tier": "primary",
+    "summary": "",
+    "url": "https://huggingface.co/blog/Hcompany/neomme",
+    "published": "2026-09-03T10:13:48+00:00"
+  },
+  {
+    "title": "Fine-tuning a 350M Model for Better Structured Outputs in 100 GRPO Steps",
+    "source": "huggingface_blog",
+    "source_tier": "primary",
+    "summary": "",
+    "url": "https://huggingface.co/blog/grpo-with-trl-ifstruct",
+    "published": "2026-09-02T21:00:00+00:00"
+  },
+  {
+    "title": "Give Your Coding Agents a Memory You Own",
+    "source": "huggingface_blog",
+    "source_tier": "primary",
+    "summary": "",
+    "url": "https://huggingface.co/blog/funes",
+    "published": "2026-09-02T21:00:00+00:00"
+  },
+  {
+    "title": "Training a coding model to paint watercolours with TRL and OpenEnv",
+    "source": "huggingface_blog",
+    "source_tier": "primary",
+    "summary": "",
+    "url": "https://huggingface.co/blog/train-to-paint-with-code",
+    "published": "2026-09-02T21:00:00+00:00"
+  },
+  {
+    "title": "BenchMIRT: What are LLM benchmarks actually measuring?",
+    "source": "huggingface_blog",
+    "source_tier": "primary",
+    "summary": "",
+    "url": "https://huggingface.co/blog/allenai/benchmirt",
+    "published": "2026-09-01T18:39:07+00:00"
+  },
+  {
+    "title": "Introducing @huggingface/kernels: 200+ WebGPU Kernels for Local AI",
+    "source": "huggingface_blog",
+    "source_tier": "primary",
+    "summary": "",
+    "url": "https://huggingface.co/blog/webgpu-kernels",
+    "published": "2026-08-31T21:00:00+00:00"
+  },
+  {
+    "title": "The Open ASR Leaderboard Adds Its First Global South Language",
+    "source": "huggingface_blog",
+    "source_tier": "primary",
+    "summary": "",
+    "url": "https://huggingface.co/blog/open-asr-leaderboard-global-south",
+    "published": "2026-08-27T21:00:00+00:00"
+  },
+  {
+    "title": "LangChain-AI/deepagents: agent harness",
+    "source": "hackernews_langchain",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://github.com/langchain-ai/deepagents Comments URL: https://news.ycombinator.com/item?id=49461911 Points: 1 # Comments: 0",
+    "url": "https://github.com/langchain-ai/deepagents",
+    "published": "2026-08-27T06:14:49+00:00"
+  },
+  {
+    "title": "August 2026: LangChain Newsletter \u2014 Managed Deep Agents, LLM Gateway, and More",
+    "source": "langchain_blog",
+    "source_tier": "primary",
+    "summary": "Managed Deep Agents and LLM Gateway hit public beta, plus Deep Agents v0.7, Tuned Evaluators, Bring Your Own Cloud on AWS, and LangSmith Engine upgrades.",
+    "url": "https://www.langchain.com/blog/august-2026-langchain-newsletter",
+    "published": "2026-08-27T01:26:36+00:00"
+  },
+  {
+    "title": "LangSmith LLM Gateway: Runtime Controls for Agents",
+    "source": "langchain_blog",
+    "source_tier": "primary",
+    "summary": "LangSmith LLM Gateway is in public beta: spend caps, rate limits, model fallbacks and PII redaction for production agents, without provider lock-in.",
+    "url": "https://www.langchain.com/blog/langsmith-llm-gateway-runtime-controls-for-production-agents",
+    "published": "2026-08-26T13:53:53+00:00"
+  },
+  {
+    "title": "How LangSmith and LangChain OSS Help You Meet EU AI Act Requirements",
+    "source": "langchain_blog",
+    "source_tier": "primary",
+    "summary": "The EU AI Act compliance deadline is August 2, 2026. Learn what the EU AI Act requires, and how LangSmith and LangChain OSS products help you meet each requirement.",
+    "url": "https://www.langchain.com/blog/langsmith-langchain-oss-eu-ai-act",
+    "published": "2026-08-26T13:53:53+00:00"
+  },
+  {
+    "title": "How Factory used LangSmith to automate their feedback loop and improve iteration speed by 2x",
+    "source": "langchain_blog",
+    "source_tier": "primary",
+    "summary": "How Factory AI uses LangSmith to debug issues and close the product feedback loop, resulting in a 2x improvement in iteration speed.",
+    "url": "https://www.langchain.com/blog/customers-factory",
+    "published": "2026-08-26T13:53:53+00:00"
+  },
+  {
+    "title": "Aligning LLM-as-a-Judge with Human Preferences",
+    "source": "langchain_blog",
+    "source_tier": "primary",
+    "summary": "Deep dive into self-improving evaluators in LangSmith, motivated by the rise of LLM-as-a-Judge evaluators plus research on few-shot learning and aligning human preferences.",
+    "url": "https://www.langchain.com/blog/aligning-llm-as-a-judge-with-human-preferences",
+    "published": "2026-08-26T13:53:53+00:00"
+  },
+  {
+    "title": "Announcing LangGraph v0.1 & LangGraph Cloud: Running agents at scale, reliably",
+    "source": "langchain_blog",
+    "source_tier": "primary",
+    "summary": "Our new infrastructure for running agents at scale, LangGraph Cloud, is available in beta. We also have a new stable release of LangGraph.",
+    "url": "https://www.langchain.com/blog/langgraph-cloud",
+    "published": "2026-08-26T13:53:53+00:00"
+  },
+  {
+    "title": "How Podium optimized agent behavior and reduced engineering intervention by 90% with LangSmith",
+    "source": "langchain_blog",
+    "source_tier": "primary",
+    "summary": "See how Podium tests across the lifecycle development of their AI employee agent, using LangSmith for dataset curation and finetuning. They improved agent F1 response quality to 98% and reduced the need for engineering intervention by 90%.",
+    "url": "https://www.langchain.com/blog/customers-podium",
+    "published": "2026-08-26T13:53:53+00:00"
+  },
+  {
+    "title": "Training and Finetuning Multi-Vector Embedding Models with Sentence Transformers",
+    "source": "huggingface_blog",
+    "source_tier": "primary",
+    "summary": "",
+    "url": "https://huggingface.co/blog/train-multi-vector-encoder",
+    "published": "2026-08-25T21:00:00+00:00"
+  },
+  {
+    "title": "Granite 4.2 LLMs: How They're Built",
+    "source": "huggingface_blog",
+    "source_tier": "primary",
+    "summary": "",
+    "url": "https://huggingface.co/blog/ibm-granite/granite-4-2",
+    "published": "2026-08-25T12:14:14+00:00"
+  },
+  {
+    "title": "Quantization-Aware Healing: a compressed, 4-bit model that outperforms its full-precision original",
+    "source": "huggingface_blog",
+    "source_tier": "primary",
+    "summary": "",
+    "url": "https://huggingface.co/blog/MultiverseComputingCAI/quantization-aware-healing",
+    "published": "2026-08-25T08:39:24+00:00"
+  },
+  {
+    "title": "Wire It, Run It, Deploy It: AI Workflows in Gradio",
+    "source": "huggingface_blog",
+    "source_tier": "primary",
+    "summary": "",
+    "url": "https://huggingface.co/blog/gradio-workflow-guide",
+    "published": "2026-08-24T21:00:00+00:00"
+  },
+  {
+    "title": "DeepSeek Harness vs. LangChain Deep Agents \u2013 what's the actual difference?",
+    "source": "hackernews_langchain",
+    "source_tier": "secondary",
+    "summary": "What is DeepSeek Harness and why is it different from Deep Agents? Comments URL: https://news.ycombinator.com/item?id=49345619 Points: 2 # Comments: 1",
+    "url": "https://news.ycombinator.com/item?id=49345619",
+    "published": "2026-08-18T10:49:52+00:00"
+  },
+  {
+    "title": "Show HN: PageLM \u2013 Open-Source NotebookLM Alternative (React/Node/LangChain)",
+    "source": "hackernews_langchain",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://github.com/CaviraOSS/PageLM Comments URL: https://news.ycombinator.com/item?id=49332584 Points: 2 # Comments: 0",
+    "url": "https://github.com/CaviraOSS/PageLM",
+    "published": "2026-08-17T12:25:23+00:00"
+  },
+  {
+    "title": "Show HN: Aidress \u2013 LangChain integration for cross-agent discovery and trust",
+    "source": "hackernews_langchain",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://docs.langchain.com/oss/python/integrations/tools Comments URL: https://news.ycombinator.com/item?id=49227511 Points: 3 # Comments: 0",
+    "url": "https://docs.langchain.com/oss/python/integrations/tools",
+    "published": "2026-08-08T22:27:09+00:00"
+  },
+  {
+    "title": "Show HN: LangChain's OpenWiki agent based on PI.dev harness",
+    "source": "hackernews_langchain",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://github.com/barvhaim/pi-openwiki Comments URL: https://news.ycombinator.com/item?id=48810399 Points: 2 # Comments: 2",
+    "url": "https://github.com/barvhaim/pi-openwiki",
+    "published": "2026-07-06T17:55:59+00:00"
+  },
+  {
+    "title": "Show HN: AgentWatch \u2013 per-client cost tracking for LangChain agents",
+    "source": "hackernews_langchain",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://agentwatch-two.vercel.app/ Comments URL: https://news.ycombinator.com/item?id=48794716 Points: 3 # Comments: 0",
+    "url": "https://agentwatch-two.vercel.app/",
+    "published": "2026-07-05T11:51:09+00:00"
+  },
+  {
+    "title": "We Ran a Complex Task \u2013 A LangChain Repo Analysis with Claude Fable Models",
+    "source": "hackernews_langchain",
+    "source_tier": "secondary",
+    "summary": "Article URL: https://ctrlnode.ai/news/fable-claude-model-audit-experiment/ Comments URL: https://news.ycombinator.com/item?id=48768491 Points: 1 # Comments: 0",
+    "url": "https://ctrlnode.ai/news/fable-claude-model-audit-experiment/",
+    "published": "2026-07-02T20:01:41+00:00"
+  },
+  {
+    "title": "Show HN: BeamWeaver \u2013 LangChain/DeepAgents-style agents and workflows for Elixir",
+    "source": "hackernews_langchain",
+    "source_tier": "secondary",
+    "summary": "Hi HN, We build agents in Elixir. We kept running into the same issue and found there is no observability for agentic systems. We decided to take the best aspects of LangChain, LangGraph, and DeepAgents and put them into Elixir. BeamWeaver comes with an OTP-native design and: - agents and tool calling - graph workflows - checkpoints and resumable execution - memory stores - retries, fallbacks, interrupts, and human review - typed streaming events - provider adapters for OpenAI, Anthropic, Google Gemini, xAI, and Moonshot/Kimi - fake/replay models for deterministic tests We're also building obs...",
+    "url": "https://github.com/caudena/beam_weaver",
+    "published": "2026-06-18T23:06:28+00:00"
+  },
+  {
+    "title": "Show HN: Tamper-evident audit logs for LangChain/Crew AI agents",
+    "source": "hackernews_langchain",
+    "source_tier": "secondary",
+    "summary": "I have been running into the same problems recently instrumenting my LangChain and CrewAI agent pipelines. If something goes wrong with a tool call, there was no way to way to prove what the agent did, in what order, and whether the logs have been modified. Observability platforms like LangSmith and Langfuse are great at optimizing for agent behavior, tokens and costs but they do not produce legally defensible and auditable artifacts. That's the reason why I decided to build RootSign, an SDK that instruments your CrewAI and LangGraph agents and produces cryptographic audit logs for CrewAI and ...",
+    "url": "https://github.com/Providex-AI/rootsign",
+    "published": "2026-06-18T13:52:51+00:00"
+  }
+]
