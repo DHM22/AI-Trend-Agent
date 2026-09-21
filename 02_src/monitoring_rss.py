@@ -49,7 +49,9 @@ FEEDS = {
 # Useful precisely BECAUSE it is noisy: it gives the verification agent
 # something to filter, which makes the filtering visible in the demo.
 SECONDARY_FEEDS = {
-    # "hackernews_ai": "https://hnrss.org/newest?q=langchain",
+    "hackernews_langchain": "https://hnrss.org/newest?q=langchain",
+    "hackernews_agents": "https://hnrss.org/newest?q=AI+agents",
+    "hackernews_langgraph": "https://hnrss.org/newest?q=langgraph",
 }
 
 

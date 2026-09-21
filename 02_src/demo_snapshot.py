@@ -45,14 +45,69 @@ DEFAULT_SNAPSHOT = "01_data/demo_snapshot.json"
 
 
 # ---------------------------------------------------------------------------
+# TRACES
+# Both agents already record their own reasoning -- CurriculumAgent into a
+# CurriculumTrace, VerificationAgent into a VerificationTrace -- and both
+# run() methods already accept one. capture() simply never passed them, so
+# every trace was built and then dropped on the floor. These turn a live
+# trace into the plain dict the snapshot stores.
+#
+# Nothing here changes what the pipeline decides. It records what it did.
+# Kept as free functions, duck-typed on the trace objects, so importing this
+# module still costs nothing (no openai import at module load).
+# ---------------------------------------------------------------------------
+
+def verification_trace_dict(trace) -> dict:
+    """VerificationTrace -> plain dict. Its Step is (n, tool, arguments, result_summary)."""
+    return {
+        "steps": [{"n": s.n, "tool": s.tool, "arguments": s.arguments,
+                   "result_summary": s.result_summary} for s in trace.steps],
+        "stopped_early": trace.stopped_early,
+    }
+
+
+def curriculum_trace_dict(trace, searched: bool, skipped_reason: str = "") -> dict:
+    """
+    CurriculumTrace -> plain dict. Its Step is (n, query, filters, result_summary).
+
+    THREE outcomes have to stay distinguishable downstream, because two of
+    them look identical in the conclusion alone:
+
+      searched=True,  search_failed=False -> it looked; reason says what it found
+      searched=True,  search_failed=True  -> it TRIED and could not run. NOT a
+                                             finding of "no match" (see below)
+      searched=False                      -> the confidence gate skipped it; no
+                                             search was ever attempted
+
+    Note there is no separate `search_failed_reason` field on the trace: when
+    search_failed is true the agents overwrite `reason` with the failure
+    reason, so that one key carries both meanings. Read it together with the
+    flag, never alone.
+    """
+    if not searched:
+        return {"searched": False, "skipped_reason": skipped_reason,
+                "steps": [], "reason": "", "stopped_early": False,
+                "search_failed": False}
+    return {
+        "searched": True,
+        "skipped_reason": "",
+        "steps": [{"n": s.n, "query": s.query, "filters": s.filters,
+                   "result_summary": s.result_summary} for s in trace.steps],
+        "reason": trace.reason,
+        "stopped_early": trace.stopped_early,
+        "search_failed": trace.search_failed,
+    }
+
+
+# ---------------------------------------------------------------------------
 # CAPTURE
 # ---------------------------------------------------------------------------
 
 def capture(signals_path: str, snapshot_path: str, limit: int,
             offset: int = 0) -> dict:
     from clustering import cluster_signals, load_signals
-    from agents.verification import VerificationAgent
-    from agents.curriculum import CurriculumAgent
+    from agents.verification import VerificationAgent, VerificationTrace
+    from agents.curriculum import CurriculumAgent, CurriculumTrace
     from agents.evaluation import EvaluationAgent
     from agents.recommendation import RecommendationAgent, collapse_duplicates
 
@@ -65,13 +120,42 @@ def capture(signals_path: str, snapshot_path: str, limit: int,
     evaluator, recommender = EvaluationAgent(), RecommendationAgent()
 
     recs = []
+    # Keyed by id(): collapse_duplicates returns the SAME Recommendation
+    # objects it was given (it mutates the survivor's plan and drops the
+    # rest), so identity survives the merge where a title might not.
+    traces: dict[int, dict] = {}
+
     for i, c in enumerate(batch, start=1):
         print(f"  [{i}/{len(batch)}] {c.representative_title[:60]}")
-        trend = verifier.run(c)
-        checked = trend.confidence >= 0.4
-        match = curriculum.run(trend) if checked else None
+
+        vtrace = VerificationTrace()
+        trend = verifier.run(c, vtrace)
+
+        # `searched` is the confidence GATE. `checked` additionally goes false
+        # when a search was attempted and failed -- keep them separate, or a
+        # failure gets recorded as "never tried".
+        searched = trend.confidence >= 0.4
+        checked = searched
+        ctrace = CurriculumTrace()
+        match = None
+        if searched:
+            match = curriculum.run(trend, ctrace)
+            if ctrace.search_failed:
+                checked = False
+                print(f"      ! curriculum search failed: {ctrace.reason[:80]}")
+
         ev = evaluator.run(trend, match)
-        recs.append(recommender.run(ev, curriculum_checked=checked))
+        rec = recommender.run(ev, curriculum_checked=checked)
+        recs.append(rec)
+
+        traces[id(rec)] = {
+            "verification": verification_trace_dict(vtrace),
+            "curriculum": curriculum_trace_dict(
+                ctrace, searched=searched,
+                skipped_reason=(
+                    f"verification confidence {trend.confidence} is below 0.4, "
+                    f"so the curriculum was not searched")),
+        }
 
     before = len(recs)
     recs = collapse_duplicates(recs)
@@ -88,7 +172,13 @@ def capture(signals_path: str, snapshot_path: str, limit: int,
         "clusters_processed": len(batch),
         "duplicates_collapsed": before - len(recs),
         "tier_counts": tiers,
-        "recommendations": [r.to_dict() for r in recs],
+        # to_dict() is still the whole contract; "trace" rides alongside it
+        # rather than inside Recommendation, so schemas.py is untouched.
+        "recommendations": [
+            ({**r.to_dict(), "trace": traces[id(r)]} if id(r) in traces
+             else r.to_dict())
+            for r in recs
+        ],
     }
 
     out = Path(snapshot_path)

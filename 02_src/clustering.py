@@ -96,7 +96,7 @@ IDENTIFIER = re.compile(
 STOP_IDENTIFIERS = {
     "AI", "API", "LLM", "LLMS", "GPT", "SDK", "CLI", "URL", "JSON", "HTTP",
     "PDF", "CPU", "GPU", "OSS", "EHR", "NEW", "AND", "THE", "FOR", "WITH",
-    "CHATGPT", "OPENAI", "GITHUB.COM",
+    "CHATGPT", "OPENAI",
 }
 
 
@@ -342,17 +342,23 @@ def load_signals(path: str) -> list[RawSignal]:
     return [RawSignal(**d) for d in data]
 
 
-def fetch_signals() -> list[RawSignal]:
-    """Live fetch. Prefer working from a saved file while tuning."""
+def fetch_signals(days: int = 30, secondary: bool = False) -> list[RawSignal]:
+    """
+    Live fetch. Prefer working from a saved file while tuning.
+
+    days -- how far back to look. 30 is a sensible default cadence, but a
+    wider window surfaces the rarer events a month rarely contains, such as a
+    genuine breaking change.
+    """
     from monitoring_github import fetch_all as fetch_github
     from monitoring_rss import fetch_all as fetch_rss
     signals = []
     try:
-        signals += fetch_github()
+        signals += fetch_github(days=days)
     except Exception as e:
         print(f"  ! github fetch failed: {e}")
     try:
-        signals += fetch_rss()
+        signals += fetch_rss(days=days, include_secondary=secondary)
     except Exception as e:
         print(f"  ! rss fetch failed: {e}")
     return signals
@@ -362,6 +368,12 @@ def main():
     ap = argparse.ArgumentParser(description="Cluster monitoring signals")
     ap.add_argument("--signals", help="path to a saved signals JSON file")
     ap.add_argument("--fetch", action="store_true", help="fetch live instead of loading")
+    ap.add_argument("--days", type=int, default=30,
+                    help="how far back to fetch. 90 surfaces rarer events that a "
+                         "30-day window usually misses")
+    ap.add_argument("--secondary", action="store_true",
+                    help="include secondary-tier community feeds (noisier, but gives "
+                         "verification something to actually be sceptical about)")
     ap.add_argument("--save", help="write fetched signals to this path")
     ap.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD)
     ap.add_argument("--strip-prefix", action="store_true",
@@ -379,7 +391,7 @@ def main():
     args = ap.parse_args()
 
     if args.fetch or not args.signals:
-        signals = fetch_signals()
+        signals = fetch_signals(days=args.days, secondary=args.secondary)
         if args.save:
             Path(args.save).parent.mkdir(parents=True, exist_ok=True)
             Path(args.save).write_text(

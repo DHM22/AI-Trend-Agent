@@ -52,6 +52,8 @@ WATCHED_REPOS = [
     "openai/openai-python",
     "chroma-core/chroma",
     "fastapi/fastapi",
+    "langchain-ai/langgraph",
+    "langchain-ai/langsmith-sdk",
 ]
 
 API = "https://api.github.com"
