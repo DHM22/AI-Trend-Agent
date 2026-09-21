@@ -258,8 +258,10 @@ How to work:
 - A repository EXISTING is not the same as its CLAIM being true. When a signal
   names a specific version, confirm it with verify_release -- do not treat stars
   or existence as proof the release happened.
-- Call verify_release ONLY when a specific version is claimed, and pass that
-  version. If no version is named, do not call it -- there is nothing to confirm.
+- Call verify_release ONLY when a specific version is claimed, and pass the
+  release tag exactly as the signal writes it -- monorepos tag per package, e.g.
+  "langchain==1.4.0", not "1.4.0". If no version is named, do not call it --
+  there is nothing to confirm.
 - If an observation leaves you unsure, call another tool. When you have checked
   what can be checked, STOP by replying with no tool call.
 - Do NOT output a confidence score or a verdict. The system computes the score
@@ -438,7 +440,7 @@ class VerificationAgent:
                 match = _match_result(repo, result)
                 full = match["full_name"] if match else None
 
-            version = _claim_version(signal)
+            version = _claim_tag(signal) or _claim_version(signal)
             if signal.source == "github" and version and full:
                 acc.record("verify_release", {"repo": full, "version": version},
                            self._run_tool("verify_release",
@@ -554,6 +556,10 @@ class _Accumulator:
         # any github_lookup that ANSWERED? A failed call (network error, cache
         # miss) is not an answer -- it must never make a repo look "missing".
         self.looked_up = False
+        # set only by a lookup that ANSWERED with no such repo AND was allowed to
+        # conclude "missing" (see record); a bare mention is not a repo claim
+        self.named_missing = False
+        self.secondary_only = "primary" not in cluster.source_tiers
         self.seen_authors: dict = {}                 # (repo, version) -> author
         self.stopped_early = False
         self._it = 0
@@ -572,8 +578,15 @@ class _Accumulator:
             failed = not isinstance(result, dict) or bool(result.get("error"))
             if not failed:
                 self.looked_up = True
-            if match:
+            bare = "/" not in query
+            if match and bare and self.secondary_only:
+                observation += (" -- bare-name match for a secondary-only claim: "
+                                "same-named repos are common, so this is not evidence")
+                match = None
+            elif match:
                 self.confirmed_repos.add(match["full_name"].lower())
+            elif not failed and (not bare or self.secondary_only):
+                self.named_missing = True       # answered: no repo by that name
             url = (match or {}).get("url", "")
         elif tool == "verify_release":
             repo = str(args.get("repo", ""))
@@ -584,9 +597,11 @@ class _Accumulator:
                 self.confirmed_versions.add(f"{repo.lower()}@{_norm_version(version)}")
                 author = matched.get("author")
                 if isinstance(author, str) and _LOGIN_RE.match(author):
-                    self.seen_authors[(repo.lower(), _norm_version(version))] = {
-                        "author": author,
-                        "url": matched.get("url") if isinstance(matched.get("url"), str) else ""}
+                    rec = {"author": author,
+                           "url": matched.get("url") if isinstance(matched.get("url"), str) else ""}
+                    number = _VERSION.search(version)
+                    for v in {version, number.group(0) if number else version}:
+                        self.seen_authors[(repo.lower(), _norm_version(v))] = rec
             url = (matched or {}).get("url", "")
         else:
             observation = f"{tool}({args}) -> {str(result)[:120]}"
@@ -614,7 +629,7 @@ class _Accumulator:
             reasoning=self.reasoning,
             verified_source_count=len({e.source for e in self.source_ev if e.verified}),
             repo_exists=repo_exists,
-            repo_missing=self.looked_up and not repo_exists,
+            repo_missing=self.named_missing and not repo_exists,
             claim_verified=bool(self.confirmed_versions),
             seen_authors=dict(self.seen_authors),
             stopped_early=self.stopped_early,
@@ -644,9 +659,17 @@ def _base_confidence(cluster: TrendCluster, facts: Facts) -> float:
         return 0.75                     # single source, but the claim IS confirmed
     if n == 1:
         return 0.60                     # repo exists, claim not confirmed
+    if _has_first_party(cluster):
+        return 0.60                     # the project's own post, nothing checkable
     if facts.repo_exists or has_primary:
         return 0.50                     # something real but nothing we could check
     return 0.40                         # a single unchecked secondary source
+
+
+def _has_first_party(cluster: TrendCluster) -> bool:
+    """A primary source that is not a GitHub release: the project's own blog."""
+    return any(s.source_tier == "primary" and s.source != "github"
+               for s in cluster.signals)
 
 
 def _enforce_bands(confidence: float, facts: Facts) -> float:
@@ -668,6 +691,8 @@ def _build_note(cluster: TrendCluster, facts: Facts, confidence: float) -> str:
         parts.append("repository exists; claim " +
                      ("CONFIRMED via release record" if facts.claim_verified
                       else "NOT independently verified"))
+    if v == 0 and not facts.repo_missing and _has_first_party(cluster):
+        parts.append("first-party source, nothing independently checkable")
     if v < 2 and not facts.repo_missing:
         parts.append(f"single-source ceiling {SINGLE_SOURCE_CEILING}")
     return f"confidence {confidence:.2f}: " + "; ".join(parts) + "."
@@ -712,6 +737,23 @@ def _claim_version(signal) -> str:
     """A version the signal claims, e.g. 'v1.0.0'. Empty if none."""
     m = _VERSION.search(signal.title) or _VERSION.search(signal.summary or "")
     return m.group(0) if m else ""
+
+
+def _claim_tag(signal) -> str:
+    """The release TAG a GitHub signal names, verbatim: 'owner/repo: <tag>'.
+
+    Monorepos tag per package -- langchain's is 'langchain==1.4.0', not '1.4.0'
+    -- so confirming only the bare number never matches a real release. The
+    tag is the first word after 'owner/repo: ' when it contains a version.
+    Empty when the signal is not in that form; callers fall back to
+    _claim_version()."""
+    if signal.source == "github" and ": " in signal.title:
+        head, tail = signal.title.split(": ", 1)
+        if "/" in head and tail.strip():
+            tag = tail.strip().split()[0]
+            if _VERSION.search(tag):
+                return tag
+    return ""
 
 
 def _norm_version(version: str) -> str:
@@ -840,6 +882,9 @@ def _describe(cluster: TrendCluster) -> str:
         version = _claim_version(s)
         if version:
             lines.append(f"   claimed version: {version}")
+        tag = _claim_tag(s)
+        if tag and tag != version:
+            lines.append(f"   release tag: {tag}")
         if getattr(s, "summary", ""):
             lines.append(f"   {s.summary[:400]}")
     lines.append("")
