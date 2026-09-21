@@ -120,9 +120,10 @@ ui3/                                   Per-agent explainer dashboard, mounted at
                                         RELEVANCE_FLOOR etc. for labelling only; update them if those move. Colours come
                                         from ui/theme.css tokens (dark mode works); source colours are dataviz-validated.
                                         Note /summary returns tier_counts as a LIST of {tier,label,count}, not a dict
-demo_ui.py                             Older Streamlit dashboard over the same snapshot. Superseded by ui/advanced.html;
-                                        still present, and it duplicates TIER_ORDER/TIER_LABEL instead of importing them.
-                                        NOTE: streamlit is NOT in requirements.txt — this file cannot run after a clean install
+demo_ui.py                             Streamlit FALLBACK UI over the same snapshot (primary is ui/advanced.html).
+                                        `streamlit run demo_ui.py`; streamlit is in requirements.txt. Cards show the
+                                        search-failed banner and a collapsed "Agent trace" expander via
+                                        demo_snapshot.trace_view(). Still duplicates TIER_ORDER/TIER_LABEL
 01_data/curriculum/week_02..week_06/   slides (.pdf/.pptx) + labs (.ipynb), solutions + some student versions
 01_data/signals.json                   30-day signal capture
 01_data/signals_90.json                90-day primary-source-only (71 signals, 4-repo era)
