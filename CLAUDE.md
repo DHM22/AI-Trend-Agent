@@ -15,6 +15,7 @@ Run from the repo root (Windows/PowerShell; Python 3.10+, `pip install -r requir
 
 ```powershell
 python 02_src/agents/test_chain.py [-v]                 # offline suite, 0 API calls (pre-merge check; plain script, no pytest)
+python 02_src/tests/test_verification.py               # 19 more offline VerificationAgent tests (run both before merging)
 python -c "import sys; sys.path.insert(0,'02_src/agents'); import test_chain as t; t.test_tiers()"   # one test: no filter flag, call the test_* fn
 python 02_src/demo_snapshot.py --replay                 # replay frozen run, 0 API calls
 python 02_src/demo_snapshot.py --capture --snapshot 01_data/experiment.json --limit 2   # live; default path OVERWRITES the committed snapshot
@@ -155,6 +156,7 @@ demo_ui.py                             Older Streamlit dashboard over the same s
 02_src/agents/recommendation.py        Orchestrator; tier-selection gates (see Key Decisions)
 02_src/agents/test_chain.py            Offline test suite — 0 API calls. Currently 113 passed, 2 skipped (the skips
                                         test a verification _score() that does not exist)
+02_src/tests/test_verification.py      19 offline VerificationAgent tests (from PR #1). Plain script, run directly
 04_eval/run_eval.py                    Golden-dataset harness — clustering/verification/curriculum/evaluation/
                                         recommendation layer scores
 04_eval/GOLD_LABELS.md                 Labeling spec: is_genuine, confidence, stale_presented_as_new, rank,
