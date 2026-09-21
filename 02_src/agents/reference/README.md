@@ -7,10 +7,11 @@ never committed to any repo. Lines 1–500 of 571 were recovered; the rest is
 missing, including `_describe(cluster)` (called once, to build the agentic
 loop's user message) and presumably the CLI.
 
-Kept here so it is backed up. It is deliberately NOT importable: the hyphens in
-the filename make it an invalid module name, and this folder has no
-`__init__.py`. It also would not import against the current `schemas.py`: it
-expects `ReasoningStep`, `Evidence.kind/.verified` (with `tier="tool"`), and
+Kept here so it is backed up. No code imports it. A plain `import` statement
+cannot name it (the hyphens in the filename are a syntax error). `importlib`
+could still locate it -- a folder without `__init__.py` is a namespace package
+-- but loading fails today anyway, because it does not match the current
+`schemas.py`: it expects `ReasoningStep`, `Evidence.kind/.verified` (with `tier="tool"`), and
 `VerifiedTrend.verified_source_count/.repo_exists/.claim_verified/.reasoning/.mode`.
 
 Evidence it is the code `test_chain.py` sections 1–2 were written for: run
