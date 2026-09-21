@@ -438,6 +438,164 @@ def test_trace_backward_compatibility():
 
 
 # ===========================================================================
+# 9. CURRICULUM SEARCH FAILURE -- driven through the real agent loop
+# Section 8 proves the flag SERIALISES. These prove CurriculumAgent.run()
+# actually SETS it on each of its three failure paths, that the helper and the
+# tier gate turn it into "watch" rather than add_new_lesson, and that the CLI
+# says so. Every client here is a fake injected into the constructor, so no
+# OpenAI client can be built and no call leaves the process.
+# ===========================================================================
+
+def _fake_reply(content=None, tool_calls=None):
+    msg = types.SimpleNamespace(
+        content=content, tool_calls=tool_calls,
+        model_dump=lambda exclude_none=True: {"role": "assistant",
+                                              "content": content or ""})
+    return types.SimpleNamespace(choices=[types.SimpleNamespace(message=msg)])
+
+
+class _ScriptedClient:
+    """chat.completions.create() replays a script: a reply, or an exception."""
+    def __init__(self, *script):
+        self.script = list(script)
+        self.chat = types.SimpleNamespace(
+            completions=types.SimpleNamespace(create=self._create))
+
+    def _create(self, **_kwargs):
+        item = self.script.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+
+def _curriculum_trend(title="Organizing Context in a Multi-Agent Harness"):
+    return VerifiedTrend(
+        cluster=TrendCluster(title, [RawSignal(title, "langchain_blog", "primary", "")]),
+        confidence=0.9, verification_note="offline test", evidence=[])
+
+
+def test_curriculum_search_failure():
+    import agents.curriculum as C
+    from agents.curriculum import (CurriculumAgent, CurriculumTrace,
+                                   search_curriculum_checked)
+    from agents.recommendation import select_tier
+
+    trend = _curriculum_trend()
+
+    # ---- path 1: the API call itself fails (e.g. the 429 spend limit) ----
+    t1 = CurriculumTrace()
+    m1 = CurriculumAgent(client=_ScriptedClient(RuntimeError("429 spend limit"))).run(trend, t1)
+    check("search_failed path 1: API error -> no match returned", m1, None)
+    check("search_failed path 1: API error sets search_failed", t1.search_failed, True,
+          "an API failure must not read as 'searched, found nothing'")
+    check_true("search_failed path 1: reason says it could not run",
+               "could not run" in t1.reason)
+
+    # ---- path 2: max steps exhausted, then the forced verdict call fails --
+    tool_call = types.SimpleNamespace(
+        id="call-1", function=types.SimpleNamespace(
+            name="search_curriculum", arguments='{"question": "context harness"}'))
+    real_call_tool = C.call_tool
+    C.call_tool = lambda name, args: {"results": []}      # no vector store needed
+    try:
+        t2 = CurriculumTrace()
+        client2 = _ScriptedClient(_fake_reply(tool_calls=[tool_call]),
+                                  RuntimeError("connection reset"))
+        m2 = CurriculumAgent(client=client2, max_steps=1).run(trend, t2)
+    finally:
+        C.call_tool = real_call_tool
+    check("search_failed path 2: max-steps -> no match returned", m2, None)
+    check("search_failed path 2: max-steps failure sets search_failed", t2.search_failed, True)
+    check("search_failed path 2: loop recorded as stopped early", t2.stopped_early, True)
+
+    # ---- path 3: the model replies, but not with valid JSON --------------
+    t3 = CurriculumTrace()
+    m3 = CurriculumAgent(client=_ScriptedClient(_fake_reply("I think it is affected"))).run(trend, t3)
+    check("search_failed path 3: invalid JSON -> no match returned", m3, None)
+    check("search_failed path 3: invalid JSON sets search_failed", t3.search_failed, True)
+
+    # ---- control: a GENUINE no-match must not be flagged as a failure ----
+    t4 = CurriculumTrace()
+    genuine = '{"affected": false, "reason": "no slide teaches this"}'
+    CurriculumAgent(client=_ScriptedClient(_fake_reply(genuine))).run(trend, t4)
+    check("search_failed control: genuine no-match is not a failure", t4.search_failed, False,
+          "flagging real no-matches as failures would hide every curriculum gap")
+
+    # ---- search_curriculum_checked() returns (match, curriculum_checked) --
+    failed = search_curriculum_checked(
+        CurriculumAgent(client=_ScriptedClient(RuntimeError("429"))), trend)
+    searched = search_curriculum_checked(
+        CurriculumAgent(client=_ScriptedClient(_fake_reply(genuine))), trend)
+    check("checked helper: failed search -> (None, False)", failed, (None, False))
+    check("checked helper: genuine no-match -> (None, True)", searched, (None, True))
+
+    # ---- end to end: a failed search can never become add_new_lesson -----
+    title = trend.cluster.representative_title
+    check("failed search -> watch, never add_new_lesson",
+          _tier(select_tier, 5, 1, failed[0], failed[1], title), "watch",
+          "the live bug: a 429 produced 'no existing coverage' lessons")
+    check("same trend, genuinely searched -> add_new_lesson",
+          _tier(select_tier, 5, 1, searched[0], searched[1], title), "add_new_lesson",
+          "proves it is the FAILURE that blocks the lesson, not the trend itself")
+
+
+def test_curriculum_cli_failure_message():
+    import contextlib, io, os
+    import clustering
+    import agents.curriculum as C
+    import agents.verification as V
+    from agents.curriculum import CurriculumTrace
+
+    class FailingAgent:
+        def run(self, trend, trace: CurriculumTrace):
+            trace.search_failed = True
+            trace.reason = "curriculum search could not run: 429 spend limit"
+            return None
+
+    class NoMatchAgent:
+        def run(self, trend, trace: CurriculumTrace):
+            trace.reason = "no slide teaches this"
+            return None
+
+    cluster = _curriculum_trend().cluster
+    saved = (C.CurriculumAgent, V.VerificationAgent, clustering.cluster_signals,
+             clustering.load_signals, sys.argv, os.environ.get("OPENAI_API_KEY"))
+
+    def run_cli(agent_cls) -> str:
+        C.CurriculumAgent = agent_cls
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            C.main()
+        return out.getvalue()
+
+    try:
+        # main() refuses to start without a key; this placeholder only gets it
+        # past that check. Every object that could use it is replaced above.
+        os.environ["OPENAI_API_KEY"] = "offline-test-placeholder"
+        V.VerificationAgent = lambda *a, **k: None
+        clustering.cluster_signals = lambda signals: [cluster]
+        clustering.load_signals = lambda path: []
+        sys.argv = ["curriculum.py", "--skip-verify", "--limit", "1"]
+
+        failed_out = run_cli(FailingAgent)
+        nomatch_out = run_cli(NoMatchAgent)
+    finally:
+        (C.CurriculumAgent, V.VerificationAgent, clustering.cluster_signals,
+         clustering.load_signals, sys.argv) = saved[:5]
+        if saved[5] is None:
+            os.environ.pop("OPENAI_API_KEY", None)
+        else:
+            os.environ["OPENAI_API_KEY"] = saved[5]
+
+    check_true("CLI: failed search prints the SEARCH FAILED line",
+               "!! SEARCH FAILED -- this is NOT a finding of 'no match'" in failed_out)
+    check("CLI: failed search does not print 'not affected'",
+          "not affected" in failed_out, False)
+    check("CLI: genuine no-match does not print SEARCH FAILED",
+          "SEARCH FAILED" in nomatch_out, False)
+
+
+# ===========================================================================
 
 TESTS = [
     ("verification scoring", test_verification_scoring),
@@ -449,6 +607,8 @@ TESTS = [
     ("tool contract", test_tool_contract),
     ("agent trace capture", test_trace_capture),
     ("trace backward compatibility", test_trace_backward_compatibility),
+    ("curriculum search failure", test_curriculum_search_failure),
+    ("curriculum CLI failure message", test_curriculum_cli_failure_message),
 ]
 
 
