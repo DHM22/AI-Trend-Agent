@@ -36,8 +36,14 @@ Swap to OpenAI embeddings for better quality -- see EMBEDDING NOTE at bottom.
 import argparse
 import hashlib
 import json
+import math
 import re
+import shutil
+import subprocess
+import tempfile
+import unicodedata
 from dataclasses import dataclass
+from difflib import SequenceMatcher
 from pathlib import Path
 
 import chromadb
@@ -60,6 +66,7 @@ class CurriculumChunk:
     slide_number: int     # 25   (cell number for notebooks)
     chunk_index: int = 0  # >0 if one slide was split into several chunks
     content_type: str = "slides"   # "slides" | "lab"
+    extraction_provenance: str = "native"  # "native" | "ocr" | "hybrid"
 
     @property
     def chunk_id(self) -> str:
@@ -140,19 +147,217 @@ def extract_pptx(path: Path, week: int | None) -> list[CurriculumChunk]:
 
 
 def extract_pdf(path: Path, week: int | None) -> list[CurriculumChunk]:
-    """Pull text page by page. Each PDF page == one slide."""
+    """Preserve native text and add local OCR for sparse or visual PDF pages."""
     topic = topic_from_filename(path)
     chunks: list[CurriculumChunk] = []
 
     with pdfplumber.open(str(path)) as pdf:
         for i, page in enumerate(pdf.pages, start=1):
-            text = (page.extract_text() or "").strip()
+            native_text = _normalize_extracted_text(page.extract_text() or "")
+            ocr_text = ""
+            if _should_ocr_pdf_page(page, native_text):
+                ocr_text = _ocr_pdf_page(
+                    page, regions=_embedded_visual_regions(page))
+            text, provenance = _merge_extracted_text_with_provenance(
+                native_text, ocr_text)
             if text:
                 chunks.append(CurriculumChunk(
                     text=text, week=week, topic=topic,
-                    source_file=path.name, slide_number=i))
+                    source_file=path.name, slide_number=i,
+                    extraction_provenance=provenance))
 
     return chunks
+
+
+def _tesseract_executable() -> str:
+    """Return an available offline Tesseract executable or explain the blocker."""
+    candidates = [
+        shutil.which("tesseract"),
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+        r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+    ]
+    for candidate in candidates:
+        if candidate and Path(candidate).is_file():
+            return candidate
+    raise RuntimeError(
+        "OCR requested for a sparse PDF page, but Tesseract was not found. "
+        "Install an offline Tesseract executable or disable OCR explicitly."
+    )
+
+
+OCR_NATIVE_SPARSE_CHARS = 200
+OCR_IMAGE_MIN_AREA_RATIO = 0.03
+OCR_IMAGE_MAX_AREA_RATIO = 0.92
+OCR_VECTOR_MARK_THRESHOLD = 24
+OCR_RESOLUTION = 300
+
+
+def _box_iou(left: tuple[float, float, float, float],
+             right: tuple[float, float, float, float]) -> float:
+    """Intersection-over-union used to collapse duplicate embedded images."""
+    x0, top, x1, bottom = left
+    rx0, rtop, rx1, rbottom = right
+    intersection = max(0.0, min(x1, rx1) - max(x0, rx0)) * max(
+        0.0, min(bottom, rbottom) - max(top, rtop))
+    union = ((x1 - x0) * (bottom - top)
+             + (rx1 - rx0) * (rbottom - rtop) - intersection)
+    return intersection / union if union > 0 else 0.0
+
+
+def _embedded_visual_regions(page) -> list[tuple[float, float, float, float]]:
+    """Return meaningful image boxes, excluding tiny logos and page backgrounds."""
+    page_area = float(page.width * page.height)
+    if page_area <= 0:
+        return []
+    regions: list[tuple[float, float, float, float]] = []
+    for image in getattr(page, "images", []):
+        box = (
+            max(0.0, float(image.get("x0", 0.0))),
+            max(0.0, float(image.get("top", 0.0))),
+            min(float(page.width), float(image.get("x1", 0.0))),
+            min(float(page.height), float(image.get("bottom", 0.0))),
+        )
+        width, height = box[2] - box[0], box[3] - box[1]
+        ratio = (width * height) / page_area
+        if (width <= 0 or height <= 0
+                or not OCR_IMAGE_MIN_AREA_RATIO <= ratio <= OCR_IMAGE_MAX_AREA_RATIO):
+            continue
+        if any(_box_iou(box, existing) >= 0.85 for existing in regions):
+            continue
+        regions.append(box)
+    return regions
+
+
+def _should_ocr_pdf_page(page, native_text: str) -> bool:
+    """Trigger OCR for sparse text, embedded visuals, or vector-heavy diagrams."""
+    if len(native_text.strip()) < OCR_NATIVE_SPARSE_CHARS:
+        return True
+    if _embedded_visual_regions(page):
+        return True
+    vector_marks = sum(len(getattr(page, name, []))
+                       for name in ("lines", "rects", "curves"))
+    return vector_marks >= OCR_VECTOR_MARK_THRESHOLD
+
+
+def _run_tesseract(image_path: Path, page_segmentation_mode: int) -> str:
+    """Run local Tesseract with explicit UTF-8 decoding."""
+    executable = _tesseract_executable()
+    completed = subprocess.run(
+        [executable, str(image_path), "stdout", "-l", "eng", "--oem", "1",
+         "--psm", str(page_segmentation_mode),
+         "-c", "preserve_interword_spaces=1"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        check=False, timeout=120,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(
+            f"Tesseract OCR failed with exit code {completed.returncode}: "
+            f"{completed.stderr.strip()[:300]}"
+        )
+    return completed.stdout.strip()
+
+
+def _ocr_pdf_page(page,
+                  regions: list[tuple[float, float, float, float]] | None = None
+                  ) -> str:
+    """OCR meaningful image regions or, when none exist, the rendered page."""
+    regions = _embedded_visual_regions(page) if regions is None else regions
+    with tempfile.TemporaryDirectory(prefix="curriculum_ocr_") as temp_dir:
+        outputs: list[str] = []
+        targets = regions or [None]
+        for index, box in enumerate(targets):
+            image_path = Path(temp_dir) / f"page_{index}.png"
+            target = page.crop(box, strict=False) if box is not None else page
+            target.to_image(resolution=OCR_RESOLUTION).original.save(
+                str(image_path), format="PNG")
+            if box is not None:
+                # Diagram labels vary between sparse and aligned layouts. Keep
+                # both local passes, then remove their overlapping lines.
+                aligned = _run_tesseract(image_path, 6)
+                sparse = _run_tesseract(image_path, 11)
+                outputs.append(_merge_extracted_text(aligned, sparse))
+            else:
+                outputs.append(_run_tesseract(image_path, 6))
+        return _normalize_extracted_text("\n".join(outputs))
+
+
+MOJIBAKE_REPLACEMENTS = {
+    "â€”": "—", "â€“": "–", "â€œ": "“", "â€": "”",
+    "â€ک": "”", "â€˜": "‘", "â€™": "’", "â€¢": "•",
+    "â†’": "→", "â†گ": "→", "â†": "←", "â‰¥": "≥",
+    "â‰¤": "≤", "Â°": "°", "آ°": "°", "Â·": "·",
+    "Â ": " ", "â€‹": "", "ï»¿": "",
+}
+
+
+def _normalize_extracted_text(text: str) -> str:
+    """Clean encoding/spacing artifacts without paraphrasing extracted text."""
+    normalized = unicodedata.normalize("NFC", text or "")
+    for broken, repaired in MOJIBAKE_REPLACEMENTS.items():
+        normalized = normalized.replace(broken, repaired)
+    normalized = normalized.replace("\u200b", "").replace("\ufeff", "")
+    # Limit purely decorative runs without touching ordinary identifiers.
+    normalized = re.sub(r"([=_~*#•·—–-])\1{3,}", r"\1\1\1", normalized)
+    lines = [re.sub(r"[\t\v\f\u00a0 ]+", " ", line).strip()
+             for line in normalized.replace("\r\n", "\n").replace("\r", "\n").split("\n")]
+    lines = [re.sub(r"\s+([,;:)\]}])", r"\1", line) for line in lines]
+    lines = [re.sub(r"([([{])\s+", r"\1", line) for line in lines]
+    compact: list[str] = []
+    for line in lines:
+        if line or (compact and compact[-1]):
+            compact.append(line)
+    while compact and not compact[-1]:
+        compact.pop()
+    return "\n".join(compact).strip()
+
+
+def _dedupe_key(line: str) -> str:
+    key = unicodedata.normalize("NFKC", line).casefold()
+    key = key.translate(str.maketrans({"“": '"', "”": '"', "‘": "'", "’": "'",
+                                      "—": "-", "–": "-"}))
+    return re.sub(r"\s+", " ", key).strip()
+
+
+def _is_duplicate_ocr_line(key: str, native_keys: list[str],
+                           native_blob: str) -> bool:
+    if not key:
+        return True
+    if key in native_keys:
+        return True
+    if len(key) >= 16 and key in native_blob:
+        return True
+    return any(len(key) >= 20 and SequenceMatcher(None, key, native).ratio() >= 0.96
+               for native in native_keys)
+
+
+def _merge_extracted_text_with_provenance(native_text: str,
+                                           ocr_text: str) -> tuple[str, str]:
+    """Merge both sources, removing only duplicate native/OCR lines."""
+    native = _normalize_extracted_text(native_text)
+    ocr = _normalize_extracted_text(ocr_text)
+    native_lines = [line for line in native.splitlines() if line]
+    native_keys = [_dedupe_key(line) for line in native_lines]
+    native_blob = " ".join(native_keys)
+    merged = list(native_lines)
+    seen = set(native_keys)
+    for line in ocr.splitlines():
+        key = _dedupe_key(line)
+        if key in seen or _is_duplicate_ocr_line(key, native_keys, native_blob):
+            continue
+        merged.append(line)
+        seen.add(key)
+    if native and ocr:
+        provenance = "hybrid"
+    elif ocr:
+        provenance = "ocr"
+    else:
+        provenance = "native"
+    return "\n".join(merged).strip(), provenance
+
+
+def _merge_extracted_text(native_text: str, ocr_text: str) -> str:
+    """Backward-compatible text-only wrapper around the Hybrid OCR merger."""
+    return _merge_extracted_text_with_provenance(native_text, ocr_text)[0]
 
 
 def extract_ipynb(path: Path, week: int | None) -> list[CurriculumChunk]:
@@ -282,7 +487,8 @@ def split_long_chunks(chunks: list[CurriculumChunk],
                 week=chunk.week, topic=chunk.topic,
                 source_file=chunk.source_file,
                 slide_number=chunk.slide_number, chunk_index=idx,
-                content_type=chunk.content_type))
+                content_type=chunk.content_type,
+                extraction_provenance=chunk.extraction_provenance))
             start += max_chars - overlap
             idx += 1
 
@@ -352,6 +558,7 @@ def ingest(curriculum_root: str, db_path: str, embedding_function=None) -> int:
             "source_file": c.source_file,
             "slide_number": c.slide_number,
             "content_type": c.content_type,
+            "extraction_provenance": c.extraction_provenance,
         } for c in chunks],
     )
 
@@ -412,10 +619,57 @@ def _row_to_hit(doc, meta, similarity: float, exact_match: str | None) -> dict:
         "source_file": meta["source_file"],
         "slide_number": meta["slide_number"],
         "content_type": meta.get("content_type", "slides"),
+        "extraction_provenance": meta.get("extraction_provenance", "native"),
         "similarity": similarity,
         "exact_match": exact_match,     # the identifier found, or None
         "citation": _format_citation(wk, meta),
     }
+
+
+LEXICAL_TOKEN = re.compile(r"[a-z0-9]+")
+LEXICAL_STOPWORDS = {
+    "a", "an", "and", "are", "as", "at", "be", "by", "for", "from",
+    "how", "in", "is", "it", "of", "on", "or", "that", "the", "to",
+    "with", "this", "these", "those", "using", "used", "change", "changes",
+}
+
+
+def _lexical_tokens(text: str) -> list[str]:
+    """Normalize prose for deterministic, case-insensitive lexical matching."""
+    return [token for token in LEXICAL_TOKEN.findall(text.casefold())
+            if len(token) >= 3 and not token.isdigit()
+            and token not in LEXICAL_STOPWORDS]
+
+
+def _lexical_rank(question: str, documents: list[str]) -> dict[int, tuple[float, str | None]]:
+    """Return document-index lexical scores and any literal identifier match."""
+    query_tokens = set(_lexical_tokens(question))
+    if not query_tokens:
+        return {}
+    tokenized = [_lexical_tokens(doc or "") for doc in documents]
+    doc_frequency: dict[str, int] = {}
+    for tokens in tokenized:
+        for token in set(tokens):
+            doc_frequency[token] = doc_frequency.get(token, 0) + 1
+    total_docs = max(1, len(tokenized))
+    identifiers = [token.casefold() for token in extract_identifiers(question)]
+    scored: dict[int, tuple[float, str | None]] = {}
+    for index, (doc, tokens) in enumerate(zip(documents, tokenized)):
+        present = set(tokens) & query_tokens
+        if not present:
+            continue
+        score = 0.0
+        for token in present:
+            # Length and inverse document frequency favor distinctive terms
+            # without relying on source names, page numbers, or benchmark IDs.
+            idf = 1.0 + math.log((total_docs + 1) / (doc_frequency[token] + 1))
+            score += (1.0 + min(len(token), 20) / 10.0) * idf
+        exact = next((identifier for identifier in identifiers
+                      if identifier in (doc or "").casefold()), None)
+        if exact:
+            score += 2.0
+        scored[index] = (score, exact)
+    return scored
 
 
 def query(db_path: str, question: str, k: int = 3,
@@ -454,43 +708,77 @@ def query(db_path: str, question: str, k: int = 3,
     elif len(filters) > 1:
         where = {"$and": filters}
 
-    # --- pass 1: semantic
-    kwargs = {"query_texts": [question], "n_results": min(k, total)}
+    # --- pass 1: semantic candidate pool
+    # Keep more candidates than the public result limit so lexical evidence
+    # can promote a relevant page that semantic ranking initially missed.
+    semantic_limit = min(total, max(k * 10, 50))
+    kwargs = {"query_texts": [question], "n_results": semantic_limit}
     if where:
         kwargs["where"] = where
     res = collection.query(**kwargs)
 
-    hits: list[dict] = []
-    seen: set[tuple] = set()
-
+    semantic_rows: list[tuple[float, dict, str]] = []
     if res["documents"] and res["documents"][0]:
-        for doc, meta, dist in zip(res["documents"][0], res["metadatas"][0], res["distances"][0]):
-            key = (meta["source_file"], meta["slide_number"])
-            seen.add(key)
-            hits.append(_row_to_hit(doc, meta, round(1 - dist, 3), None))
+        semantic_rows = [
+            (round(1 - dist, 3), meta, doc)
+            for doc, meta, dist in zip(
+                res["documents"][0], res["metadatas"][0], res["distances"][0]
+            )
+        ]
 
-    # --- pass 2: literal identifier lookup
-    if hybrid:
-        for token in extract_identifiers(question):
-            g_kwargs = {"where_document": {"$contains": token}, "limit": k}
-            if where:
-                g_kwargs["where"] = where
-            found = collection.get(**g_kwargs)
+    # Fetch the filtered corpus once for deterministic lexical scoring. This
+    # replaces the old identifier-only pass while retaining exact_match.
+    corpus = collection.get(where=where, include=["documents", "metadatas"])
+    corpus_docs = corpus.get("documents", []) or []
+    corpus_metas = corpus.get("metadatas", []) or []
+    lexical = _lexical_rank(question, corpus_docs) if hybrid else {}
+    lexical_rows = sorted(
+        lexical.items(), key=lambda item: (-item[1][0],
+                                           corpus_metas[item[0]].get("source_file", ""),
+                                           corpus_metas[item[0]].get("slide_number", 0))
+    )
 
-            for doc, meta in zip(found["documents"], found["metadatas"]):
-                key = (meta["source_file"], meta["slide_number"])
-                if key in seen:
-                    # already returned semantically -- just tag it as exact
-                    for h in hits:
-                        if (h["source_file"], h["slide_number"]) == key:
-                            h["exact_match"] = token
-                    continue
-                seen.add(key)
-                hits.append(_row_to_hit(doc, meta, None, token))
+    # Reciprocal Rank Fusion combines semantic and lexical rank without
+    # comparing their incompatible score scales. The stable tie-breakers make
+    # repeated calls deterministic.
+    rrf_constant = 60.0
+    fused: dict[tuple, dict] = {}
+    semantic_keys: dict[tuple, tuple[float, dict, str]] = {}
+    for rank, (similarity, meta, doc) in enumerate(semantic_rows, start=1):
+        key = (meta["source_file"], meta["slide_number"])
+        semantic_keys[key] = (similarity, meta, doc)
+        fused.setdefault(key, {"semantic_rank": None, "lexical_rank": None,
+                               "lexical_exact": None})["semantic_rank"] = rank
 
-    # exact matches first, then by descending similarity
-    hits.sort(key=lambda h: (h["exact_match"] is None, -(h["similarity"] or 0)))
-    return hits[:k]
+    for rank, (index, (_, exact)) in enumerate(lexical_rows, start=1):
+        meta = corpus_metas[index]
+        key = (meta["source_file"], meta["slide_number"])
+        fused.setdefault(key, {"semantic_rank": None, "lexical_rank": None,
+                               "lexical_exact": None})["lexical_rank"] = rank
+        fused[key]["lexical_exact"] = exact
+
+    ranked = sorted(
+        fused.items(),
+        key=lambda item: (
+            -((1.0 / (rrf_constant + item[1]["semantic_rank"])
+               if item[1]["semantic_rank"] else 0.0)
+              + (1.0 / (rrf_constant + item[1]["lexical_rank"])
+                 if item[1]["lexical_rank"] else 0.0)),
+            item[0][0], item[0][1],
+        ),
+    )
+
+    hits: list[dict] = []
+    for key, ranks in ranked[:k]:
+        if key in semantic_keys:
+            similarity, meta, doc = semantic_keys[key]
+        else:
+            index = next(i for i, m in enumerate(corpus_metas)
+                         if (m["source_file"], m["slide_number"]) == key)
+            meta, doc = corpus_metas[index], corpus_docs[index]
+            similarity = None
+        hits.append(_row_to_hit(doc, meta, similarity, ranks["lexical_exact"]))
+    return hits
 
 
 # ---------------------------------------------------------------------------
