@@ -1028,6 +1028,148 @@ def test_verifier_real_data_fixes():
 
 
 # ===========================================================================
+# 14. TRACE DISPLAY -- what the trace panel shows (demo_snapshot.trace_view)
+# Hand-written fixtures only: a live capture needs the API. Covers the four
+# cases the tracing spec names -- trace present, trace absent, search failed,
+# empty steps -- plus the restored verifier's mode and full reasoning.
+# ===========================================================================
+
+def _trace_fixture(search_failed=False, searched=True, c_steps=True, v_mode=
+                   "agentic (LLM-driven tool loop)", reasoning=True):
+    c = {"searched": searched, "skipped_reason": "" if searched else "confidence 0.2 is below 0.4",
+         "steps": ([{"n": 1, "query": "create_react_agent", "filters": {"week": 4, "type": "lab"},
+                     "result_summary": "2 hit(s): Week 4 / Lab: X / cell 8 (exact)"}]
+                   if c_steps and searched and not search_failed else []),
+         "reason": ("curriculum search could not run: 429 spend limit" if search_failed
+                    else "cell 8 imports the deprecated create_react_agent"),
+         "stopped_early": False, "search_failed": search_failed}
+    v = {"steps": [{"n": 2, "tool": "github_lookup", "arguments": {"query": "langchain-ai/langchain"},
+                    "result_summary": "github_lookup('langchain-ai/langchain') matched langchain-ai/langchain"}],
+         "stopped_early": False, "mode": v_mode,
+         "reasoning": ([{"iteration": 1, "thought": "The signal names langchain-ai/langchain; check it exists.",
+                         "tool": "", "tool_args": {}, "observation": "model planned a lookup"},
+                        {"iteration": 2, "thought": "Confirm the repository.", "tool": "github_lookup",
+                         "tool_args": {"query": "langchain-ai/langchain"},
+                         "observation": "github_lookup('langchain-ai/langchain') matched langchain-ai/langchain"}]
+                       if reasoning else [])}
+    return {"trend": "langchain-ai/langchain: langchain==1.4.0", "recommended_action": "watch",
+            "trace": {"curriculum": c, "verification": v}}
+
+
+def test_trace_view():
+    import json
+    import demo_snapshot as D
+
+    # ---- present ---------------------------------------------------------
+    view = D.trace_view(_trace_fixture())
+    check("trace view: present -> a view", view is not None, True)
+    check("trace view: step count in the label (2 verification + 1 curriculum)",
+          view["label"], "Agent trace (3 steps)")
+    check("trace view: verification shows the model's non-tool thought too",
+          view["verification_steps"][0]["text"],
+          "The signal names langchain-ai/langchain; check it exists.")
+    check("trace view: a tool step says why it was called",
+          view["verification_steps"][1]["why"], "Confirm the repository.")
+    check_true("trace view: agentic mode explained in plain words",
+               "model chose which checks" in view["verification_mode"])
+    check("trace view: curriculum search shows query and filters",
+          view["curriculum_steps"][0]["text"], 'Searched for "create_react_agent" (week 4, type lab)')
+    check("trace view: a genuine search has no failure banner", view["failure_banner"], None)
+    check("trace view: conclusion carried", view["conclusion"],
+          "cell 8 imports the deprecated create_react_agent")
+
+    # ---- absent (old snapshot) -------------------------------------------
+    check("trace view: no trace key -> None (render nothing)", D.trace_view({"trend": "t"}), None)
+    snap = json.load(open(Path(__file__).resolve().parents[2] / "01_data" / "demo_snapshot.json",
+                          encoding="utf-8"))
+    check("trace view: every committed (pre-trace) recommendation -> None",
+          {D.trace_view(r) is None for r in snap["recommendations"]}, {True})
+
+    # ---- search failed: distinct, and never a "no match" -------------------
+    failed = D.trace_view(_trace_fixture(search_failed=True))
+    check("trace view: failed search flagged", failed["search_failed"], True)
+    check_true("trace view: banner says this is NOT a finding of 'no match'",
+               "NOT a finding of 'no match'" in (failed["failure_banner"] or ""))
+    check_true("trace view: label names the failure", "failed" in failed["label"])
+    check_true("trace view: failure reason shown", "429" in failed["failure_reason"])
+    check("trace view: a failed search has no 'conclusion'", failed["conclusion"], "",
+          "the failure reason must never read as a finding")
+    check("trace view: failed search says no query was issued",
+          failed["curriculum_empty"], "The search failed before it issued any query.")
+
+    # ---- empty steps / skipped / older trace shapes ------------------------
+    empty = D.trace_view(_trace_fixture(c_steps=False, reasoning=False, v_mode=""))
+    check("trace view: empty curriculum steps -> explicit text, not an empty box",
+          (empty["curriculum_steps"], empty["curriculum_empty"]), ([], "No searches were issued."))
+    check("trace view: no mode recorded (older trace) -> no mode line", empty["verification_mode"], "")
+    check("trace view: older trace without reasoning falls back to tool steps",
+          [s["text"] for s in empty["verification_steps"]], ["Checked github_lookup"])
+    skipped = D.trace_view(_trace_fixture(searched=False))
+    check_true("trace view: never-searched is 'Skipped', not a failure",
+               skipped["curriculum_empty"].startswith("Skipped") and not skipped["search_failed"])
+
+    # ---- mode wording ------------------------------------------------------
+    check_true("trace view: deterministic mode explained",
+               "fixed script" in D.verification_mode_text("deterministic (no LLM; scripted tool loop)"))
+    check_true("trace view: model failure named as such",
+               "model call failed" in D.verification_mode_text(
+                   "deterministic (no LLM; scripted tool loop) [LLM loop failed: RuntimeError]"))
+
+
+def test_capture_records_verifier_mode_and_reasoning():
+    import json, os, tempfile, contextlib, io
+    import demo_snapshot as D
+    import agents.verification as V
+    import agents.curriculum as C
+    import agents.evaluation as E
+    import agents.recommendation as R
+
+    title = LANGCHAIN_TITLE
+    runner = lambda n, a: ({"found": 1, "results": [{"full_name": "langchain-ai/langchain"}]}
+                           if n == "github_lookup" else {"error": "offline"})
+
+    class NoMatch:
+        def __init__(self, *a, **k): pass
+        def run(self, trend, trace):
+            trace.reason = "no slide teaches this"
+            return None
+
+    saved = (V.VerificationAgent, C.CurriculumAgent, E.EvaluationAgent, R.RecommendationAgent)
+    real_v, real_e, real_r = V.VerificationAgent, E.EvaluationAgent, R.RecommendationAgent
+    try:
+        # the REAL restored verifier, no model, fake tools -> deterministic mode
+        V.VerificationAgent = lambda *a, **k: real_v(client=None, tool_runner=runner)
+        C.CurriculumAgent = NoMatch
+        E.EvaluationAgent = lambda *a, **k: real_e(client=_AlwaysFails())
+        R.RecommendationAgent = lambda *a, **k: real_r(client=_AlwaysFails())
+        with tempfile.TemporaryDirectory() as tmp:
+            sig = os.path.join(tmp, "signals.json")
+            with open(sig, "w", encoding="utf-8") as f:
+                json.dump([{"title": title, "source": "github", "source_tier": "primary",
+                            "summary": "", "url": ""}], f)
+            out = os.path.join(tmp, "snap.json")
+            with contextlib.redirect_stdout(io.StringIO()):
+                D.capture(sig, out, limit=5)
+            with open(out, encoding="utf-8") as f:
+                rec = json.load(f)["recommendations"][0]
+    finally:
+        V.VerificationAgent, C.CurriculumAgent, E.EvaluationAgent, R.RecommendationAgent = saved
+
+    vt = rec["trace"]["verification"]
+    check_true("capture: verification mode recorded",
+               vt["mode"].startswith("deterministic"))
+    check_true("capture: full reasoning recorded", len(vt["reasoning"]) >= len(vt["steps"]) >= 1)
+    check("capture: reasoning entries carry thought/tool/observation",
+          set(vt["reasoning"][0]), {"iteration", "thought", "tool", "tool_args", "observation"})
+    view = D.trace_view(rec)
+    check_true("capture: the captured trace renders a mode line",
+               "fixed script" in view["verification_mode"])
+    # back-compat: the old call shape (no trend) still works
+    check("capture: verification_trace_dict(trace) alone still works",
+          D.verification_trace_dict(V.VerificationTrace())["reasoning"], [])
+
+
+# ===========================================================================
 
 TESTS = [
     ("verification scoring", test_verification_scoring),
@@ -1051,6 +1193,8 @@ TESTS = [
     ("verifier: _describe input", test_describe_carries_url_and_version),
     ("verifier: trace from reasoning", test_trace_built_from_reasoning),
     ("verifier: real-data fixes", test_verifier_real_data_fixes),
+    ("trace view", test_trace_view),
+    ("capture: verifier mode + reasoning", test_capture_records_verifier_mode_and_reasoning),
 ]
 
 
