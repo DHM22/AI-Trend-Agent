@@ -101,6 +101,17 @@ ui/advanced.html                       The dashboard — this is the original ui
                                         Each card ENDS with its agent trace, inline in a collapsed <details> (auto-open when the
                                         curriculum search failed), built from the .trace/.tgroup/.tstep components in theme.css.
                                         The failure WARNING stays above it, un-collapsed — that must never need a click
+ui/cards.js                            card() + traceBlock() shared by advanced.html and walkthrough.html -- ONE copy of
+                                        the card rendering (moved verbatim out of advanced.html; dashboard verified
+                                        pixel-identical after the move). Card CSS moved to theme.css for the same reason
+ui/walkthrough.html                    Presenter page: one recommendation end to end in 6 steps (problem, signal, agent
+                                        trace, dashboard card, REVIEW, roadmap). Narration/review from /walkthrough; every
+                                        fact about the card read live from /recommendations/{i}, /signals, /tiers, and eval
+                                        numbers from /eval/results/{file}. Featured card checked by index AND title --
+                                        a mismatch stops the page with a warning. Linked from the dashboard header
+01_data/walkthrough.json               AUTHORED walkthrough content only (narration, featured index+title, review findings,
+                                        "verified" flag for the presenter check). Never copy snapshot facts into it --
+                                        test_chain section 15 fails if the featured citation/plan text appears in it
 ui2/                                   ONBOARDING PROTOTYPE, mounted at /ui2 — separate prefix, cannot shadow /ui.
                                         Every screen is simulated; the amber sticky banner on each says so, and the
                                         hand-off screen labels the dashboard as the real recorded run (green). The
@@ -175,7 +186,7 @@ demo_ui.py                             Streamlit FALLBACK UI over the same snaps
 02_src/agents/curriculum.py            RAG search agent; has search_failed flag + curriculum_checked() tri-state
 02_src/agents/evaluation.py            Deterministic _maturity_score / _relevance_score; model only writes rationale
 02_src/agents/recommendation.py        Orchestrator; tier-selection gates (see Key Decisions)
-02_src/agents/test_chain.py            Offline test suite — 0 API calls. Currently 188 passed, 0 skipped
+02_src/agents/test_chain.py            Offline test suite — 0 API calls. Currently 199 passed, 0 skipped
                                         (sections 1-2, written for the deterministic verifier, run again)
 02_src/tests/test_verification.py      14 offline VerificationAgent tests (from PR #1, adapted to the restored
                                         verifier). Plain script, run directly
@@ -315,7 +326,7 @@ script, before trusting a validation run on a non-default dataset.
      flag that `VerifiedTrend` does not have. `curriculum.precision_at_3` needs the agent's top-3 candidates, but
      `CurriculumAgent` exposes only the one selected match. Both require a code change first.
 - **Promptfoo behavioral suite (`04_eval/promptfooconfig.yaml`) has never been run** — blocked by Node version
-  (need 22.22+, machine has 21.6.1). Decided to accept this gap given time constraints; test_chain.py (188 passed) +
+  (need 22.22+, machine has 21.6.1). Decided to accept this gap given time constraints; test_chain.py (199 passed) +
   the written config + gold-set eval numbers are the evaluation answer for now.
 - **Content-Type Agent (proposed, not built):** would classify a signal as release/announcement/case_study/
   self_promotion/opinion before it reaches the tier gates. Would fix false positives from Show HN self-promotion
