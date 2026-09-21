@@ -1219,6 +1219,66 @@ def test_capture_records_verifier_mode_and_reasoning():
 
 
 # ===========================================================================
+# 15. PRESENTER WALKTHROUGH -- the story file and the routes that serve it
+# The page itself is checked in a browser; these pin what it depends on:
+# the featured card is the one the snapshot really has, the story file copies
+# no snapshot facts, and the read-only routes behave.
+# ===========================================================================
+
+def test_walkthrough_content_and_routes():
+    import json, os
+    root = Path(__file__).resolve().parents[2]
+    story = json.loads((root / "01_data" / "walkthrough.json").read_text(encoding="utf-8"))
+    snap = json.loads((root / "01_data" / "demo_snapshot.json").read_text(encoding="utf-8"))
+    f = story["featured"]
+    recs = snap["recommendations"]
+
+    check_true("walkthrough: featured index exists in the snapshot", 0 <= f["index"] < len(recs))
+    check("walkthrough: featured index and title agree with the snapshot",
+          recs[f["index"]]["trend"], f["title"],
+          "the page refuses to narrate on a mismatch; the committed pair must agree")
+    check("walkthrough: 'verified' is a boolean", type(story["review"]["featured"]["verified"]), bool)
+    check("walkthrough: six steps in order", [s["id"] for s in story["steps"]],
+          ["problem", "signal", "agent", "card", "review", "next"])
+
+    # never copy snapshot facts into the story file
+    text = json.dumps(story)
+    rec = recs[f["index"]]
+    copied = [label for label, v in (("citation", rec["match"]["citation"]),
+                                     ("first plan step", rec["action_plan"][0]))
+              if v and v in text]
+    check("walkthrough: no snapshot facts copied into the story file", copied, [])
+
+    # routes
+    from fastapi.testclient import TestClient
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))          # app.py lives at the repo root
+    import app as A
+    c = TestClient(A.app)
+    check("route: /walkthrough serves the story", c.get("/walkthrough").json()["featured"], f)
+    saved = os.environ.get("WALKTHROUGH_PATH")
+    os.environ["WALKTHROUGH_PATH"] = str(root / "01_data" / "no_such_walkthrough.json")
+    try:
+        r = c.get("/walkthrough")
+    finally:
+        if saved is None:
+            os.environ.pop("WALKTHROUGH_PATH", None)
+        else:
+            os.environ["WALKTHROUGH_PATH"] = saved
+    check("route: missing story file -> 404 with a clear message",
+          (r.status_code, "no walkthrough file" in r.json().get("detail", "")), (404, True))
+
+    for e in story.get("eval_results", []):
+        r = c.get(f"/eval/results/{e['file']}")
+        check(f"route: eval result {e['file']} is served", r.status_code, 200)
+    check("route: traversal-looking result names are rejected",
+          c.get("/eval/results/..%2Fapp.py").status_code in (400, 404), True)
+    sig = c.get("/signals").json()["signals"]
+    check("route: /signals carries url and summary (the walkthrough's raw-signal step)",
+          {"url", "summary"} <= set(sig[0]), True)
+
+
+# ===========================================================================
 
 TESTS = [
     ("verification scoring", test_verification_scoring),
@@ -1245,6 +1305,7 @@ TESTS = [
     ("verifier: model-invented repo", test_model_invented_repo_is_not_missing),
     ("trace view", test_trace_view),
     ("capture: verifier mode + reasoning", test_capture_records_verifier_mode_and_reasoning),
+    ("walkthrough content and routes", test_walkthrough_content_and_routes),
 ]
 
 
