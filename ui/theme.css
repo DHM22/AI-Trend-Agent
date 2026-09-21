@@ -192,7 +192,7 @@ summary {
 }
 summary::-webkit-details-marker { display: none; }
 summary::before { content: "▸"; color: var(--text-muted); transition: transform 140ms; }
-details[open] summary::before { transform: rotate(90deg); }
+details[open] > summary::before { transform: rotate(90deg); }
 summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
 
 /* ---- evidence ---------------------------------------------------------- */
@@ -278,3 +278,45 @@ summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; b
 
 .rec-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
             font-size: 0.8125rem; color: var(--text-secondary); margin-bottom: 12px; }
+
+/* Five-node flow (cards.js flowBlock): Signal -> Verify -> Search -> Score ->
+   Recommend. Compact inside the dashboard's trace panel, large on the
+   walkthrough. State colours reuse the status tokens; every state also has a
+   ✓ / ✗ glyph, so meaning never rides on colour alone. */
+.flow5 { display: flex; align-items: stretch; gap: 6px; margin: 4px 0 10px; }
+.fnode { flex: 1 1 0; min-width: 0; border: 1px solid var(--border); border-radius: 10px;
+         padding: 10px 12px; background: var(--surface-1); }
+.fnode.ok  { border-color: color-mix(in srgb, var(--good) 55%, var(--border)); }
+.fnode.bad { border-color: var(--critical); border-width: 2px; }
+.fnode.muted { opacity: 0.75; }
+.fk { font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted);
+      display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.fv { font-weight: 640; margin-top: 4px; overflow-wrap: anywhere; line-height: 1.3; }
+.fnode.ok .fv { color: var(--text-primary); }
+.fnode.bad .fv { color: var(--critical); }
+.fsub { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; overflow-wrap: anywhere; }
+.fbadge { font-size: 0.625rem; letter-spacing: 0.04em; text-transform: none; padding: 1px 6px;
+          border-radius: 999px; border: 1px solid var(--border); color: var(--text-secondary); }
+.fchips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.fchip { font-size: 0.6875rem; font-family: ui-monospace, Consolas, monospace; padding: 2px 7px;
+         border-radius: 6px; border: 1px solid var(--border); max-width: 100%;
+         overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fchip.ok   { border-color: color-mix(in srgb, var(--good) 60%, var(--border)); }
+.fchip.miss { border-color: var(--critical); }
+.farrow { align-self: center; color: var(--text-muted); font-size: 0.9rem; flex: none; }
+.flow5.compact .fnode { padding: 7px 9px; }
+.flow5.compact .fv { font-size: 0.8125rem; }
+.flow5.compact .fchip { font-size: 0.625rem; }
+@media (max-width: 720px) { .flow5 { flex-direction: column; } .farrow { transform: rotate(90deg); } }
+
+/* "Show details" inside the trace panel: the text trace, one click away */
+.tdetails > summary { font-size: 0.8125rem; color: var(--text-secondary); cursor: pointer; margin: 2px 0 6px; }
+
+/* reveal in order (walkthrough only); nothing moves for reduced-motion users */
+.flow5.animate .fnode, .flow5.animate .farrow { opacity: 0; animation: freveal 420ms ease forwards; }
+.flow5.animate .fnode { animation-delay: calc(var(--i) * 360ms); }
+.flow5.animate .farrow { animation-delay: calc(var(--i, 0) * 360ms); }
+@keyframes freveal { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .flow5.animate .fnode, .flow5.animate .farrow { animation: none; opacity: 1; }
+}

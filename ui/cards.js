@@ -96,7 +96,7 @@ function card(r, tiers = []) {
              <div class="matched">${esc(m.matched_text)}</div></div>` : ""}
       </div>
     </details>
-    ${traceBlock(r)}
+    ${traceBlock(r, tiers)}
   </article>`;
 }
 
@@ -114,7 +114,7 @@ function card(r, tiers = []) {
 // link moves inside this block rather than standing in for it. A snapshot
 // captured before traces existed renders nothing here, as before.
 // ---------------------------------------------------------------------------
-function traceBlock(r) {
+function traceBlock(r, tiers = []) {
   if (!r.trace) return "";
   const c = r.trace.curriculum || {};
   const v = r.trace.verification || {};
@@ -123,6 +123,7 @@ function traceBlock(r) {
   const n = cSteps.length + ((v.reasoning && v.reasoning.length) || vSteps.length);
 
   let body = "";
+  let notice = "";
 
   if (c.search_failed) {
     // The reason string is already on the card above, in the un-collapsed
@@ -130,10 +131,10 @@ function traceBlock(r) {
     // one card. It is repeated only in the case where that warning did NOT
     // render (a match alongside a failed search), which the agents should
     // never produce; the guard is here so the reason can never go missing.
-    body += `<div class="tfail"><b>The curriculum search failed.</b>
+    notice += `<div class="tfail"><b>The curriculum search failed.</b>
       ${r.match && c.reason ? `<div class="tr">${esc(c.reason)}</div>` : ""}</div>`;
   } else if (c.searched === false) {
-    body += `<p class="tnote">The curriculum was never searched &mdash;
+    notice += `<p class="tnote">The curriculum was never searched &mdash;
       ${esc(c.skipped_reason || "it did not clear the confidence gate.")}</p>`;
   }
 
@@ -186,7 +187,12 @@ function traceBlock(r) {
   return `<details class="rec-trace"${c.search_failed ? " open" : ""}>
     <summary>${esc(label)}</summary>
     <div class="trace">
-      ${body}
+      ${notice}
+      ${flowBlock(r, { tiers, compact: true })}
+      <details class="tdetails">
+        <summary>Show details</summary>
+        ${body}
+      </details>
       ${r.index !== undefined
         ? `<a class="tracelink" href="trace.html?i=${r.index}">Open this trace on its own page
            <span class="arrow">→</span></a>` : ""}
@@ -219,5 +225,79 @@ function step(n, ask, got, args) {
       ${args ? `<div class="tr" style="font-family:ui-monospace,Consolas,monospace">${args}</div>` : ""}
       <div class="tr">→ ${esc(got || "")}</div>
     </div>
+  </div>`;
+}
+
+// ---------------------------------------------------------------------------
+// FIVE-NODE FLOW -- Signal -> Verify -> Search curriculum -> Score -> Recommend
+// The same picture on the dashboard (compact, inside the trace panel) and on
+// the walkthrough (large, revealed in order). Every value is read from the
+// recommendation and its trace; nothing is invented, and a snapshot without a
+// trace still gets the nodes it can fill.
+// ---------------------------------------------------------------------------
+function flowBlock(r, opts = {}) {
+  const tiers = opts.tiers || [];
+  const t = r.trace || {};
+  const c = t.curriculum || {};
+  const v = t.verification || {};
+  const m = r.match || null;
+
+  const tag = String(r.trend || "").split(": ").slice(1).join(": ") || String(r.trend || "");
+  const repo = String(r.trend || "").split(": ")[0];
+
+  const vRows = (v.reasoning && v.reasoning.length)
+    ? v.reasoning.filter((s) => s.tool).map((s) => ({ tool: s.tool, args: s.tool_args || {}, out: s.observation || "" }))
+    : (v.steps || []).map((s) => ({ tool: s.tool, args: s.arguments || {}, out: s.result_summary || "" }));
+  const outcome = (text) => /confirmed|matched\b/i.test(text) ? "ok"
+    : /not found|could not|failed|no repository|no matching/i.test(text) ? "miss" : "info";
+  const confirmed = /CONFIRMED/.test(r.verification_note || "") || vRows.some((x) => /CONFIRMED/.test(x.out));
+  const mode = String(v.mode || "").toLowerCase();
+  const modeBadge = !mode ? "" : mode.includes("llm loop failed") ? "scripted · model failed"
+    : mode.startsWith("deterministic") ? "scripted" : mode.startsWith("agentic") ? "agentic" : "";
+
+  const hits = (s) => { const k = /^(\d+) hit/.exec(s || ""); return k ? +k[1] : null; };
+  const cRows = (c.steps || []).map((s) => ({
+    q: s.query || "", out: s.result_summary || "",
+    state: /exact[:\s]/i.test(s.result_summary || "") || hits(s.result_summary) > 0 ? "ok"
+      : hits(s.result_summary) === 0 || /^no results/i.test(s.result_summary || "") ? "miss" : "info" }));
+
+  const where = m ? String(m.citation || "").split(" / ").pop() : "";
+  const search = c.search_failed ? { v: "search FAILED", s: "bad" }
+    : c.searched === false ? { v: "not searched", s: "muted" }
+    : m ? { v: `matched ${where}`, s: "ok" } : { v: "no match", s: "muted" };
+  const label = (tiers.find((x) => x.tier === r.recommended_action) || {}).label
+    || String(r.recommended_action || "").replace(/_/g, " ");
+
+  const chip = (text, state, title) => `<span class="fchip ${state}" title="${esc(title || "")}">${
+    state === "ok" ? "✓" : state === "miss" ? "✗" : "·"} ${esc(text)}</span>`;
+  // chip text: the tool plus the part of its argument a viewer cares about
+  // ("verify_release 1.6.4", "github_lookup langchain"); the full call and its
+  // result stay on hover
+  const short = (tool, o) => {
+    const val = String((tool === "verify_release" ? o.version : o.query || o.repo) || Object.values(o)[0] || "");
+    return val.split(/==|\//).filter(Boolean).pop() || val;
+  };
+
+  const nodes = [
+    { k: "Signal", v: tag, sub: repo, s: "info" },
+    { k: "Verify", v: confirmed ? "release confirmed" : `confidence ${Number(r.confidence).toFixed(2)}`,
+      s: confirmed ? "ok" : "info", badge: modeBadge,
+      chips: vRows.map((x) => chip(`${x.tool} ${short(x.tool, x.args)}`, outcome(x.out),
+             `${x.tool}(${JSON.stringify(x.args)}) -> ${x.out}`)) },
+    { k: "Search curriculum", v: search.v, s: search.s,
+      chips: cRows.map((x) => chip(`"${x.q}"`, x.state, x.out)) },
+    { k: "Score", v: r.total_score != null ? `${r.total_score} / 5` : "—", s: "info" },
+    { k: "Recommend", v: label, s: r.recommended_action === "watch" ? "muted" : "ok" },
+  ];
+
+  return `<div class="flow5${opts.compact ? " compact" : ""}${opts.animate ? " animate" : ""}" role="list"
+      aria-label="Pipeline for this recommendation">${nodes.map((nd, i) => `${
+      i ? `<div class="farrow" aria-hidden="true" style="--i:${i - 0.5}">→</div>` : ""}
+    <div class="fnode ${nd.s}" role="listitem" style="--i:${i}">
+      <div class="fk">${esc(nd.k)}${nd.badge ? ` <span class="fbadge">${esc(nd.badge)}</span>` : ""}</div>
+      <div class="fv">${nd.s === "ok" ? "✓ " : nd.s === "bad" ? "✗ " : ""}${esc(nd.v)}</div>
+      ${nd.sub ? `<div class="fsub">${esc(nd.sub)}</div>` : ""}
+      ${nd.chips && nd.chips.length ? `<div class="fchips">${nd.chips.join("")}</div>` : ""}
+    </div>`).join("")}
   </div>`;
 }
