@@ -5,98 +5,189 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Walkthrough — AI Trend Agent</title>
 <!--
-  Presenter walkthrough: ONE real recommendation, end to end, in six steps.
+  Presenter walkthrough: ONE real recommendation, end to end, in six steps --
+  built for a projector: one dominant visual per step, a title and at most two
+  short lines, everything else behind "Show details".
 
   Content comes from two places and is kept strictly apart:
-    /walkthrough      authored narration + which card to feature + review
-                      findings (01_data/walkthrough.json)
-    /recommendations/{i}, /signals, /tiers, /eval/results/{file}
-                      every fact about the featured card and every number,
-                      read from the snapshot and result files at render time.
-  The featured card is identified by index AND title; if they disagree (the
-  snapshot was re-captured) the page stops with a warning instead of
-  narrating the wrong card. Zero API calls to any model.
-
-  Steps 3 and 4 render with cards.js -- the same traceBlock() and card() the
-  dashboard uses -- so the card here is exactly the card on the dashboard.
+    /walkthrough      authored narration, which card to feature, and review
+                      data (fact-check verdicts, captions) -- 01_data/walkthrough.json
+    /recommendations, /signals, /tiers, /eval/results/{file}
+                      every fact and every number, read at render time. The
+                      step 5 counts are COMPUTED from the snapshot + verdicts.
+  The featured card is identified by index AND title; a mismatch stops the
+  page with a warning. Zero model calls. No libraries: plain HTML/CSS/SVG/JS.
+  The five-node flow and the card come from cards.js, shared with the dashboard.
 -->
 <link rel="stylesheet" href="theme.css">
 <style>
-  body { font-size: 20px; }
-  .wt { max-width: 980px; margin: 0 auto; padding: 28px 24px 120px; }
+  html, body { height: 100%; }
+  body { font-size: 19px; }
+  .wt { max-width: 1120px; margin: 0 auto; padding: 18px 28px 92px; }
 
-  .wt-top { display: flex; align-items: center; gap: 18px; margin-bottom: 28px; }
+  .wt-top { display: flex; align-items: center; gap: 18px; margin-bottom: 14px; }
   .wt-top .grow { flex: 1; min-width: 0; }
-  .wt-top a { color: var(--accent); text-decoration: none; font-size: 0.8rem; }
-  .wt-top a:hover { text-decoration: underline; }
+  .wt-top a { color: var(--accent); text-decoration: none; font-size: 0.78rem; }
   .progress { display: flex; gap: 8px; align-items: center; }
   .dot { width: 34px; height: 6px; border-radius: 3px; background: var(--gridline); border: 0; padding: 0; cursor: pointer; }
   .dot[aria-current="step"] { background: var(--accent); }
   .dot.done { background: var(--baseline); }
-  .stepno { font-size: 0.8rem; color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 92px; text-align: right; }
+  .stepno { font-size: 0.78rem; color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 84px; text-align: right; }
 
-  .eyebrow { font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 8px; }
-  h2.wt-title { font-size: 2.4rem; letter-spacing: -0.025em; line-height: 1.12; margin: 0 0 14px; font-weight: 660; }
-  .lead { font-size: 1.35rem; color: var(--text-secondary); margin: 0 0 26px; line-height: 1.45; }
-  .wt-body p { font-size: 1.15rem; line-height: 1.6; margin: 0 0 16px; max-width: 46em; }
+  .eyebrow { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 4px; }
+  h2.wt-title { font-size: 2.1rem; letter-spacing: -0.025em; line-height: 1.1; margin: 0 0 6px; font-weight: 660; }
+  .lead { font-size: 1.12rem; color: var(--text-secondary); margin: 0 0 18px; line-height: 1.4; }
 
-  .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
-           padding: 22px 26px; box-shadow: var(--shadow); margin-top: 8px; }
-  .kv { display: grid; grid-template-columns: 150px 1fr; gap: 10px 20px; font-size: 1rem; }
-  .kv dt { color: var(--text-muted); }
-  .kv dd { margin: 0; overflow-wrap: anywhere; }
-  .kv code, .excerpt code { font-size: 0.92em; }
-  .summary-txt { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.55; margin-top: 14px; }
+  /* reveal in order; reduced-motion users get everything at once */
+  .rv { opacity: 0; animation: rv 460ms ease forwards; animation-delay: calc(var(--d, 0) * 1ms); }
+  @keyframes rv { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .rv { animation: none; opacity: 1; } }
 
-  /* the reused card/trace, scaled up a notch for projection */
-  .reuse { font-size: 1.05rem; }
-  .reuse .rec { padding: 22px 26px; }
-  .matched-block { margin-top: 18px; }
-  .matched-block .matched { font-size: 0.88rem; }
+  details.more { margin-top: 12px; }
+  details.more > summary { cursor: pointer; font-size: 0.8rem; color: var(--text-secondary); }
+  details.more .more-body { font-size: 0.86rem; color: var(--text-secondary); line-height: 1.55; margin-top: 8px;
+                            border-left: 2px solid var(--gridline); padding-left: 12px; }
 
-  /* REVIEW is visibly not agent output */
-  .review-badge { display: inline-block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em;
-                  text-transform: uppercase; padding: 5px 11px; border-radius: 6px;
-                  border: 1.5px solid var(--text-primary); color: var(--text-primary); margin-bottom: 14px; }
-  .finding { border-left: 4px solid var(--text-primary); padding: 4px 0 4px 20px; margin: 0 0 26px; }
-  .finding h3 { font-size: 1.45rem; margin: 0 0 12px; }
-  .finding p { font-size: 1.08rem; line-height: 1.55; margin: 0 0 10px; }
-  .verdict { font-weight: 680; }
-  .excerpt { font-size: 0.92rem; color: var(--text-secondary); margin: 6px 0 12px; }
-  .excerpt q { font-style: italic; }
-  .pending { display: inline-block; font-size: 0.8rem; padding: 4px 10px; border-radius: 999px;
-             border: 1px dashed var(--warning); color: var(--text-secondary); margin: 2px 0 12px; }
-  .sub { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin: 26px 0 10px; }
-  ul.points { margin: 0; padding-left: 22px; font-size: 1.05rem; line-height: 1.55; }
-  ul.points li { margin-bottom: 8px; }
-  .fail-list { display: grid; gap: 10px; }
-  .fail-item { font-size: 0.98rem; line-height: 1.5; }
-  .fail-item b { margin-right: 6px; }
-  .fail-item .cite-src { display: block; font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
-  table.evalt { width: 100%; border-collapse: collapse; font-size: 0.95rem; margin-top: 6px; }
-  table.evalt th, table.evalt td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--gridline); }
-  table.evalt th { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
-  table.evalt td.n { font-variant-numeric: tabular-nums; }
-  .closing { font-size: 1.5rem; font-weight: 640; margin: 30px 0 8px; letter-spacing: -0.01em; }
-  .closing-note { font-size: 1rem; color: var(--text-secondary); }
+  /* ---- step 1: the timeline ------------------------------------------- */
+  .timeline svg { width: 100%; height: auto; max-height: 360px; display: block; }
+  .tl-lab { fill: var(--surface-1); stroke: var(--baseline); stroke-width: 2; }
+  .tl-lab.rot { animation: rot 3.2s ease forwards 700ms; }
+  @keyframes rot { 0% { fill: var(--surface-1); stroke: var(--baseline); } 55% { fill: color-mix(in srgb, var(--warning) 45%, var(--surface-1)); stroke: var(--warning); }
+                   100% { fill: color-mix(in srgb, var(--critical) 40%, var(--surface-1)); stroke: var(--critical); } }
+  .tl-crack { opacity: 0; animation: rv 400ms ease forwards 3400ms; }
+  .tl-text { fill: var(--text-secondary); font-size: 15px; }
+  .tl-small { fill: var(--text-muted); font-size: 13px; }
+  .tl-axis { stroke: var(--baseline); stroke-width: 2; }
+  .tl-bell { opacity: 0; animation: rv 400ms ease forwards 3900ms; }
+  @media (prefers-reduced-motion: reduce) {
+    .tl-lab.rot { animation: none; fill: color-mix(in srgb, var(--critical) 40%, var(--surface-1)); stroke: var(--critical); }
+    .tl-crack, .tl-bell { animation: none; opacity: 1; }
+  }
 
-  .roadmap li { font-size: 1.1rem; }
-  .bigbtn { display: inline-block; margin-top: 18px; font-size: 1.05rem; padding: 12px 18px;
-            border-radius: 10px; background: var(--accent); color: #fff; text-decoration: none; }
+  /* ---- step 2: release card into the inbox ------------------------------ */
+  .inbox-wrap { display: grid; grid-template-columns: 1.5fr 1fr; gap: 26px; align-items: center; }
+  .gh { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow);
+        padding: 22px 24px; animation: slide 700ms cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes slide { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .gh { animation: none; } }
+  .gh-repo { font-size: 0.9rem; color: var(--text-secondary); font-family: ui-monospace, Consolas, monospace; }
+  .gh-tag { display: inline-block; margin: 12px 0 6px; font-size: 1.55rem; font-weight: 680; letter-spacing: -0.01em; }
+  .gh-pill { display: inline-block; font-size: 0.72rem; padding: 3px 9px; border-radius: 999px;
+             border: 1px solid color-mix(in srgb, var(--good) 60%, var(--border)); color: var(--text-secondary); margin-left: 10px; vertical-align: middle; }
+  .gh-date { font-size: 0.85rem; color: var(--text-muted); }
+  .gh-line { margin-top: 14px; font-size: 1.02rem; font-family: ui-monospace, Consolas, monospace; }
+  .inbox { border: 2px dashed var(--baseline); border-radius: 14px; padding: 18px; text-align: center; }
+  .inbox .big { font-size: 2.6rem; font-weight: 680; line-height: 1; font-variant-numeric: tabular-nums; }
+  .inbox .cap { font-size: 0.85rem; color: var(--text-muted); margin-top: 6px; }
+  .inbox .arrow { font-size: 1.8rem; color: var(--accent); }
 
-  .alert { border: 1px solid var(--critical); border-left: 5px solid var(--critical); border-radius: 12px;
-           padding: 22px 26px; background: var(--surface-1); }
+  /* ---- step 3: flow + handoff -------------------------------------------- */
+  .flow-big .flow5 { gap: 8px; }
+  .flow-big .fnode { padding: 12px 14px; }
+  .flow-big .fv { font-size: 1.02rem; }
+  .flow-big .fk { font-size: 0.72rem; }
+  .handoff { display: grid; grid-template-columns: 1fr 150px 1fr; align-items: center; gap: 10px; margin-top: 16px; }
+  .bubble { position: relative; background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
+            padding: 12px 16px; font-size: 0.98rem; line-height: 1.45; box-shadow: var(--shadow); }
+  .bubble .who { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .bubble.ok { border-color: color-mix(in srgb, var(--good) 55%, var(--border)); }
+  .bubble.bad { border-color: var(--critical); }
+  .hand-arrow { text-align: center; color: var(--critical); }
+  .hand-arrow svg { width: 150px; height: 44px; display: block; margin: 0 auto; }
+  .hand-arrow .lbl { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; }
+  .hl { background: color-mix(in srgb, var(--warning) 30%, transparent); border-radius: 3px; padding: 0 2px; }
+
+  /* ---- step 4: the card, large ------------------------------------------ */
+  .card-stage { max-width: 900px; margin: 0 auto; }
+  .card-stage .rec { padding: 20px 24px; }
+  .card-stage .rec-title { font-size: 1.25rem; }
+  .card-stage .tag { font-size: 0.95rem; padding: 7px 14px; }
+  .card-stage .score { font-size: 1.15rem; }
+  .card-stage .score b { font-size: 1.7rem; }
+  /* one line per step; markers moved inside so overflow:hidden cannot clip them */
+  .card-stage ul.plan { padding-left: 4px; }
+  .card-stage ul.plan li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; list-style-position: inside; }
+  .card-stage.full ul.plan li { white-space: normal; }
+
+  /* ---- step 5: scoreboards ---------------------------------------------- */
+  .review-badge { display: inline-block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+                  padding: 4px 10px; border-radius: 6px; border: 1.5px solid var(--text-primary); margin-bottom: 12px; }
+  .boards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .board { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+  .board .num { font-size: 2.3rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .board .cap { font-size: 0.86rem; color: var(--text-secondary); margin-top: 6px; line-height: 1.4; }
+  .dots { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .dotv { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 0.8rem; font-weight: 700;
+          border: 2px solid var(--baseline); color: var(--text-muted); cursor: help; }
+  .dotv.red   { background: var(--critical); border-color: var(--critical); color: #fff; }
+  .dotv.amber { background: var(--warning);  border-color: var(--warning);  color: #0b0b0b; }
+  .dotv.green { background: var(--good);     border-color: var(--good);     color: #fff; }
+  .bars { display: flex; align-items: flex-end; gap: 4px; height: 70px; margin-top: 24px; border-bottom: 1px solid var(--baseline); position: relative; }
+  .bars span { flex: 1; background: var(--accent); border-radius: 3px 3px 0 0; cursor: help; }
+  .bars .axis { position: absolute; left: 0; right: 0; top: -1px; border-top: 1px dashed var(--gridline); font-size: 0.65rem; color: var(--text-muted); }
+  .bars .axis b { position: absolute; right: 0; top: -15px; font-weight: 500; }
+  .verdict { display: grid; gap: 8px; margin: 16px 0 4px; }
+  .vrow { display: flex; align-items: center; gap: 14px; font-size: 1.12rem; }
+  .vrow .mark { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; font-weight: 800; flex: none; }
+  .vrow .mark.no { background: var(--critical); color: #fff; }
+  .vrow .mark.yes { background: var(--good); color: #fff; }
+  .vrow .vl { color: var(--text-muted); min-width: 110px; }
+  .pending { display: inline-block; font-size: 0.75rem; padding: 3px 10px; border-radius: 999px;
+             border: 1px dashed var(--warning); color: var(--text-secondary); }
+  .fails { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px; }
+  .fail { border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: var(--surface-1); }
+  .fail .ic { font-size: 1.5rem; line-height: 1; }
+  .fail .ct { font-size: 0.84rem; margin-top: 6px; line-height: 1.35; }
+  .fail details > summary { font-size: 0.72rem; color: var(--text-muted); cursor: pointer; margin-top: 6px; }
+  .fail details p { font-size: 0.78rem; color: var(--text-secondary); margin: 6px 0 0; }
+  .eval { margin-top: 16px; }
+  .erow { display: grid; grid-template-columns: 230px 1fr 110px; align-items: center; gap: 12px; margin: 8px 0; font-size: 0.9rem; }
+  .etrack { position: relative; height: 18px; background: var(--gridline); border-radius: 3px; }
+  .efill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 3px 4px 4px 3px; }
+  .erange { position: absolute; top: -4px; bottom: -4px; border-left: 2px solid var(--text-primary); border-right: 2px solid var(--text-primary); }
+  .erange::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 2px solid var(--text-primary); }
+  .eval-note { font-size: 0.75rem; color: var(--text-muted); }
+  .closing { font-size: 1.35rem; font-weight: 650; margin: 18px 0 2px; }
+  .sub { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin: 18px 0 6px; }
+
+  /* ---- step 6: domain tiles ---------------------------------------------- */
+  .domains { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 10px; }
+  .dom { border: 2px solid var(--border); border-radius: 16px; padding: 28px 22px; text-align: center; background: var(--surface-1); }
+  .dom .dn { font-size: 1.35rem; font-weight: 660; }
+  .dom .ds { font-size: 0.86rem; color: var(--text-muted); margin-top: 8px; }
+  .dom.live { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+  .dom.live .ds { color: var(--accent); font-weight: 600; }
+  .dom.configured { opacity: 0.45; filter: grayscale(1); }
+  .bigbtn { display: inline-block; margin-top: 22px; font-size: 1rem; padding: 11px 18px; border-radius: 10px;
+            background: var(--accent); color: #fff; text-decoration: none; }
+
+  .alert { border: 1px solid var(--critical); border-left: 5px solid var(--critical); border-radius: 12px; padding: 22px 26px; background: var(--surface-1); }
   .alert h2 { margin: 0 0 10px; font-size: 1.5rem; color: var(--critical); }
   .alert p { margin: 0 0 8px; font-size: 1.05rem; }
 
-  .nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--page);
-         border-top: 1px solid var(--gridline); }
-  .nav-in { max-width: 980px; margin: 0 auto; padding: 14px 24px; display: flex; gap: 12px; align-items: center; }
-  .nav button { font-size: 1.05rem; padding: 12px 22px; border-radius: 10px; }
+  .nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--page); border-top: 1px solid var(--gridline); }
+  .nav-in { max-width: 1120px; margin: 0 auto; padding: 10px 28px; display: flex; gap: 12px; align-items: center; }
+  .nav button { font-size: 1rem; padding: 10px 20px; border-radius: 10px; }
   .nav .next { background: var(--accent); border-color: var(--accent); color: #fff; }
   .nav button:disabled { opacity: 0.35; cursor: default; }
-  .nav .hint { flex: 1; text-align: center; font-size: 0.78rem; color: var(--text-muted); }
-  @media (max-width: 700px) { body { font-size: 17px; } h2.wt-title { font-size: 1.8rem; } .kv { grid-template-columns: 1fr; } .nav .hint { display: none; } }
+  .nav .hint { flex: 1; text-align: center; font-size: 0.75rem; color: var(--text-muted); }
+
+  /* 1280x720: tighten so steps 1-4 fit without scrolling */
+  @media (max-height: 800px) {
+    body { font-size: 16px; }
+    .wt { padding-top: 12px; padding-bottom: 76px; }
+    h2.wt-title { font-size: 1.75rem; }
+    .lead { margin-bottom: 12px; font-size: 1.02rem; }
+    .timeline svg { max-height: 300px; }
+    .flow-big .fv { font-size: 0.95rem; }
+    .bubble { font-size: 0.9rem; padding: 10px 14px; }
+    .nav-in { padding: 7px 28px; }
+  }
+  @media (max-width: 860px) {
+    .inbox-wrap, .boards, .fails, .domains { grid-template-columns: 1fr; }
+    .handoff { grid-template-columns: 1fr; } .hand-arrow svg { transform: rotate(90deg); }
+    .erow { grid-template-columns: 1fr; } .nav .hint { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -120,7 +211,7 @@
 <script src="cards.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
-const W = { story: null, rec: null, tiers: [], signal: null, evals: [], actionable: [], onboarding: false, step: 0 };
+const W = { story: null, rec: null, tiers: [], signal: null, signalCount: 0, evals: [], actionable: [], onboarding: false, step: 0 };
 
 try {                                   // same per-viewer theme as the other pages
   const saved = localStorage.getItem("ata-theme");
@@ -176,7 +267,7 @@ async function load() {
   ]);
   W.tiers = tiers;
   W.signal = sig ? (sig.signals || []).find((s) => s.title === W.rec.trend) || null : null;
-  W.signalSource = sig ? sig.source : "";
+  W.signalCount = sig ? (sig.signals || []).length : 0;
   W.actionable = act ? act.recommendations : [];
   W.evals = await Promise.all((W.story.eval_results || []).map((e) =>
     getJSON(`/eval/results/${encodeURIComponent(e.file)}`).then((d) => ({ ...e, data: d }))
@@ -189,96 +280,178 @@ async function load() {
 }
 
 // ---------------------------------------------------------------------------
-// STEPS
+// helpers
 // ---------------------------------------------------------------------------
+const trim = (s, n) => { s = String(s || "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s; };
+const more = (html) => `<details class="more"><summary>Show details</summary><div class="more-body">${html}</div></details>`;
+const rv = (html, d) => `<div class="rv" style="--d:${d}">${html}</div>`;
+
 function head(s, i) {
   return `<p class="eyebrow">Step ${i + 1} of ${W.story.steps.length}</p>
           <h2 class="wt-title">${esc(s.title)}</h2>
-          ${s.lead ? `<p class="lead">${esc(s.lead)}</p>` : ""}
-          <div class="wt-body">${(s.body || []).map((p) => `<p>${esc(p)}</p>`).join("")}</div>`;
+          ${s.lead ? `<p class="lead">${esc(s.lead)}</p>` : ""}`;
 }
 
+// the one-line summary of a release: its first real change, not the boilerplate
+function releaseLine(summary) {
+  const parts = String(summary || "").split(/(?=\b(?:chore|fix|feat|docs|refactor|perf|release)\()/)
+    .map((x) => x.trim()).filter(Boolean);
+  const real = parts.find((p) => !/^release\(|^Changes since/i.test(p));
+  return trim(real || parts[0] || "", 90);
+}
+
+// ---------------------------------------------------------------------------
+// STEPS -- one dominant visual each
+// ---------------------------------------------------------------------------
 const RENDER = {
-  problem: () => "",
+  problem: () => {
+    const weeks = ["Week 2", "Week 3", "Week 4", "Week 5", "Week 6"];
+    const x = (i) => 90 + i * 190;
+    const labs = weeks.map((w, i) => `
+      <g><rect class="tl-lab${i === 1 ? " rot" : ""}" x="${x(i) - 55}" y="70" width="110" height="80" rx="10"/>
+         <text class="tl-text" x="${x(i) - 12}" y="116" text-anchor="middle">lab</text>
+         <text class="tl-small" x="${x(i)}" y="182" text-anchor="middle">${w}</text></g>`).join("");
+    return `<div class="timeline"><svg viewBox="0 0 960 300" role="img"
+        aria-label="A curriculum timeline. One lab, in week 3, turns red over time; no alert goes off.">
+      <line class="tl-axis" x1="20" y1="215" x2="940" y2="215"/>
+      ${labs}
+      <g class="tl-crack"><path d="M ${x(1) + 34} 74 l -12 20 l 10 16 l -12 24 l 8 14" fill="none" stroke="var(--critical)" stroke-width="3"/>
+        <text class="tl-text" x="${x(1)}" y="52" text-anchor="middle" style="fill:var(--critical);font-weight:700">breaks after a library release</text></g>
+      <g class="tl-bell"><text x="${x(4)}" y="262" text-anchor="middle" font-size="30">🔕</text>
+        <text class="tl-small" x="${x(4)}" y="290" text-anchor="middle">no alert</text></g>
+      <text class="tl-small" x="20" y="262">time →</text>
+    </svg></div>`;
+  },
 
   signal: () => {
     const s = W.signal;
-    if (!s) return `<div class="panel"><p class="summary-txt">The raw signal for this card is not in
-      ${esc(W.signalSource || "the snapshot's signals file")}, so it cannot be shown here.</p></div>`;
-    const summary = (s.summary || "").replace(/\s+/g, " ").trim();
-    return `<div class="panel"><dl class="kv">
-        <dt>Title</dt><dd><b>${esc(s.title)}</b></dd>
-        <dt>Source</dt><dd>${esc(s.source)} · ${esc(s.source_tier)}</dd>
-        <dt>Published</dt><dd>${esc((s.published || "").replace("T", " ").replace("Z", " UTC"))}</dd>
-        <dt>Link</dt><dd><code>${esc(s.url || "—")}</code></dd>
-      </dl>
-      ${summary ? `<div class="summary-txt">${esc(summary.slice(0, 420))}${summary.length > 420 ? "…" : ""}</div>` : ""}
-      <p class="summary-txt">From <code>${esc(W.signalSource)}</code>.</p></div>`;
+    if (!s) return `<p class="lead">The raw signal for this card is not in the snapshot's signals file.</p>`;
+    const [repo, tag] = [s.title.split(": ")[0], s.title.split(": ").slice(1).join(": ")];
+    const date = (s.published || "").slice(0, 10);
+    return `<div class="inbox-wrap">
+      <div class="gh" role="img" aria-label="Release ${esc(tag)} of ${esc(repo)}">
+        <div class="gh-repo">▣ ${esc(repo)}</div>
+        <div class="gh-tag">🏷 ${esc(tag)}<span class="gh-pill">${esc(s.source)} · ${esc(s.source_tier)}</span></div>
+        <div class="gh-date">Released ${esc(date)}</div>
+        <div class="gh-line">${esc(releaseLine(s.summary))}</div>
+      </div>
+      ${rv(`<div class="inbox"><div class="arrow">↓</div><div class="big">${W.signalCount || "—"}</div>
+        <div class="cap">signals in the monitoring inbox<br>this run</div></div>`, 650)}
+    </div>
+    ${more(`<p><b>Full release text:</b> ${esc(s.summary || "")}</p><p><code>${esc(s.url || "")}</code></p>`)}`;
   },
 
   agent: () => {
-    const m = W.rec.match;
-    const trace = traceBlock(W.rec);
-    return `<div class="reuse">${trace || `<div class="panel"><p class="summary-txt">This snapshot
-        carries no agent trace for this card.</p></div>`}
-      ${m ? `<div class="panel matched-block"><p class="sub" style="margin-top:0">What it matched</p>
-        <p style="margin:0 0 10px"><code>${esc(m.citation || "")}</code></p>
-        ${m.matched_text ? `<div class="matched">${esc(m.matched_text)}</div>` : ""}</div>` : ""}</div>`;
+    const r = W.rec;
+    const c = (r.trace || {}).curriculum || {};
+    const concl = c.reason || "";
+    const plan0 = (r.action_plan || [])[0] || "";
+    const mark = (t, re) => esc(t).replace(re, (m) => `<span class="hl">${m}</span>`);
+    const bubbles = concl && plan0 ? rv(`<div class="handoff">
+        <div class="bubble ok"><div class="who">Curriculum agent concluded</div>
+          ${mark(trim(concl, 170), /deprecat\w*/gi)}</div>
+        <div class="hand-arrow"><svg viewBox="0 0 150 44" aria-hidden="true">
+            <line x1="6" y1="22" x2="132" y2="22" stroke="currentColor" stroke-width="3"/>
+            <path d="M 130 12 L 146 22 L 130 32 Z" fill="currentColor"/></svg>
+          <div class="lbl">lost in the handoff</div></div>
+        <div class="bubble bad"><div class="who">Plan, first step</div>
+          ${mark(trim(plan0, 150), /import[^.]*?path|module path/gi)}</div>
+      </div>`, 2000) : "";
+    return `<div class="flow-big">${flowBlock(r, { tiers: W.tiers, animate: true })}</div>${bubbles}
+      ${more(`<p><b>Curriculum agent's conclusion:</b> ${esc(concl)}</p>
+              <p><b>Full plan:</b></p><ol>${(r.action_plan || []).map((p) => `<li>${esc(p)}</li>`).join("")}</ol>
+              ${r.index !== undefined ? `<p><a href="trace.html?i=${r.index}" style="color:var(--accent)">Full step-by-step trace →</a></p>` : ""}`)}`;
   },
 
-  card: () => `<div class="reuse">${card(W.rec, W.tiers)}</div>`,
+  card: () => `<div class="card-stage" id="cardStage">${card(W.rec, W.tiers)}</div>
+    <details class="more" ontoggle="document.getElementById('cardStage').classList.toggle('full', this.open)">
+      <summary>Show details — full plan text</summary></details>`,
 
   review: () => {
     const R = W.story.review || {};
     const F = R.featured || {};
     const P = R.pattern || {};
-    const pending = F.verified === true ? ""
-      : `<span class="pending">Pending presenter check — confirm against the release note and cell 36</span>`;
-    const featured = `<section class="finding">
-        <h3>${esc(F.headline || "")}</h3>${pending}
-        <p><span class="verdict">The agent said:</span> ${esc(F.agent_claim || "")}</p>
-        <p><span class="verdict">Review:</span> ${esc(F.finding_claim || "")}</p>
-        ${F.release_excerpt ? `<p class="excerpt">Release note: <q>${esc(F.release_excerpt)}</q>
-          ${F.pr_excerpt ? ` · PR: <q>${esc(F.pr_excerpt)}</q>` : ""}</p>` : ""}
-        ${F.cell_excerpt ? `<p class="excerpt">Cell 36: <code>${esc(F.cell_excerpt)}</code></p>` : ""}
-        <p>${esc(F.finding_real || "")}</p>
-      </section>`;
+    const pat = new RegExp(R.import_claim_pattern || "$^", "i");
+    const checks = Object.fromEntries((R.fact_checks || []).map((x) => [x.title, x]));
 
-    const pattern = `<p class="sub">${esc(P.headline || "")}</p>
-      <ul class="points">${(P.points || []).map((p) => `<li>${esc(p)}</li>`).join("")}</ul>`;
+    // COMPUTED: which actionable cards claim an import-path change, and what review found
+    const claimers = W.actionable.filter((r) => pat.test((r.action_plan || []).join(" ")));
+    const claimDots = claimers.map((r) => {
+      const fc = checks[r.trend];
+      const cls = !fc ? "" : fc.claim_supported ? "green" : "red";
+      const g = !fc ? "?" : fc.claim_supported ? "✓" : "✗";
+      return `<span class="dotv ${cls}" title="${esc(r.trend)}${fc ? " — " + esc(fc.why) : " — not fact-checked"}">${g}</span>`;
+    });
+    const supported = claimers.filter((r) => (checks[r.trend] || {}).claim_supported === true).length;
 
-    const fails = `<p class="sub">Other failures evaluation caught</p><div class="fail-list">${
-      (R.other_failures || []).map((x) => `<div class="fail-item"><b>${esc(x.name)}</b>${esc(x.text)}
-        ${x.citation ? `<span class="cite-src">${esc(x.citation)}</span>` : ""}</div>`).join("")}</div>`;
+    const books = {};
+    claimers.forEach((r) => {
+      const nb = (r.match || {}).source_file || "?";
+      const fc = checks[r.trend];
+      books[nb] = books[nb] || { needs: false, checked: false, cards: [] };
+      books[nb].cards.push(r.trend);
+      if (fc) { books[nb].checked = true; books[nb].needs = books[nb].needs || fc.needs_work; }
+    });
+    const nbList = Object.entries(books);
+    const needed = nbList.filter(([, b]) => b.needs).length;
+    const nbDots = nbList.map(([nb, b]) => `<span class="dotv ${b.needs ? "amber" : ""}"
+        title="${esc(nb)} (${esc(b.cards.join(", "))})">${b.needs ? "!" : b.checked ? "✓" : "?"}</span>`);
+
+    const confs = W.actionable.map((r) => Number(r.confidence));
+    const bars = W.actionable.map((r) => `<span style="height:${(Number(r.confidence) * 100).toFixed(0)}%"
+        title="${esc(r.trend)} — confidence ${Number(r.confidence).toFixed(2)}"></span>`).join("");
+    const same = confs.length && confs.every((c) => c === confs[0]);
+
+    const boards = `<div class="boards">
+      ${rv(`<div class="board"><div class="num">${supported} / ${claimers.length}</div>
+        <div class="cap">${esc(P.claims_caption || "")}</div><div class="dots">${claimDots.join("")}</div></div>`, 100)}
+      ${rv(`<div class="board"><div class="num">${needed} / ${nbList.length}</div>
+        <div class="cap">${esc(P.notebooks_caption || "")}</div><div class="dots">${nbDots.join("")}</div></div>`, 450)}
+      ${rv(`<div class="board"><div class="num">${confs.length} × ${same ? confs[0].toFixed(2) : "…"}</div>
+        <div class="cap">${esc(P.confidence_caption || "")}</div>
+        <div class="bars" aria-label="Confidence of each actionable card">${bars}
+          <div class="axis"><b>1.0</b></div></div></div>`, 800)}
+    </div>`;
+
+    const verdict = rv(`<p class="sub">The featured card — ${esc(F.headline || "")}
+        ${F.verified === true ? "" : ` <span class="pending">Pending presenter check</span>`}</p>
+      <div class="verdict">${(F.verdict_rows || []).map((v) => `<div class="vrow">
+        <span class="mark ${v.ok ? "yes" : "no"}">${v.ok ? "✓" : "✗"}</span>
+        <span class="vl">${esc(v.label)}</span><span>${esc(v.text)}</span></div>`).join("")}</div>
+      ${more(`<p><b>The plan said:</b> ${esc(F.agent_claim || "")}</p><p>${esc(F.finding_claim || "")}</p>
+              <p>Release note: <q>${esc(F.release_excerpt || "")}</q> · PR: <q>${esc(F.pr_excerpt || "")}</q></p>
+              <p>Cell 36: <code>${esc(F.cell_excerpt || "")}</code></p><p>${esc(F.finding_real || "")}</p>`)}`, 1150);
+
+    const fails = rv(`<p class="sub">Other failures evaluation caught</p><div class="fails">${
+      (R.other_failures || []).map((x) => `<div class="fail"><div class="ic" aria-hidden="true">${esc(x.icon || "•")}</div>
+        <div class="ct"><b>${esc(x.name)}</b><br>${esc(x.caption || "")}</div>
+        <details><summary>details</summary><p>${esc(x.text)}</p>${x.citation ? `<p>${esc(x.citation)}</p>` : ""}</details></div>`).join("")}</div>`, 1450);
 
     const rows = W.evals.map((e) => {
-      if (e.error || !e.data) return `<tr><td>${esc(e.label)}</td><td colspan="4">not available (${esc(e.error || "missing")})</td></tr>`;
+      if (e.error || !e.data) return `<div class="erow"><span>${esc(e.label)}</span><span class="eval-note">not available</span><span></span></div>`;
       const v = ((e.data.aggregate || {}).layers || {}).verification || {};
-      const mt = v.metrics || {};
-      const f = (x, d = 2) => (x && x.mean != null ? x.mean.toFixed(d) : "—");
-      const pm = (x, d = 2) => (x && x.mean != null ? `${x.mean.toFixed(d)} ± ${(x.std || 0).toFixed(d)}` : "—");
-      return `<tr><td>${esc(e.label)}</td><td class="n">${pm(v.score)}</td>
-        <td class="n">${f(mt.truth_confidence_gap, 3)}</td><td class="n">${f(mt.confidence_mae, 3)}</td>
-        <td class="n">${pm((e.data.aggregate || {}).composite_score)}</td></tr>`;
+      const mean = v.score && v.score.mean != null ? v.score.mean : null;
+      const per = (e.data.runs || []).map((r) => (((r.layers || {}).verification || {}).score)).filter((x) => x != null);
+      const lo = per.length ? Math.min(...per) : mean, hi = per.length ? Math.max(...per) : mean;
+      const range = hi - lo > 0.01 ? `<span class="erange" style="left:${lo}%;width:${hi - lo}%" title="repeats ${per.map((p) => p.toFixed(1)).join(" / ")}"></span>` : "";
+      return `<div class="erow"><span>${esc(e.label)}</span>
+        <span class="etrack"><span class="efill" style="width:${mean || 0}%"></span>${range}</span>
+        <span style="font-variant-numeric:tabular-nums">${mean != null ? mean.toFixed(1) : "—"}${
+          v.score && v.score.std ? ` ± ${v.score.std.toFixed(1)}` : ""}</span></div>`;
     }).join("");
-    const evals = W.evals.length ? `<p class="sub">Evaluation, read from 04_eval/results</p>
-      <table class="evalt"><tr><th>Run</th><th>Verification</th><th>Gap</th><th>MAE</th><th>Composite</th></tr>${rows}</table>` : "";
+    const evals = W.evals.length ? rv(`<div class="eval"><p class="sub">Verification score, gold set (0–100) · read from 04_eval/results</p>${rows}
+      <div class="eval-note">Bracket = spread across the live run's repeats.</div></div>`, 1750) : "";
 
-    // computed from the snapshot, not authored: what confidence actually says
-    const confs = [...new Set(W.actionable.map((r) => r.confidence))];
-    const confNote = !W.actionable.length ? "" : confs.length === 1
-      ? `Every one of the ${W.actionable.length} actionable cards has confidence ${Number(confs[0]).toFixed(2)}: confidence says the release is real, not that the recommendation is right.`
-      : `The ${W.actionable.length} actionable cards range from confidence ${Math.min(...confs).toFixed(2)} to ${Math.max(...confs).toFixed(2)}: confidence says the release is real, not that the recommendation is right.`;
-
-    return `<span class="review-badge">Review — not agent output</span>${featured}${pattern}${fails}${evals}
-      <p class="closing">${esc(R.closing || "")}</p><p class="closing-note">${esc(confNote)}</p>`;
+    return `<span class="review-badge">Review — not agent output</span>${boards}${verdict}${fails}${evals}
+      ${rv(`<p class="closing">${esc(R.closing || "")}</p><p class="eval-note">${esc(P.takeaway || "")}</p>`, 2050)}`;
   },
 
   next: () => {
     const rm = W.story.roadmap || {};
-    return `<ul class="points roadmap">${(rm.static || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+    return `<div class="domains">${(rm.domains || []).map((d, i) => rv(`<div class="dom ${esc(d.status)}">
+        <div class="dn">${esc(d.name)}</div><div class="ds">${esc(d.note || d.status)}</div></div>`, 150 + i * 250)).join("")}</div>
       ${W.onboarding ? `<a class="bigbtn" href="${esc(rm.onboarding_url)}">${esc(rm.onboarding_label || "Onboarding")} →</a>` : ""}
-      <p style="margin-top:26px"><a href="advanced.html" style="color:var(--accent)">Open the full dashboard →</a></p>`;
+      ${more(`<ul>${(rm.static || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`)}`;
   },
 };
 
@@ -286,10 +459,7 @@ function go(i, push = true) {
   const steps = W.story.steps;
   W.step = Math.max(0, Math.min(steps.length - 1, i));
   const s = steps[W.step];
-  const render = RENDER[s.id] || (() => "");
-  $("stage").innerHTML = head(s, W.step) + render();
-  if (s.id === "agent")      // the trace IS step 3; step 4 shows the card exactly as the dashboard does
-    $("stage").querySelectorAll("details.rec-trace").forEach((d) => { d.open = true; });
+  $("stage").innerHTML = head(s, W.step) + (RENDER[s.id] || (() => ""))();
   $("progress").innerHTML = steps.map((x, k) =>
     `<button class="dot${k < W.step ? " done" : ""}" ${k === W.step ? 'aria-current="step"' : ""}
       aria-label="Step ${k + 1}: ${esc(x.title)}" data-k="${k}"></button>`).join("");

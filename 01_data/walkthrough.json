@@ -8,40 +8,31 @@
     {
       "id": "problem",
       "title": "The problem",
-      "lead": "Curricula go stale quietly.",
-      "body": [
-        "Libraries ship new releases every week. A renamed import or a deprecated class does not announce itself to the course that teaches it.",
-        "Nobody notices a broken lab until a student runs the cell and it fails. By then it is already in front of the class."
-      ]
+      "lead": "A library changes. The lab breaks silently. Nobody is told.",
+      "body": []
     },
     {
       "id": "signal",
       "title": "A signal arrives",
-      "lead": "Monitoring picks up a release the moment it ships.",
-      "body": [
-        "This is the raw signal exactly as monitoring captured it from GitHub, before any agent has looked at it."
-      ]
+      "lead": "Monitoring catches the release the moment it ships.",
+      "body": []
     },
     {
       "id": "agent",
       "title": "The agent works on it",
-      "lead": "Every step it took is recorded.",
-      "body": [
-        "First it checks the release is real. Then it searches our own slides and lab notebooks for material the release could touch."
-      ]
+      "lead": "Five stages. Every call it made is on the record.",
+      "body": []
     },
     {
       "id": "card",
       "title": "It lands on the dashboard",
-      "lead": "This is what a curriculum lead sees.",
-      "body": [
-        "Tier, score, confidence, the exact cell it points at, and a plan. The agent only recommends: a human approves."
-      ]
+      "lead": "What a curriculum lead sees. The agent recommends; a human approves.",
+      "body": []
     },
     {
       "id": "review",
       "title": "Review",
-      "lead": "Then we checked the claim against reality.",
+      "lead": "Then we checked the advice against reality.",
       "body": []
     },
     {
@@ -64,48 +55,104 @@
       "sources": [
         "https://github.com/langchain-ai/langchain/releases/tag/langchain-core%3D%3D1.6.4",
         "https://github.com/langchain-ai/langchain/pull/40711"
+      ],
+      "verdict_rows": [
+        {
+          "label": "Claim",
+          "text": "import path moved",
+          "ok": false
+        },
+        {
+          "label": "Real reason",
+          "text": "deprecated in this same release",
+          "ok": true
+        }
       ]
     },
     "pattern": {
       "headline": "The pattern across the snapshot",
-      "points": [
-        "4 of 13 actionable cards claimed an import-path change. We fact-checked those 4 plus one SDK-version claim: 0 of 5 were supported by the release notes.",
-        "3 of the 4 notebooks behind those 5 cards genuinely needed work -- for other reasons.",
-        "Every release behind them was real. Verification held up; the plans overreached."
-      ]
+      "claims_caption": "import-path claims supported by the release notes",
+      "notebooks_caption": "notebooks behind them needed work anyway",
+      "confidence_caption": "confidence says the release is real -- not that the advice is right",
+      "takeaway": "Every release was real. Verification held up; the plans overreached."
     },
     "other_failures": [
       {
         "name": "Model-invented repo",
         "text": "V7 blog post: the model looked up openai/openai, which does not exist, and the verifier scored a genuine post as fabricated (0.15). Fixed: only repos named in the signal can be marked missing.",
-        "citation": "01_data/demo_snapshot.json -- \"How V7 gives AI agents institutional memory\""
+        "citation": "01_data/demo_snapshot.json -- \"How V7 gives AI agents institutional memory\"",
+        "icon": "🔎",
+        "caption": "Model invented a repo; a genuine post scored as fake"
       },
       {
         "name": "Wrong repo accepted",
         "text": "github_lookup(\"langchain\") ranks microsoft/markitdown first by stars; the restored repo guard rejects it.",
-        "citation": "02_src/agents/test_chain.py -- repo matching"
+        "citation": "02_src/agents/test_chain.py -- repo matching",
+        "icon": "⭐",
+        "caption": "Most-starred repo taken as the right one"
       },
       {
         "name": "Silent search failure",
         "text": "Before: a spend-limit error made every curriculum search fail silently, and three trends got confident add_new_lesson recommendations. Now it is flagged, blocked, and shows as a red warning on the card.",
-        "citation": "02_src/agents/curriculum.py -- search_failed"
+        "citation": "02_src/agents/curriculum.py -- search_failed",
+        "icon": "🔕",
+        "caption": "A failed search read as “no coverage”"
       },
       {
         "name": "Eval measuring the wrong thing",
         "text": "The eval paired results with gold labels by position; after one merged cluster, every score was graded against the wrong label. Fixed, and every number re-scored.",
-        "citation": "04_eval/run_eval.py -- commit c4c9355"
+        "citation": "04_eval/run_eval.py -- commit c4c9355",
+        "icon": "📏",
+        "caption": "Eval graded answers against the wrong labels"
       }
     ],
-    "closing": "Our confidence scores didn't catch these -- our evaluation did."
+    "closing": "Our confidence scores didn't catch these -- our evaluation did.",
+    "import_claim_pattern": "import (?:statement|path)|module path|new module|update the import|import for|imports? to",
+    "fact_checks": [
+      {
+        "title": "langchain-ai/langchain: langchain-core==1.6.4",
+        "claim_supported": false,
+        "needs_work": true,
+        "why": "The same release deprecates ChatMessageHistory, which cell 36 teaches."
+      },
+      {
+        "title": "openai/openai-python: v3.12.0",
+        "claim_supported": false,
+        "needs_work": false,
+        "why": "Cited cell is prose; the notebook already uses the current SDK."
+      },
+      {
+        "title": "openai/openai-python: v3.10.0",
+        "claim_supported": false,
+        "needs_work": true,
+        "why": "Other cells use langchain.chat_models / langchain.chains, which fail on LangChain 1.x."
+      },
+      {
+        "title": "langchain-ai/langchain: langchain-openai==1.6.3",
+        "claim_supported": false,
+        "needs_work": true,
+        "why": "The notebook pins LangChain 0.3 / langchain-openai 0.2 -- a major version behind."
+      },
+      {
+        "title": "langchain-ai/langchain: langchain==1.4.2",
+        "claim_supported": false,
+        "needs_work": true,
+        "why": "Same notebook as v3.10.0: cells 88 and 93 fail on LangChain 1.x."
+      }
+    ]
   },
   "eval_results": [
     {
-      "label": "Live (model-driven)",
-      "file": "live_baseline_fixed_harness.json"
+      "label": "Source-type heuristic",
+      "file": "rescored_1_pre_restore_nokey.json"
     },
     {
-      "label": "No model (scripted checks)",
+      "label": "Restored verifier (no model)",
       "file": "rescored_3_restored_fixed_nokey.json"
+    },
+    {
+      "label": "Restored verifier (live)",
+      "file": "live_baseline_fixed_harness.json"
     }
   ],
   "roadmap": {
@@ -115,6 +162,23 @@
       "Pick a domain -- agentic AI today; AI engineering and cybersecurity next.",
       "A content-type agent, so vendor case studies and self-promotion never reach the tier gates.",
       "An instructor companion: ask questions about any recommendation and its evidence."
+    ],
+    "domains": [
+      {
+        "name": "Agentic AI",
+        "status": "live",
+        "note": "Watching now"
+      },
+      {
+        "name": "AI Engineering",
+        "status": "configured",
+        "note": "Configured, not built"
+      },
+      {
+        "name": "Cybersecurity",
+        "status": "configured",
+        "note": "Configured, not built"
+      }
     ]
   }
 }
