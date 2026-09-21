@@ -58,6 +58,13 @@ MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 # confused model cannot loop forever and burn the API budget.
 MAX_STEPS = 5
 
+# A fallback verdict is scored from source tiers alone -- no claim was checked.
+# It must never reach maturity 4 (confidence >= 0.70 in evaluation.py), which is
+# the floor for any action tier. Without this cap an API outage (the spend-limit
+# 429) turned primary-source trends into 0.8 "verified" and actionable, the
+# verification twin of the silent curriculum-search failure.
+FALLBACK_CEILING = 0.65
+
 INJECTION_RE = re.compile(
     r"\b(?:ignore|disregard)\s+(?:(?:all|the)\s+)*"
     r"(?:previous|prior)\s+instructions\b"
@@ -683,14 +690,15 @@ class VerificationAgent:
         has_primary = "primary" in cluster.source_tiers
         n = cluster.independent_source_count
 
-        if has_primary and n >= 2:
-            conf = 0.8
-        elif has_primary:
+        # No 0.8 band: however many sources, an unchecked claim stays below
+        # the action floor (FALLBACK_CEILING, enforced again just below).
+        if has_primary:
             conf = 0.65
         elif n >= 2:
             conf = 0.45
         else:
             conf = 0.2
+        conf = min(conf, FALLBACK_CEILING)
 
         note = (f"Fallback verdict ({reason}). Scored from source "
                 "tiers only, without agent reasoning.")

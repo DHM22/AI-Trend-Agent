@@ -231,7 +231,7 @@ def test_invalid_json_triggers_fallback():
     c = cluster(sig("github", "primary"), sig("hackernews", "secondary"))
     trend = VerificationAgent(client=FakeLLM(["this is not json at all"])).run(c)
     assert "Fallback verdict" in trend.verification_note
-    assert trend.confidence == 0.8      # primary present + 2 independent sources
+    assert trend.confidence == 0.65     # fallback ceiling: never actionable without a checked claim
 
 
 def test_api_failure_triggers_fallback():
@@ -244,13 +244,16 @@ def test_api_failure_triggers_fallback():
 def test_fallback_scoring_bands():
     agent = VerificationAgent(client=RaisingLLM())
     bands = {
-        0.8:  cluster(sig("github", "primary"), sig("hackernews", "secondary")),
         0.65: cluster(sig("github", "primary")),
         0.45: cluster(sig("hackernews", "secondary"), sig("reddit", "secondary")),
         0.2:  cluster(sig("hackernews", "secondary")),
     }
     for expected, c in bands.items():
         assert agent.run(c).confidence == expected, f"expected {expected}"
+    # Primary + a second source used to score 0.8. A fallback never checked the
+    # claim, so however strong the sources look it stays at the ceiling.
+    strongest = cluster(sig("github", "primary"), sig("hackernews", "secondary"))
+    assert agent.run(strongest).confidence == V.FALLBACK_CEILING
 
 
 # ===========================================================================
