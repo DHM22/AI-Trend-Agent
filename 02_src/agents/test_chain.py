@@ -1249,6 +1249,21 @@ def test_walkthrough_content_and_routes():
               if v and v in text]
     check("walkthrough: no snapshot facts copied into the story file", copied, [])
 
+    # step 5 counts are COMPUTED on the page from the snapshot + these verdicts
+    import re as _re
+    actionable = {r["trend"] for r in recs if r["recommended_action"] != "watch"}
+    R = story["review"]
+    check("walkthrough: every fact-check names a real actionable card",
+          [fc["title"] for fc in R.get("fact_checks", []) if fc["title"] not in actionable], [])
+    pat = _re.compile(R["import_claim_pattern"], _re.I)
+    claimers = [r for r in recs if r["recommended_action"] != "watch"
+                and pat.search(" ".join(r["action_plan"]))]
+    checked = {fc["title"] for fc in R["fact_checks"]}
+    check("walkthrough: every import-path claimer has a fact-check (no '?' dots)",
+          [r["trend"] for r in claimers if r["trend"] not in checked], [])
+    check("walkthrough: pattern block carries no typed-in counts",
+          _re.findall(r"\d+\s*(?:of|/)\s*\d+", json.dumps(R["pattern"])), [])
+
     # routes
     from fastapi.testclient import TestClient
     if str(root) not in sys.path:
