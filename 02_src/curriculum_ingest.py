@@ -37,6 +37,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import re
 import shutil
 import subprocess
@@ -155,7 +156,7 @@ def extract_pdf(path: Path, week: int | None) -> list[CurriculumChunk]:
         for i, page in enumerate(pdf.pages, start=1):
             native_text = _normalize_extracted_text(page.extract_text() or "")
             ocr_text = ""
-            if _should_ocr_pdf_page(page, native_text):
+            if OCR_ENABLED and _should_ocr_pdf_page(page, native_text):
                 ocr_text = _ocr_pdf_page(
                     page, regions=_embedded_visual_regions(page))
             text, provenance = _merge_extracted_text_with_provenance(
@@ -181,10 +182,16 @@ def _tesseract_executable() -> str:
             return candidate
     raise RuntimeError(
         "OCR requested for a sparse PDF page, but Tesseract was not found. "
-        "Install an offline Tesseract executable or disable OCR explicitly."
+        "Install an offline Tesseract executable, or disable OCR explicitly "
+        "with --no-ocr (or CURRICULUM_OCR=0) -- the index will then lack "
+        "text that only exists inside slide images."
     )
 
 
+# Explicit opt-out for machines without Tesseract. Default stays ON, and a
+# missing Tesseract still raises: silently skipping OCR would build an index
+# missing image-only slide text with nothing to say so.
+OCR_ENABLED = os.environ.get("CURRICULUM_OCR", "1").strip().lower() not in {"0", "false", "off", "no"}
 OCR_NATIVE_SPARSE_CHARS = 200
 OCR_IMAGE_MIN_AREA_RATIO = 0.03
 OCR_IMAGE_MAX_AREA_RATIO = 0.92
@@ -795,6 +802,9 @@ def main():
     ap.add_argument("--type", choices=["slides", "lab"], dest="content_type",
                     help="restrict a query to slides or lab notebooks")
     ap.add_argument("-k", type=int, default=3, help="results to return")
+    ap.add_argument("--no-ocr", action="store_true",
+                    help="skip Tesseract OCR of sparse/diagram PDF pages "
+                         "(same as CURRICULUM_OCR=0); native text only")
     args = ap.parse_args()
 
     if args.query:
@@ -809,6 +819,9 @@ def main():
             print(f"\n[{score}] {h['citation']}{tag}")
             print(f"  {h['text'][:200]}...")
     else:
+        if args.no_ocr:
+            global OCR_ENABLED
+            OCR_ENABLED = False
         ingest(args.curriculum, args.db)
 
 
