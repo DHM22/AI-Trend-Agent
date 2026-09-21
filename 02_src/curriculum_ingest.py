@@ -814,7 +814,12 @@ def main():
             print("no results -- has anything been ingested?")
             return
         for h in hits:
-            score = f"{h['similarity']}" if h["similarity"] is not None else "exact"
+            # similarity is None for hits found only by the lexical pass; that is
+            # "exact" only when a literal identifier matched, else keyword overlap
+            if h["similarity"] is not None:
+                score = f"{h['similarity']}"
+            else:
+                score = "exact" if h["exact_match"] else "lexical"
             tag = f"  <- literal '{h['exact_match']}'" if h["exact_match"] else ""
             print(f"\n[{score}] {h['citation']}{tag}")
             print(f"  {h['text'][:200]}...")
