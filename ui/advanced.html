@@ -83,32 +83,6 @@
   .spacer { flex: 1; }
   .count { color: var(--text-muted); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
 
-  /* ---- recommendation cards -------------------------------------------- */
-  .recs { display: flex; flex-direction: column; gap: 12px; }
-  .rec { background: var(--surface-1); border: 1px solid var(--border);
-         border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow); }
-  .rec-top { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 10px; }
-  .rec-title { font-weight: 620; flex: 1; min-width: 0; letter-spacing: -0.01em; }
-  /* A card whose curriculum search FAILED carries the warning rule all the
-     way out to the card edge -- visible while scrolling, without opening
-     anything. The detail lives on trace.html; the warning does not hide. */
-  .rec.failed { border-left: 3px solid var(--critical); }
-
-  /* The inline trace is the card's last section, separated from the evidence
-     disclosure above it by a rule rather than by spacing alone. */
-  .rec-trace { border-top: 1px solid var(--gridline); margin-top: 6px; padding-top: 2px; }
-  .rec-trace .trace { padding: 6px 0 2px; }
-
-  .tracelink {
-    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
-    font-size: 0.8125rem; color: var(--accent); text-decoration: none;
-  }
-  .tracelink:hover { text-decoration: underline; }
-  .tracelink .arrow { transition: transform 140ms; }
-  .tracelink:hover .arrow { transform: translateX(2px); }
-
-  .rec-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
-              font-size: 0.8125rem; color: var(--text-secondary); margin-bottom: 12px; }
   /* ---- table view (the WCAG-clean twin of every chart above) ----------- */
   table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
   th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--gridline); }
@@ -157,7 +131,8 @@
     <div class="grow">
       <h1>AI Trend Agent</h1>
       <p class="tagline">Evidence-backed curriculum recommendations. The agent only recommends &mdash; a human approves.
-         <a href="simple.html" style="color:var(--accent)">Plain-language view</a>.</p>
+         <a href="simple.html" style="color:var(--accent)">Plain-language view</a> ·
+         <a href="walkthrough.html" style="color:var(--accent)">Guided walkthrough</a>.</p>
       <p class="meta" id="meta"></p>
     </div>
     <button id="theme" title="Toggle light / dark" aria-label="Toggle light or dark theme">◐</button>
@@ -242,19 +217,13 @@
   </div>
 </aside>
 
+<script src="cards.js"></script>
 <script>
 "use strict";
 
 // The API is same-origin: app.py serves this page at /ui/ and the JSON at /.
 const API = "";
 
-const TIER_VAR = {
-  update_existing_material: "--tier-1",
-  add_new_lesson:           "--tier-2",
-  add_optional_content:     "--tier-3",
-  investigate_larger_change:"--tier-4",
-  watch:                    "--tier-5",
-};
 
 // Tier order and labels come from /tiers, which reads them from
 // demo_snapshot.TIER_ORDER -- so this page cannot disagree with the CLI about
@@ -263,8 +232,6 @@ let TIERS = [];
 
 const state = { snap: null, recs: [], actionable: false, labOnly: false, table: false };
 const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
-  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 // ---------------------------------------------------------------------------
 // THEME  (stored per viewer; may throw in a private window, so it is guarded
@@ -436,213 +403,17 @@ function render() {
   if (state.table) return renderTable(rows);
 
   $("recs").innerHTML = rows.length
-    ? rows.map(card).join("")
+    ? rows.map((r) => card(r, TIERS)).join("")
     : `<p class="empty">Nothing matches these filters.</p>`;
 }
 
-function confidenceWords(c) {
-  if (typeof c !== "number") return ["var(--text-muted)", "n/a"];
-  if (c >= 0.85) return ["var(--good)", "strong"];
-  if (c >= 0.60) return ["var(--warning)", "moderate"];
-  return ["var(--critical)", "weak"];
-}
 
-function card(r) {
-  const tier = r.recommended_action || "";
-  const label = (TIERS.find((t) => t.tier === tier) || {}).label || tier;
-  const m = r.match || null;
-  const [cColor, cWord] = confidenceWords(r.confidence);
 
-  // An old snapshot has no trace at all -- every read below is guarded, and
-  // the absent case renders nothing rather than an empty box.
-  const ct = (r.trace || {}).curriculum || {};
-  const failed = ct.search_failed === true;
-  const skipped = ct.searched === false;
-
-  let cite;
-  if (m) {
-    cite = `<div class="cite">📎 <code>${esc(m.citation || "")}</code>
-       <span class="how">— ${m.content_type === "lab" ? "lab cell" : "slide"},
-       ${m.exact_match
-          ? `exact match on <code>${esc(m.exact_match)}</code>`
-          : `similarity ${esc(m.similarity)}`}</span></div>`;
-  } else if (failed) {
-    // Three different things can leave a recommendation without a citation.
-    // Only ONE of them means "we looked and there is no coverage".
-    cite = `<div class="cite failed">
-       <b>⚠ CURRICULUM SEARCH FAILED — this is NOT a finding of "no match".</b>
-       <div style="margin-top:5px;color:var(--text-secondary)">The search could not run,
-       so nothing was learned about existing coverage. Do not read this as a gap in
-       the curriculum.</div>
-       ${ct.reason ? `<div class="why">${esc(ct.reason)}</div>` : ""}</div>`;
-  } else if (skipped) {
-    cite = `<div class="cite none">📎 curriculum not searched —
-       ${esc(ct.skipped_reason || "below the confidence gate")}</div>`;
-  } else {
-    // Absence of a citation is information, not an empty field.
-    cite = `<div class="cite none">📎 no curriculum match</div>`;
-  }
-
-  const ev = r.evidence || [];
-  const evHTML = ev.map((e) => `
-    <div class="ev-item">
-      <span class="ev-src"><b>[${esc(e.tier || "?")}]</b> ${esc(e.source || "?")}</span>
-      ${e.note ? ` — ${esc(e.note)}` : ""}
-      ${e.url ? `<div class="ev-url">${esc(e.url)}</div>` : ""}
-    </div>`).join("") || `<p style="color:var(--text-muted);margin:0">No evidence recorded for this trend.</p>`;
-
-  return `<article class="rec${failed ? " failed" : ""}">
-    <div class="rec-top">
-      <div class="rec-title">${esc(r.trend || "untitled")}</div>
-      <span class="tag" style="background:var(${TIER_VAR[tier] || "--tier-5"});
-            color:var(${TIER_VAR[tier] || "--tier-5"}-ink)">${esc(label)}</span>
-    </div>
-    <div class="rec-meta">
-      <span class="pill" style="color:${cColor}">confidence ${
-        typeof r.confidence === "number" ? r.confidence.toFixed(2) : "n/a"} · ${cWord}</span>
-      ${r.total_score != null ? `<span class="score"><b>${esc(r.total_score)}</b>/5</span>` : ""}
-    </div>
-    ${cite}
-    ${(r.action_plan || []).length
-      ? `<ul class="plan">${r.action_plan.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>` : ""}
-    <details>
-      <summary>Evidence trail (${ev.length} source${ev.length === 1 ? "" : "s"})</summary>
-      <div class="ev">
-        ${r.verification_note ? `<p class="ev-note">${esc(r.verification_note)}</p>` : ""}
-        ${evHTML}
-        ${m && m.matched_text
-          ? `<div style="margin-top:12px"><b style="font-size:0.75rem;color:var(--text-muted);
-             text-transform:uppercase;letter-spacing:0.05em">Matched curriculum text</b>
-             <div class="matched">${esc(m.matched_text)}</div></div>` : ""}
-      </div>
-    </details>
-    ${traceBlock(r)}
-  </article>`;
-}
-
-// ---------------------------------------------------------------------------
-// AGENT TRACE -- rendered INLINE at the bottom of the card, inside a collapsed
-// <details>, using the .trace/.tgroup/.tstep components in theme.css.
-//
-// The card already carries the failure WARNING above, un-collapsed, because
-// that must never require a click. This block adds the step-by-step underneath
-// it, so the reasoning and the conclusion it produced sit on one surface.
-// A failed search opens the block by default -- if the steps explain a wrong
-// recommendation, they should not be behind a disclosure.
-//
-// trace.html is kept as a permalink (one trace, full width, shareable); the
-// link moves inside this block rather than standing in for it. A snapshot
-// captured before traces existed renders nothing here, as before.
-// ---------------------------------------------------------------------------
-function traceBlock(r) {
-  if (!r.trace) return "";
-  const c = r.trace.curriculum || {};
-  const v = r.trace.verification || {};
-  const cSteps = c.steps || [];
-  const vSteps = v.steps || [];
-  const n = cSteps.length + ((v.reasoning && v.reasoning.length) || vSteps.length);
-
-  let body = "";
-
-  if (c.search_failed) {
-    // The reason string is already on the card above, in the un-collapsed
-    // warning -- printing it again here would be the same sentence twice on
-    // one card. It is repeated only in the case where that warning did NOT
-    // render (a match alongside a failed search), which the agents should
-    // never produce; the guard is here so the reason can never go missing.
-    body += `<div class="tfail"><b>The curriculum search failed.</b>
-      ${r.match && c.reason ? `<div class="tr">${esc(c.reason)}</div>` : ""}</div>`;
-  } else if (c.searched === false) {
-    body += `<p class="tnote">The curriculum was never searched &mdash;
-      ${esc(c.skipped_reason || "it did not clear the confidence gate.")}</p>`;
-  }
-
-  // Newer traces carry the verifier's whole loop (`reasoning`, including steps
-  // with no tool call) and which loop ran it (`mode`); older ones only `steps`.
-  const vRows = (v.reasoning && v.reasoning.length) ? v.reasoning.map((s, i) => {
-    const args = Object.entries(s.tool_args || {})
-      .map(([k, val]) => `${esc(k)}=${esc(JSON.stringify(val))}`).join(", ");
-    const ask = s.tool ? `Checked <code>${esc(s.tool)}</code>` : esc(s.thought || "");
-    const why = s.tool && s.thought
-      ? `<div class="tr" style="color:var(--text-muted)">Why: ${esc(s.thought)}</div>` : "";
-    return step(i + 1, ask + why, s.observation, args);
-  }) : vSteps.map((s, i) => {
-    const args = Object.entries(s.arguments || {})
-      .map(([k, val]) => `${esc(k)}=${esc(JSON.stringify(val))}`).join(", ");
-    return step(i + 1, `Checked <code>${esc(s.tool || "")}</code>`,
-                s.result_summary, args);
-  });
-  const mode = modeText(v.mode);
-  body += group("Verification &mdash; is this trend real?", vRows,
-                "No verification steps were recorded.", mode);
-
-  body += group("Curriculum &mdash; does it affect what we teach?", cSteps.map((s, i) => {
-    const f = Object.entries(s.filters || {})
-      .filter(([, val]) => val !== null && val !== undefined && val !== "")
-      .map(([k, val]) => `${esc(k)} ${esc(val)}`).join(", ");
-    return step(vSteps.length + i + 1,
-      `Searched for &ldquo;${esc(s.query || "")}&rdquo;${
-        f ? ` <span style="color:var(--text-muted)">(${f})</span>` : ""}`,
-      s.result_summary, "");
-  }), c.search_failed
-        ? "The search failed before it issued any query."
-        : (c.searched === false ? "Skipped &mdash; see above."
-                                : "No searches were issued."));
-
-  if (v.stopped_early || c.stopped_early) {
-    body += `<p class="tnote">An agent hit its step limit and was asked to
-      conclude early, so this trace may be shorter than the reasoning was.</p>`;
-  }
-
-  if (c.searched && !c.search_failed && c.reason) {
-    body += `<p class="tgroup" style="margin-top:14px">Conclusion</p>
-             <p class="tr" style="margin:0">${esc(c.reason)}</p>`;
-  }
-
-  const label = c.search_failed
-    ? "Agent trace — why the search failed"
-    : `Agent trace (${n} step${n === 1 ? "" : "s"})`;
-
-  return `<details class="rec-trace"${c.search_failed ? " open" : ""}>
-    <summary>${esc(label)}</summary>
-    <div class="trace">
-      ${body}
-      ${r.index !== undefined
-        ? `<a class="tracelink" href="trace.html?i=${r.index}">Open this trace on its own page
-           <span class="arrow">→</span></a>` : ""}
-    </div>
-  </details>`;
-}
 
 // Plain words for the verifier's mode. Mirrors demo_snapshot.verification_mode_text
 // (the page cannot import Python); keep the two in step.
-function modeText(mode) {
-  const m = String(mode || "").toLowerCase();
-  if (!m) return "";
-  if (m.includes("llm loop failed")) return "The model call failed, so the same checks ran from a fixed script instead — scored exactly the same way.";
-  if (m.startsWith("deterministic")) return "No model was used: the checks ran from a fixed script. The score comes from what the checks found, as always.";
-  if (m.startsWith("agentic")) return "The model chose which checks to run. The score was computed from what those checks found, not by the model.";
-  return mode;
-}
 
-function group(title, steps, emptyText, note) {
-  return `<p class="tgroup">${title}</p>`
-    + (note ? `<p class="tnote" style="margin-top:0">${esc(note)}</p>` : "")
-    + (steps.length
-    ? steps.join("")
-    : `<p class="tnote">${emptyText}</p>`);
-}
 
-function step(n, ask, got, args) {
-  return `<div class="tstep">
-    <div class="tn">${n}</div>
-    <div>
-      <div class="tq">${ask}</div>
-      ${args ? `<div class="tr" style="font-family:ui-monospace,Consolas,monospace">${args}</div>` : ""}
-      <div class="tr">→ ${esc(got || "")}</div>
-    </div>
-  </div>`;
-}
 
 function renderTable(rows) {
   $("tbody").innerHTML = rows.map((r) => {
