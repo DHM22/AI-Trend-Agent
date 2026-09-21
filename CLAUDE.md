@@ -153,13 +153,17 @@ demo_ui.py                             Older Streamlit dashboard over the same s
                                         extra ceilings after _score(): injection (<=0.1), staleness + publisher
                                         (-> 0.0 "contradicted"). A FAILED lookup is "unchecked", never "repo missing".
                                         No key / model failure -> the same tools in a scripted loop, same scorer.
-                                        run(cluster, trace) fills VerificationTrace from Facts.reasoning
+                                        run(cluster, trace) fills VerificationTrace from Facts.reasoning.
+                                        Four fixes found on real data (108a8dc): monorepo tags confirmed verbatim
+                                        ("langchain==1.4.0"), a bare-name "not found" only counts for secondary-only
+                                        claims, a bare-name match never confirms a secondary-only claim (squatters),
+                                        and a first-party post with nothing checkable scores 0.60 (< action floor)
 02_src/agents/reference/               The team's verifier as recovered (lines 1-500 of 571) and completed (+ a
                                         RECONSTRUCTED _describe()/main()). The source of the restore; never edit it
 02_src/agents/curriculum.py            RAG search agent; has search_failed flag + curriculum_checked() tri-state
 02_src/agents/evaluation.py            Deterministic _maturity_score / _relevance_score; model only writes rationale
 02_src/agents/recommendation.py        Orchestrator; tier-selection gates (see Key Decisions)
-02_src/agents/test_chain.py            Offline test suite — 0 API calls. Currently 147 passed, 0 skipped
+02_src/agents/test_chain.py            Offline test suite — 0 API calls. Currently 155 passed, 0 skipped
                                         (sections 1-2, written for the deterministic verifier, run again)
 02_src/tests/test_verification.py      14 offline VerificationAgent tests (from PR #1, adapted to the restored
                                         verifier). Plain script, run directly
@@ -172,9 +176,12 @@ test_signals_graded*.json (repo root, untracked)  THREE variants — see "Gold d
 04_eval/DATASET_REQUIREMENTS.md        the spec that answers "why is this metric null" — per-gold-field, and it is
                                         explicit that recency needs a NEW output contract (e.g. VerifiedTrend.is_stale)
                                         and that labels must be event-level. Read it before relabelling anything
-04_eval/results/*.json                 saved eval runs (baseline, baseline_wk5, baseline_wk5_v2, my_run, my_run_2,
-                                        INVALID_offline_run). show_reqs.py (repo root) prints unmet metric
-                                        requirements out of baseline_wk5.json
+04_eval/results/*.json                 saved eval runs. rescored_{1,2,3}_*_nokey.json are the ONLY verification
+                                        numbers scored with the fixed pairing (see "Eval pairing bug"). The older
+                                        files (baseline, baseline_wk5, baseline_wk5_v2, my_run, my_run_2,
+                                        INVALID_offline_run) have MISALIGNED verification scores -- don't compare
+                                        against them. show_reqs.py (repo root) prints unmet metric requirements
+                                        out of baseline_wk5.json
 promptfooconfig.yaml (12 behavioral cases) is not in the tree; never run (see Known gaps)
 04_eval/README.md still writes paths as evals/... — the directory is 04_eval/
 ```
@@ -296,7 +303,7 @@ script, before trusting a validation run on a non-default dataset.
      flag that `VerifiedTrend` does not have. `curriculum.precision_at_3` needs the agent's top-3 candidates, but
      `CurriculumAgent` exposes only the one selected match. Both require a code change first.
 - **Promptfoo behavioral suite (`04_eval/promptfooconfig.yaml`) has never been run** — blocked by Node version
-  (need 22.22+, machine has 21.6.1). Decided to accept this gap given time constraints; test_chain.py (147 passed) +
+  (need 22.22+, machine has 21.6.1). Decided to accept this gap given time constraints; test_chain.py (155 passed) +
   the written config + gold-set eval numbers are the evaluation answer for now.
 - **Content-Type Agent (proposed, not built):** would classify a signal as release/announcement/case_study/
   self_promotion/opinion before it reaches the tier gates. Would fix false positives from Show HN self-promotion
@@ -322,6 +329,28 @@ with account access needs to raise it. A new API key does not help — the limit
    claims, run with repeats to average out LLM non-determinism.
 3. Behavioral test cases (promptfoo) — targeting specific observed failures, not hypotheticals. Not yet executed.
 
-Latest eval numbers (`test_signals_graded.json`, `--repeats 3`, pre-Week-6-positive-case):
-clustering 100.00±0.00, verification 72.56±2.49, curriculum/evaluation/recommendation `null` (see Known Gaps),
-composite 84.76±1.38.
+### Eval pairing bug (fixed 2026-09-21, c4c9355) — every earlier verification number is misaligned
+
+`run_eval.py` used to `zip(trends, entries)`: one trend per CLUSTER against one gold entry per SIGNAL. On the
+default set that is 11 vs 12, so after the first merged cluster every trend was scored against the NEXT signal's
+label. Each signal is now matched to the cluster containing it, by title. Consequences:
+- Every verification score produced before c4c9355 is misaligned, including the old "latest" numbers this file
+  used to quote (verification 72.56±2.49, composite 84.76±1.38) and baseline_wk5_v2 (66.20). Do not compare with them.
+- Clustering was never affected (`clustering_metrics()` already matched by title). Clustering scoring `null` on
+  the 13-entry `_updated.json` is NOT this bug: that file has zero `is_fabricated` and zero `event_id` labels.
+- The dataset hash is taken over raw bytes, and `core.autocrlf=true` checks the gold file out as CRLF while the
+  original working copy is LF: same labels, different sha256, and `compare.py` refuses the pair. When comparing
+  runs from different checkouts, make sure they read byte-identical dataset files.
+
+Re-scored with the fixed eval (`test_signals_graded.json`, no OpenAI key, `--repeats 3`, shared tool cache,
+TOOL_CACHE_ONLY=1, identical dataset sha eb13e5ada377):
+
+| verifier | verification | gap | MAE | composite |
+| --- | --- | --- | --- | --- |
+| pre-restore, source-tier fallback (3f5c2a7) | 65.42 ± 0.00 | 0.450 | 0.142 | 80.79 |
+| restored deterministic, before fixes (7d435e8) | 33.71 ± 0.00 | -0.005 | 0.321 | 63.17 |
+| restored + 4 fixes (c4c9355) — CURRENT | 56.04 ± 0.00 | 0.275 | 0.154 | 75.58 |
+
+Read with care: in this 12-item set every fabricated item is secondary and every genuine one primary, so a rule
+that only looks at source tier separates them by construction. The current verifier scores from what tools
+confirmed. No live (model-driven) run exists with the fixed eval yet.
