@@ -34,6 +34,9 @@ from schemas import (CurriculumMatch, Evidence, RawSignal, TrendCluster,
                      VerifiedTrend, RELEVANCE_FLOOR)
 
 PASS, FAIL = [], []
+# A test whose code under test does not exist records here, NOT in PASS --
+# counting a skip as a pass overstated this suite by two for a long time.
+SKIP = []
 
 
 def check(name: str, got, want, why: str = "") -> None:
@@ -59,8 +62,7 @@ def test_verification_scoring():
     # the alternative lets the model output the number directly. Skip rather
     # than fail when running the other one.
     if not hasattr(V, "_score"):
-        PASS.append(("verif: skipped -- no deterministic scorer in this "
-                     "verification.py", "skipped"))
+        SKIP.append("verif scoring: no deterministic _score() in this verification.py")
         return
 
     def facts(verified=0, repo_exists=False, repo_missing=False, claim=False):
@@ -111,8 +113,7 @@ def test_repo_matching():
     from agents import verification as V
 
     if not hasattr(V, "_match_result"):
-        PASS.append(("repo match: skipped -- no _match_result in this "
-                     "verification.py", "skipped"))
+        SKIP.append("repo matching: no _match_result() in this verification.py")
         return
 
     raw = {"results": [
@@ -635,7 +636,11 @@ def main():
     for label, err in errors:
         print(f"  ERROR {label}: {err}")
 
-    print(f"\n{len(PASS)} passed, {len(FAIL)} failed, {len(errors)} errored")
+    for reason in SKIP:
+        print(f"  SKIP  {reason}")
+
+    print(f"\n{len(PASS)} passed, {len(FAIL)} failed, {len(errors)} errored, "
+          f"{len(SKIP)} skipped")
     return 1 if (FAIL or errors) else 0
 
 
