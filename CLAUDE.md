@@ -338,9 +338,9 @@ label. Each signal is now matched to the cluster containing it, by title. Conseq
   used to quote (verification 72.56±2.49, composite 84.76±1.38) and baseline_wk5_v2 (66.20). Do not compare with them.
 - Clustering was never affected (`clustering_metrics()` already matched by title). Clustering scoring `null` on
   the 13-entry `_updated.json` is NOT this bug: that file has zero `is_fabricated` and zero `event_id` labels.
-- The dataset hash is taken over raw bytes, and `core.autocrlf=true` checks the gold file out as CRLF while the
-  original working copy is LF: same labels, different sha256, and `compare.py` refuses the pair. When comparing
-  runs from different checkouts, make sure they read byte-identical dataset files.
+- The dataset hash USED to be taken over raw bytes, so a CRLF checkout (`core.autocrlf=true`) of the same labels got
+  a different sha256 and `compare.py` refused the pair. Fixed: `read_dataset()` now hashes line-ending-normalised
+  bytes (LF and CRLF copies both give eb13e5ada377, the hash the re-scored runs recorded).
 
 Re-scored with the fixed eval (`test_signals_graded.json`, no OpenAI key, `--repeats 3`, shared tool cache,
 TOOL_CACHE_ONLY=1, identical dataset sha eb13e5ada377):

@@ -67,7 +67,10 @@ def read_dataset(path: Path) -> tuple[list[RawSignal], list[dict[str, Any]], str
         if "gold" in item and not isinstance(item["gold"], dict):
             fail(f"dataset entry {index}.gold must be an object")
         signals.append(RawSignal(**{name: item[name] for name in required}))
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    # Hash line-ending-normalised bytes: core.autocrlf checks this file out as
+    # CRLF on Windows, and the same labels must not get a different identity
+    # (compare.py refuses runs whose dataset hashes differ).
+    digest = hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
     return signals, raw, digest
 
 
