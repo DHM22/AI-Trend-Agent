@@ -8,6 +8,7 @@ venv/
 env/
 .env
 .env.*
+!.env.example
 *.log
 chroma.sqlite3*
 
@@ -31,3 +32,12 @@ evals/temp_*.py
 01_data/curriculum/**/*.ipynb
 # Signals are a committed replay/input fixture.
 !01_data/signals.json
+
+# macOS noise
+**/.DS_Store
+
+evals/results/
+
+# Generated Netlify dashboard and local CLI metadata
+dist/
+.netlify/
