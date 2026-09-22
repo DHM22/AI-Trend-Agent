@@ -1,38 +1,44 @@
-# SkillRadar AI interface
+# C-Sync interface
 
-This Streamlit app reads the existing `AI-Trend-Agent` checkout. It does not
-copy or modify any agent, fixture, or evaluation result. Its default backend
-path is `C:\Users\ALD\Documents\AI-Trend-Agent`; set `SKILLRADAR_BACKEND` to
-another checkout if needed.
+C-Sync is a Streamlit view of the AI Trend Agent's recorded run. It is based on
+the SkillRadar UI by aldanah (imported unchanged in 61e97c4). It lives inside
+this repo, and by default it reads the checkout it sits in. Set `CSYNC_BACKEND`
+(or the older `SKILLRADAR_BACKEND`) to read another checkout.
 
-The presentation follows **Discover → Verify → Compare → Evaluate → Decide**.
-Home introduces the problem. Radar plots clickable nodes from saved trends.
-Trend story shows original signals and verification notes. Curriculum previews
-uploaded material. The gap compares a trend with its saved course citation.
-Evaluation displays the original agent's scores. Decision shows the recorded
-action and the evidence chain. How it works explains the process in plain
-language. The top navigation and page CTAs preserve the selected trend.
+It shows the **same data as the dashboard** (`app.py` / `ui/advanced.html`):
+the snapshot at `SNAPSHOT_PATH` (default `01_data/demo_snapshot.json`) and the
+signals file named by that snapshot's `source_signals`. It does not re-run any
+agent and makes no API calls.
 
-## Run in VS Code PowerShell
+- Maturity is `evaluation.py`'s own `_maturity_score` applied to the stored
+  confidence.
+- Relevance is solved from the stored `total_score`
+  (total = ½ maturity + ½ relevance).
+
+## Layout
+
+- **Left panel:** all pages. These are Home, Dashboard, Radar, Trend story,
+  Curriculum, The gap, Evaluation, Decision and How it works.
+- **Top bar:** the five stages: 01 Discover, 02 Verify, 03 Compare, 04 Evaluate
+  and 05 Decide. Each opens the page for that stage.
+- **Home:** "From noise to curriculum". Each square is one pipeline stage, and
+  its area is proportional to the real count for that stage. The stages are
+  signals, then clusters, then assessed clusters, then recommendations, then
+  actionable recommendations.
+- **Dashboard:** every recommendation, most urgent tier first. You can filter by
+  action, material type (lab or slides) and "actionable only".
+- **Trend story:** the walkthrough's step-3 agent trace. It shows the five-node
+  flow plus the "lost in the handoff" bubbles. It is drawn by `ui/cards.js`
+  (`flowBlock` and `handoffBlock`), so it is one copy of the renderer shared
+  with the dashboard and the walkthrough.
+
+## Run
 
 ```powershell
-Set-Location 'C:\Users\ALD\Documents\ChatGPT\AITREND'
-python -m pip install -r requirements-ui.txt
-python -m streamlit run app.py
+python -m pip install -r c_sync/requirements-ui.txt
+python -m streamlit run c_sync/app.py
 ```
 
-The pages replay `01_data/demo_snapshot.json` and `01_data/signals.json`
-through the backend's existing loaders. Radar maturity badges and the
-Evaluation page reconstruct saved `VerifiedTrend` and `CurriculumMatch` inputs
-and call the original `EvaluationAgent.run`; the current recommendation calls
-`RecommendationAgent.run`. The agents' built-in fallback rationale and action
-plan are used in offline mode; no OpenAI or monitoring API request is made.
-Current results can differ from the older recorded snapshot if the agent
-implementation changed after capture; the UI keeps them labeled separately.
-
-The Curriculum page can extract text from uploaded PDF, PPTX, and IPYNB files
-through `curriculum_ingest`'s existing extractors. It does not index uploads or
-claim they were compared to trends. The checkout's curriculum folders contain
-no course files and no vector store. Live verification and curriculum search
-require the existing backend's model/API setup and indexed course material;
-those workflows are not exposed by this offline interface.
+The Curriculum page can extract text from uploaded PDF, PPTX and IPYNB files
+using `curriculum_ingest`'s extractors. Uploads are not indexed, and they are
+not compared to trends.

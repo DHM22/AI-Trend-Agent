@@ -42,4 +42,4 @@ def radar_map(visible: list[tuple[int, dict]], maturity: list[int | None]) -> No
     legend = "".join(f'<div><i style="background:{color}"></i>{e(action_label(action))}</div>'
                      for action, color in ACTION_COLORS.items()
                      if any(r.get("recommended_action") == action for _, r in visible))
-    st.html(f'<div class="sr-data-radar"><div class="sr-data-grid"></div><div class="sr-data-core">SKILLRADAR<br>AI</div>{"".join(nodes)}<div class="sr-data-caption">SELECT A LIGHT TO OPEN ITS STORY</div></div><div class="sr-radar-legend">{legend}</div>')
+    st.html(f'<div class="sr-data-radar"><div class="sr-data-grid"></div><div class="sr-data-core">C-SYNC</div>{"".join(nodes)}<div class="sr-data-caption">SELECT A LIGHT TO OPEN ITS STORY</div></div><div class="sr-radar-legend">{legend}</div>')

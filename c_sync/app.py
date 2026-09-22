@@ -1,25 +1,33 @@
-"""SkillRadar AI — a story-led Streamlit interface over the existing backend."""
+"""C-Sync — a story-led Streamlit interface over the AI Trend Agent's recorded run."""
 
 from __future__ import annotations
 
 import streamlit as st
 
 from ui_adapter import BACKEND, backend_ready, load_recorded_run
-from ui_components import brand, inject_css, pipeline
-from ui_pages import curriculum, decision, evaluation, gap, go, home, how_it_works, radar, trend_story
+from ui_components import STAGES, brand, inject_css
+from ui_pages import (
+    curriculum, dashboard, decision, evaluation, gap, go, home, how_it_works, radar, trend_story,
+)
 
 
 st.set_page_config(
-    page_title="SkillRadar AI · Know what to teach next",
-    page_icon=":material/radar:",
+    page_title="C-Sync",
+    page_icon=":material/sync_alt:",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
-PAGES = ["Home", "Radar", "Trend story", "Curriculum", "The gap", "Evaluation", "Decision", "How it works"]
-STAGES = {"Home": "Discover", "Radar": "Discover", "Trend story": "Verify",
-          "Curriculum": "Compare", "The gap": "Compare", "Evaluation": "Evaluate",
-          "Decision": "Decide", "How it works": None}
+# Left panel: every page. Top bar: only the five pipeline stages.
+PAGES = [
+    ("Home", "home"), ("Dashboard", "dashboard"), ("Radar", "radar"),
+    ("Trend story", "auto_stories"), ("Curriculum", "school"), ("The gap", "difference"),
+    ("Evaluation", "analytics"), ("Decision", "tips_and_updates"), ("How it works", "help_outline"),
+]
+STAGE_OF = {"Radar": "Discover", "Trend story": "Verify", "Curriculum": "Compare",
+            "The gap": "Compare", "Evaluation": "Evaluate", "Decision": "Decide"}
+STAGE_PAGE = {"Discover": "Radar", "Verify": "Trend story", "Compare": "The gap",
+              "Evaluate": "Evaluation", "Decide": "Decision"}
 
 
 @st.cache_data(ttl=300, max_entries=2, show_spinner=False)
@@ -27,17 +35,23 @@ def recorded_data():
     return load_recorded_run()
 
 
-def navigation() -> None:
-    with st.container(horizontal=True):
-        for page, icon in (
-            ("Home", "home"), ("Radar", "radar"), ("Trend story", "auto_stories"),
-            ("Curriculum", "school"), ("The gap", "difference"),
-            ("Evaluation", "analytics"), ("Decision", "tips_and_updates"),
-            ("How it works", "help_outline"),
-        ):
-            st.button(page, icon=f":material/{icon}:", key=f"nav_{page}",
-                      type="primary" if st.session_state["page"] == page else "secondary",
+def side_panel() -> None:
+    with st.sidebar:
+        brand()
+        for page, icon in PAGES:
+            st.button(page, icon=f":material/{icon}:", key=f"nav_{page}", width="stretch",
+                      type="primary" if st.session_state["page"] == page else "tertiary",
                       on_click=go, args=(page,))
+
+
+def stage_bar() -> None:
+    active = STAGE_OF.get(st.session_state["page"])
+    cols = st.columns(len(STAGES), gap="small")
+    for i, (col, (name, _)) in enumerate(zip(cols, STAGES), 1):
+        with col:
+            st.button(f"0{i}  {name}", key=f"stage_{name}", width="stretch",
+                      type="primary" if name == active else "secondary",
+                      on_click=go, args=(STAGE_PAGE[name],))
 
 
 def main() -> None:
@@ -52,12 +66,11 @@ def main() -> None:
             pass
         st.query_params.clear()
     inject_css()
-    brand()
-    navigation()
-    pipeline(STAGES.get(st.session_state["page"]))
+    side_panel()
+    stage_bar()
 
     if not backend_ready():
-        st.error(f"AI Trend Agent backend not found at {BACKEND}. Set SKILLRADAR_BACKEND to the existing checkout and restart the app.")
+        st.error(f"AI Trend Agent backend not found at {BACKEND}. Set CSYNC_BACKEND to the checkout and restart the app.")
         return
     try:
         snapshot, signals = recorded_data()
@@ -67,6 +80,7 @@ def main() -> None:
     records = snapshot.get("recommendations") or []
     routes = {
         "Home": lambda: home(snapshot, records, signals),
+        "Dashboard": lambda: dashboard(records),
         "Radar": lambda: radar(records, signals),
         "Trend story": lambda: trend_story(records, signals),
         "Curriculum": lambda: curriculum(records),
@@ -75,8 +89,7 @@ def main() -> None:
         "Decision": lambda: decision(records, signals),
         "How it works": lambda: how_it_works(snapshot),
     }
-    routes[st.session_state["page"]]()
-    st.caption("SkillRadar AI · Recorded pipeline replay · No external API calls · Backend agents and evaluation artifacts remain unchanged")
+    routes.get(st.session_state["page"], routes["Home"])()
 
 
 if __name__ == "__main__":

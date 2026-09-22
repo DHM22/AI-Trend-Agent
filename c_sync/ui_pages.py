@@ -1,4 +1,4 @@
-"""Story-led pages for the SkillRadar AI offline presentation."""
+"""Story-led pages for C-Sync. Every value shown comes from the recorded run."""
 
 from __future__ import annotations
 
@@ -7,10 +7,12 @@ from urllib.parse import urlparse
 
 import streamlit as st
 
-from ui_adapter import evaluate_record, extract_upload
+from ui_adapter import (
+    extract_upload, stored_scores, tier_order, trace_assets, trace_payload,
+)
 from ui_components import (
-    action_label, action_tone, e, empty_state, page_intro, pill, radar_art,
-    score_ring, section, stat, trend_card,
+    action_label, action_tone, dashboard_card, e, empty_state, page_intro, pill,
+    score_ring, section, squares_funnel, stat, trace_diagram, trend_card,
 )
 from ui_visuals import radar_map
 
@@ -70,66 +72,90 @@ def match_details(match: dict | None) -> None:
         st.code(match.get("matched_text") or "No excerpt saved.", language=None)
 
 
-def run_current(record: dict, signals: list, selected: int) -> None:
-    with st.spinner("Evaluating curriculum impact and preparing a recommendation..."):
-        try:
-            evaluation, recommendation = evaluate_record(record, signals)
-            st.session_state["evaluation"] = (selected, evaluation, recommendation)
-        except Exception:
-            st.error("The current agents could not complete this offline run. Check the backend installation and recorded data.")
+def maturity_scores(records: list[dict]) -> list[int | None]:
+    """Maturity per record from the STORED confidence (evaluation.py's band
+    function) -- the same number the dashboard implies; nothing is re-run."""
+    return [stored_scores(r)[0] for r in records]
 
 
-@st.cache_data(ttl=300, max_entries=2, show_spinner=False)
-def maturity_scores(records: list[dict], signals: list) -> list[int | None]:
-    """Use the original Evaluation Agent for every radar maturity badge."""
-    scores = []
-    for record in records:
-        try:
-            evaluation, _ = evaluate_record(record, signals)
-            scores.append(evaluation.maturity_score)
-        except Exception:
-            scores.append(None)
-    return scores
+def tiers_for_trace() -> list[dict]:
+    order, labels = tier_order()
+    return [{"tier": t, "label": labels.get(t, t)} for t in order]
+
+
+def agent_trace(record: dict) -> None:
+    """The walkthrough's step-3 diagram for one recommendation."""
+    if not record.get("trace"):
+        empty_state("No agent trace saved", "This recommendation was captured before traces were recorded.")
+        return
+    css, js = trace_assets()
+    curriculum_reason = ((record.get("trace") or {}).get("curriculum") or {}).get("reason")
+    with_handoff = bool(curriculum_reason and (record.get("action_plan") or []))
+    trace_diagram(css, js, trace_payload(record, tiers_for_trace()), with_handoff)
 
 
 def home(snapshot: dict, records: list[dict], signals: list) -> None:
-    left, right = st.columns([1.08, 0.92], gap="large", vertical_alignment="center")
-    with left:
-        st.html('<div class="sr-eyebrow">THE FUTURE OF CURRICULUM INTELLIGENCE</div><div class="sr-hero-title">SkillRadar <span class="sr-gradient">AI</span></div><div style="font-size:clamp(1.75rem,3vw,2.7rem);font-weight:750;letter-spacing:-.05em;color:#fff;margin-bottom:18px">Know what to teach next.</div><p class="sr-hero-copy">SkillRadar AI watches the technology landscape, detects meaningful trends, compares them with your curriculum, and recommends what should change.</p>')
-        with st.container(horizontal=True):
-            st.button("Explore the radar", type="primary", icon=":material/radar:",
-                      on_click=go, args=("Radar",))
-            st.button("See how it works", icon=":material/arrow_forward:",
-                      on_click=go, args=("How it works",))
-    with right:
-        radar_art()
-    section("From noise to curriculum action.",
-            "A recorded run shows how source signals become a focused list of curriculum decisions.",
-            "THE BIG PICTURE")
-    counts = [
-        (snapshot.get("signals_in_file", len(signals)), "Source signals", "01 · DISCOVER"),
-        (snapshot.get("clusters_total", "—"), "Trend clusters", "02 · GROUP"),
-        (snapshot.get("clusters_processed", "—"), "Trends assessed", "03 · VERIFY"),
-        (len(records), "Recommendations", "04 · DECIDE"),
-    ]
-    cols = st.columns(4, gap="medium")
-    for col, (value, name, kicker) in zip(cols, counts):
-        with col:
-            stat(value, name, kicker)
-    st.caption(f"Recorded on {snapshot.get('captured_at', 'an unavailable date')}. These are saved pipeline counts, not live monitoring totals.")
-    section("A decision you can trace.",
-            "Start with a technology signal, inspect the evidence, then see exactly which course area may need attention.",
-            "WHY IT MATTERS")
+    st.html('<div class="sr-eyebrow">CURRICULUM INTELLIGENCE</div><div class="sr-hero-title">C-<span class="sr-gradient">Sync</span></div>'
+            '<p class="sr-hero-copy">C-Sync watches the technology landscape, checks what is real, compares it with the course, and recommends what should change. A human approves.</p>')
+    actionable = sum(1 for r in records if r.get("recommended_action") != "watch")
+    section("From noise to curriculum.", "Each square is a stage of the run; its size is how much survives.", "THE BIG PICTURE")
+    squares_funnel([
+        (snapshot.get("signals_in_file", len(signals)), "Signals"),
+        (snapshot.get("clusters_total", 0), "Trend clusters"),
+        (snapshot.get("clusters_processed", 0), "Assessed"),
+        (len(records), "Recommendations"),
+        (actionable, "Actionable"),
+    ])
+    with st.container(horizontal=True):
+        st.button("Open the dashboard", type="primary", icon=":material/dashboard:",
+                  on_click=go, args=("Dashboard",))
+        st.button("Explore the radar", icon=":material/radar:", on_click=go, args=("Radar",))
     if records:
         featured = next((r for r in records if r.get("recommended_action") == "add_new_lesson"), records[0])
         index = records.index(featured)
-        left, right = st.columns([1.1, 0.9], gap="large")
-        with left:
-            trend_card(featured)
-            st.button("Follow this trend's story", type="primary", icon=":material/arrow_forward:",
-                      key="featured_story", on_click=go, args=("Trend story", index))
-        with right:
-            st.html('<div class="sr-glass"><div class="sr-kicker">THE SKILLRADAR JOURNEY</div><div class="sr-card-title" style="font-size:1.65rem">From source to decision</div><p class="sr-card-copy" style="display:block;min-height:0">Each saved action carries verification evidence and a total evaluation score. Course citations appear where a match was found.</p><div style="margin-top:22px;line-height:2.2;color:#d4def0">Discover <span style="color:#7ed6e9">→</span> Verify <span style="color:#7ed6e9">→</span> Compare <span style="color:#7ed6e9">→</span> Evaluate <span style="color:#7ed6e9">→</span> Decide</div></div>')
+        section("A decision you can trace.", "Start with one trend and follow it to its recommendation.", "FEATURED")
+        trend_card(featured)
+        st.button("Follow this trend's story", icon=":material/arrow_forward:",
+                  key="featured_story", on_click=go, args=("Trend story", index))
+
+
+def dashboard(records: list[dict]) -> None:
+    page_intro("ALL RECOMMENDATIONS", "Dashboard", "Every recommendation in the run, most urgent first.")
+    if not records:
+        empty_state("No recommendations", "The recorded run has no recommendations.")
+        return
+    order, labels = tier_order()
+    present = [t for t in order if any(r.get("recommended_action") == t for r in records)]
+    f1, f2, f3 = st.columns([2.2, 1.2, 1])
+    with f1:
+        chosen = st.multiselect("Action", present, default=present, format_func=action_label)
+    with f2:
+        kind = st.segmented_control("Material", ["All", "Lab", "Slides"], default="All")
+    with f3:
+        actionable_only = st.toggle("Actionable only", value=False)
+    rank = {t: i for i, t in enumerate(order)}
+    rows = [(i, r) for i, r in enumerate(records)
+            if r.get("recommended_action") in chosen
+            and not (actionable_only and r.get("recommended_action") == "watch")
+            and (kind in (None, "All") or ((r.get("match") or {}).get("content_type") == ("lab" if kind == "Lab" else "slides")))]
+    rows.sort(key=lambda p: (rank.get(p[1].get("recommended_action"), len(order)), -(p[1].get("total_score") or 0)))
+    st.caption(f"{len(rows)} of {len(records)} recommendations")
+    if not rows:
+        empty_state("Nothing matches", "Change the filters above.")
+        return
+    for offset in range(0, len(rows), 2):
+        cols = st.columns(2, gap="small")
+        for col, (index, record) in zip(cols, rows[offset:offset + 2]):
+            with col:
+                dashboard_card(record)
+                with st.container(horizontal=True):
+                    st.button("Story", key=f"dash_story_{index}", icon=":material/arrow_forward:",
+                              on_click=go, args=("Trend story", index))
+                    st.button("Decision", key=f"dash_dec_{index}", icon=":material/tips_and_updates:",
+                              on_click=go, args=("Decision", index))
+                with st.expander("Full plan"):
+                    for step in record.get("action_plan") or []:
+                        st.markdown(f"- {step}")
 
 
 def radar(records: list[dict], signals: list) -> None:
@@ -148,11 +174,11 @@ def radar(records: list[dict], signals: list) -> None:
                (not search or search.lower() in (r.get("trend", "") + " " + " ".join(
                    str(item.get("source") or "") for item in r.get("evidence") or [])).lower()) and
                (action == "All decisions" or r.get("recommended_action") == action)]
-    st.caption(f"{len(visible)} of {len(records)} recorded trends · Node size reflects current agent maturity · Glow reflects saved confidence · Color reflects the saved action")
+    st.caption(f"{len(visible)} of {len(records)} trends · Node size = maturity · Glow = confidence · Color = action")
     if not visible:
         empty_state("No trends found", "Try another search or decision filter.")
         return
-    maturity = maturity_scores(records, signals)
+    maturity = maturity_scores(records)
     radar_map(visible, maturity)
     section("Signals worth a closer look", "Open a trend to inspect its source evidence and curriculum impact.", "RECORDED TRENDS")
     for offset in range(0, len(visible), 2):
@@ -178,6 +204,8 @@ def trend_story(records: list[dict], signals: list) -> None:
         confidence = record.get("confidence")
         stat(f"{confidence:.0%}" if isinstance(confidence, (int, float)) else "—", "Recorded confidence", "VERIFICATION")
         st.caption(f"{len(record.get('evidence') or [])} saved verification evidence item(s)")
+    section("How the agent worked it", "Verify → search the curriculum → score → recommend, from the recorded trace.", "AGENT TRACE")
+    agent_trace(record)
     section("The signal trail", "Original monitoring signals are shown by published date when that date was recorded.", "WHAT WE SAW")
     originals = sorted((s for s in signals if s.title == record.get("trend")), key=lambda s: s.published or "")
     if originals:
@@ -269,32 +297,23 @@ def gap(records: list[dict]) -> None:
 
 
 def evaluation(records: list[dict], signals: list) -> None:
-    page_intro("04 / EVALUATE", "How important is this?", "The original Evaluation Agent scores maturity and course relevance. The interface only displays its returned numbers.")
+    page_intro("04 / EVALUATE", "How important is this?", "Maturity says how established the trend is; relevance says how directly it hits what we teach.")
     if not records:
         empty_state("Nothing to evaluate", "No trends are available in the recorded run.")
         return
     selected, record = choose_trend(records, "evaluation")
-    st.html(f'<div class="sr-glass"><div class="sr-kicker">CURRENT TREND</div><div class="sr-card-title">{e(record.get("trend"))}</div><div class="sr-card-copy" style="display:block;min-height:0">{e(record.get("verification_note") or "No verification note recorded.")}</div></div>')
-    if st.button("Run the Evaluation Agent", type="primary", icon=":material/play_arrow:"):
-        run_current(record, signals, selected)
-    saved = st.session_state.get("evaluation")
-    if not saved or saved[0] != selected:
-        empty_state("Ready to evaluate", "Run the existing agent to reveal the maturity, relevance, and overall scores for this recorded trend.")
-        return
-    result = saved[1]
-    section("The agent's assessment", "Scores below come directly from EvaluationAgent.run.", "THE VERDICT")
-    cols = st.columns(3, gap="medium")
-    for col, title, value, color in zip(cols,
-                                         ("MATURITY", "RELEVANCE", "OVERALL"),
-                                         (result.maturity_score, result.relevance_score, result.total_score),
-                                         ("#a78bfa", "#67e8f9", "#34d399")):
+    maturity, relevance, total = stored_scores(record)
+    cols = st.columns(3, gap="small")
+    for col, title, value, color in zip(cols, ("MATURITY", "RELEVANCE", "OVERALL"),
+                                         (maturity, relevance, total), ("#a78bfa", "#67e8f9", "#34d399")):
         with col:
-            score_ring(title, value, color)
-    section("Why did SkillRadar reach this conclusion?", "The explanation comes from the Evaluation Agent's validated offline fallback.", "AI INSIGHT")
-    st.html(f'<div class="sr-glass selected"><div class="sr-kicker">✦ EVALUATION RATIONALE</div><p style="font-size:1.12rem;color:#e4eaf8;line-height:1.7;margin:15px 0 0">{e(result.rationale)}</p></div>')
-    if record.get("total_score") != result.total_score:
-        st.warning("This current agent score differs from the older recorded total. The saved run may have used an earlier backend version.")
-    section("Evidence used", "The score is grounded in recorded verification and curriculum evidence.", "TRACEABILITY")
+            if value is None:
+                empty_state(title.title(), "Not recorded.")
+            else:
+                score_ring(title, value, color)
+    st.caption("Overall is the stored total score. Maturity is evaluation.py's band for the stored confidence; "
+               "relevance is solved from total = ½ maturity + ½ relevance.")
+    section("Evidence used", "The score is grounded in verification and curriculum evidence.", "TRACEABILITY")
     match_details(record.get("match"))
     with st.expander("Verification sources", icon=":material/fact_check:"):
         evidence_cards(record)
@@ -313,7 +332,7 @@ def decision(records: list[dict], signals: list) -> None:
     match = record.get("match")
     area = match.get("citation") if match else "No cited course area"
     ev_pill = pill(f"{len(record.get('evidence') or [])} evidence item(s)", "cyan")
-    st.html(f'<div class="sr-decision {tone}"><div class="sr-kicker">RECORDED RECOMMENDATION · {e(record.get("trend"))}</div><div class="sr-decision-title">{e(action_label(action))}</div><div class="sr-decision-copy">{e(record.get("verification_note") or "No verification note recorded.")}</div><div style="margin-top:25px;display:flex;gap:8px;flex-wrap:wrap">{ev_pill}{pill(area,"violet") if match else pill("No cited course area","amber")}</div></div>')
+    st.html(f'<div class="sr-decision {tone}"><div class="sr-kicker">RECOMMENDATION · {e(record.get("trend"))}</div><div class="sr-decision-title">{e(action_label(action))}</div><div class="sr-decision-copy">{e(record.get("verification_note") or "No verification note recorded.")}</div><div style="margin-top:25px;display:flex;gap:8px;flex-wrap:wrap">{ev_pill}{pill(area,"violet") if match else pill("No cited course area","amber")}</div></div>')
     section("The action plan", "Steps returned by the saved Recommendation Agent run.", "WHAT CHANGES")
     for number, step in enumerate(record.get("action_plan") or [], 1):
         st.html(f'<div class="sr-glass" style="margin-bottom:12px;display:flex;align-items:flex-start;gap:18px"><span class="sr-pill violet">{number:02d}</span><div style="color:#e6edf9;font-size:1.04rem;line-height:1.55">{e(step)}</div></div>')
@@ -330,21 +349,10 @@ def decision(records: list[dict], signals: list) -> None:
     st.html(f'<div class="sr-flow">{cells}</div>')
     with st.expander("Inspect verification evidence", icon=":material/fact_check:"):
         evidence_cards(record)
-    saved = st.session_state.get("evaluation")
-    if saved and saved[0] == selected:
-        current = saved[2]
-        with st.expander("Current Recommendation Agent result", icon=":material/neurology:"):
-            st.caption("Current offline run; it may differ from the recorded snapshot.")
-            st.subheader(action_label(current.recommended_action))
-            for step in current.action_plan:
-                st.markdown(f"- {step}")
-    elif st.button("Run the current agents", icon=":material/play_arrow:"):
-        run_current(record, signals, selected)
-        st.rerun()
 
 
 def how_it_works(snapshot: dict) -> None:
-    page_intro("THE METHOD", "How does SkillRadar work?", "Five simple steps turn technology noise into curriculum action you can explain.")
+    page_intro("THE METHOD", "How does C-Sync work?", "Five simple steps turn technology noise into curriculum action you can explain.")
     stages = [
         ("01", "Listen", "We watch trusted technology sources for new developments.", "sensors"),
         ("02", "Verify", "We check the evidence before treating a signal as meaningful.", "verified"),
@@ -355,5 +363,5 @@ def how_it_works(snapshot: dict) -> None:
     for number, title, copy, icon in stages:
         st.html(f'<div class="sr-glass" style="margin-bottom:14px;display:flex;align-items:center;gap:25px"><div style="font-size:2rem;font-weight:800;color:#a78bfa;min-width:65px">{number}</div><div><div class="sr-card-title" style="margin:0 0 5px;font-size:1.45rem">{e(title)}</div><div style="color:#b7c6da">{e(copy)}</div></div></div>')
     section("Every recommendation has a trail.", "Follow the source, the course match, the agent evaluation, and the final action.", "EXPLAINABLE BY DESIGN")
-    st.html(f'<div class="sr-glass selected" style="text-align:center"><div class="sr-metric-number">{e(snapshot.get("signals_in_file", "—"))} → {e(snapshot.get("clusters_total", "—"))} → {e(len(snapshot.get("recommendations") or []))}</div><div class="sr-metric-label">Saved signals → clusters → recommendations in this recorded run</div></div>')
+    st.html(f'<div class="sr-glass selected" style="text-align:center"><div class="sr-metric-number">{e(snapshot.get("signals_in_file", "—"))} → {e(snapshot.get("clusters_total", "—"))} → {e(len(snapshot.get("recommendations") or []))}</div><div class="sr-metric-label">Signals → clusters → recommendations in this run</div></div>')
     st.button("Explore the radar", type="primary", icon=":material/radar:", on_click=go, args=("Radar",))

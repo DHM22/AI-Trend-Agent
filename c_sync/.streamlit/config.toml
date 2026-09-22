@@ -12,3 +12,6 @@ chartCategoricalColors = ["#A78BFA", "#67E8F9", "#F0ABFC", "#34D399", "#FBBF24"]
 
 [server]
 headless = true
+
+[client]
+toolbarMode = "viewer"
