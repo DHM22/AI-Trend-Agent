@@ -62,7 +62,9 @@ def match_details(match: dict | None) -> None:
     if not match:
         empty_state("No saved curriculum match", "A missing match alone does not prove the course has a gap.")
         return
-    st.html(f'<div class="sr-glass"><div class="sr-kicker">MATCHED COURSE MATERIAL</div><div class="sr-card-title">{e(match.get("citation") or "Citation unavailable")}</div><div class="sr-card-copy">{e(match.get("topic") or "Topic unavailable")}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">{pill(str(match.get("content_type") or "Unknown"),"cyan")}{pill("Exact identifier: " + str(match["exact_match"]),"green") if match.get("exact_match") else ""}{pill(f"Similarity {match["similarity"]:.3f}","violet") if isinstance(match.get("similarity"),(int,float)) else ""}</div></div>')
+    sim_pill = (pill(f"Similarity {match['similarity']:.3f}", "violet")
+                if isinstance(match.get("similarity"), (int, float)) else "")
+    st.html(f'<div class="sr-glass"><div class="sr-kicker">MATCHED COURSE MATERIAL</div><div class="sr-card-title">{e(match.get("citation") or "Citation unavailable")}</div><div class="sr-card-copy">{e(match.get("topic") or "Topic unavailable")}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">{pill(str(match.get("content_type") or "Unknown"),"cyan")}{pill("Exact identifier: " + str(match["exact_match"]),"green") if match.get("exact_match") else ""}{sim_pill}</div></div>')
     with st.expander("Read the cited course content", icon=":material/description:"):
         st.caption(match.get("source_file") or "Source file unavailable")
         st.code(match.get("matched_text") or "No excerpt saved.", language=None)
@@ -310,7 +312,8 @@ def decision(records: list[dict], signals: list) -> None:
     tone = "green" if action == "add_new_lesson" else "amber" if action == "watch" else ""
     match = record.get("match")
     area = match.get("citation") if match else "No cited course area"
-    st.html(f'<div class="sr-decision {tone}"><div class="sr-kicker">RECORDED RECOMMENDATION · {e(record.get("trend"))}</div><div class="sr-decision-title">{e(action_label(action))}</div><div class="sr-decision-copy">{e(record.get("verification_note") or "No verification note recorded.")}</div><div style="margin-top:25px;display:flex;gap:8px;flex-wrap:wrap">{pill(f"{len(record.get("evidence") or [])} evidence item(s)","cyan")}{pill(area,"violet") if match else pill("No cited course area","amber")}</div></div>')
+    ev_pill = pill(f"{len(record.get('evidence') or [])} evidence item(s)", "cyan")
+    st.html(f'<div class="sr-decision {tone}"><div class="sr-kicker">RECORDED RECOMMENDATION · {e(record.get("trend"))}</div><div class="sr-decision-title">{e(action_label(action))}</div><div class="sr-decision-copy">{e(record.get("verification_note") or "No verification note recorded.")}</div><div style="margin-top:25px;display:flex;gap:8px;flex-wrap:wrap">{ev_pill}{pill(area,"violet") if match else pill("No cited course area","amber")}</div></div>')
     section("The action plan", "Steps returned by the saved Recommendation Agent run.", "WHAT CHANGES")
     for number, step in enumerate(record.get("action_plan") or [], 1):
         st.html(f'<div class="sr-glass" style="margin-bottom:12px;display:flex;align-items:flex-start;gap:18px"><span class="sr-pill violet">{number:02d}</span><div style="color:#e6edf9;font-size:1.04rem;line-height:1.55">{e(step)}</div></div>')
@@ -322,7 +325,8 @@ def decision(records: list[dict], signals: list) -> None:
         ("Evaluation", f"Saved total {record.get('total_score')}/5" if record.get("total_score") is not None else "Total unavailable"),
         ("Decision", action_label(action)),
     ]
-    cells = "".join(f'<div class="sr-flow-item sr-glass"><div class="sr-kicker">{e(title)}</div><div class="sr-card-title" style="font-size:1rem">{e(text)}</div></div>{"<div class=\"sr-flow-arrow\">→</div>" if i<4 else ""}' for i,(title,text) in enumerate(chain))
+    flow_arrow = '<div class="sr-flow-arrow">→</div>'
+    cells = "".join(f'<div class="sr-flow-item sr-glass"><div class="sr-kicker">{e(title)}</div><div class="sr-card-title" style="font-size:1rem">{e(text)}</div></div>{flow_arrow if i<4 else ""}' for i,(title,text) in enumerate(chain))
     st.html(f'<div class="sr-flow">{cells}</div>')
     with st.expander("Inspect verification evidence", icon=":material/fact_check:"):
         evidence_cards(record)
