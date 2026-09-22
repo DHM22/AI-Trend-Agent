@@ -301,3 +301,28 @@ function flowBlock(r, opts = {}) {
     </div>`).join("")}
   </div>`;
 }
+
+// ---------------------------------------------------------------------------
+// HANDOFF -- the curriculum agent's conclusion beside the plan's first step,
+// joined by "lost in the handoff". Both texts come from the recommendation
+// itself; "" when either is missing. Used by walkthrough.html (step 3) and
+// by C-Sync, so the picture is drawn from one copy.
+// ---------------------------------------------------------------------------
+function handoffBlock(r) {
+  const concl = ((r.trace || {}).curriculum || {}).reason || "";
+  const plan0 = (r.action_plan || [])[0] || "";
+  if (!concl || !plan0) return "";
+  const clip = (s, n) => { s = String(s).replace(/\s+/g, " ").trim();
+    return s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s; };
+  const mark = (t, re) => esc(t).replace(re, (m) => `<span class="hl">${m}</span>`);
+  return `<div class="handoff">
+        <div class="bubble ok"><div class="who">Curriculum agent concluded</div>
+          ${mark(clip(concl, 170), /deprecat\w*/gi)}</div>
+        <div class="hand-arrow"><svg viewBox="0 0 150 44" aria-hidden="true">
+            <line x1="6" y1="22" x2="132" y2="22" stroke="currentColor" stroke-width="3"/>
+            <path d="M 130 12 L 146 22 L 130 32 Z" fill="currentColor"/></svg>
+          <div class="lbl">lost in the handoff</div></div>
+        <div class="bubble bad"><div class="who">Plan, first step</div>
+          ${mark(clip(plan0, 150), /import[^.]*?path|module path/gi)}</div>
+      </div>`;
+}

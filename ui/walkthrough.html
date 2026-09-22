@@ -86,16 +86,6 @@
   .flow-big .fnode { padding: 12px 14px; }
   .flow-big .fv { font-size: 1.02rem; }
   .flow-big .fk { font-size: 0.72rem; }
-  .handoff { display: grid; grid-template-columns: 1fr 150px 1fr; align-items: center; gap: 10px; margin-top: 16px; }
-  .bubble { position: relative; background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
-            padding: 12px 16px; font-size: 0.98rem; line-height: 1.45; box-shadow: var(--shadow); }
-  .bubble .who { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
-  .bubble.ok { border-color: color-mix(in srgb, var(--good) 55%, var(--border)); }
-  .bubble.bad { border-color: var(--critical); }
-  .hand-arrow { text-align: center; color: var(--critical); }
-  .hand-arrow svg { width: 150px; height: 44px; display: block; margin: 0 auto; }
-  .hand-arrow .lbl { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; }
-  .hl { background: color-mix(in srgb, var(--warning) 30%, transparent); border-radius: 3px; padding: 0 2px; }
 
   /* ---- step 4: the card, large ------------------------------------------ */
   .card-stage { max-width: 900px; margin: 0 auto; }
@@ -346,17 +336,8 @@ const RENDER = {
     const c = (r.trace || {}).curriculum || {};
     const concl = c.reason || "";
     const plan0 = (r.action_plan || [])[0] || "";
-    const mark = (t, re) => esc(t).replace(re, (m) => `<span class="hl">${m}</span>`);
-    const bubbles = concl && plan0 ? rv(`<div class="handoff">
-        <div class="bubble ok"><div class="who">Curriculum agent concluded</div>
-          ${mark(trim(concl, 170), /deprecat\w*/gi)}</div>
-        <div class="hand-arrow"><svg viewBox="0 0 150 44" aria-hidden="true">
-            <line x1="6" y1="22" x2="132" y2="22" stroke="currentColor" stroke-width="3"/>
-            <path d="M 130 12 L 146 22 L 130 32 Z" fill="currentColor"/></svg>
-          <div class="lbl">lost in the handoff</div></div>
-        <div class="bubble bad"><div class="who">Plan, first step</div>
-          ${mark(trim(plan0, 150), /import[^.]*?path|module path/gi)}</div>
-      </div>`, 2000) : "";
+    const hand = handoffBlock(r);             // shared with C-Sync (cards.js)
+    const bubbles = hand ? rv(hand, 2000) : "";
     return `<div class="flow-big">${flowBlock(r, { tiers: W.tiers, animate: true })}</div>${bubbles}
       ${more(`<p><b>Curriculum agent's conclusion:</b> ${esc(concl)}</p>
               <p><b>Full plan:</b></p><ol>${(r.action_plan || []).map((p) => `<li>${esc(p)}</li>`).join("")}</ol>

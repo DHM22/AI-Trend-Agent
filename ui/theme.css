@@ -320,3 +320,15 @@ summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; b
 @media (prefers-reduced-motion: reduce) {
   .flow5.animate .fnode, .flow5.animate .farrow { animation: none; opacity: 1; }
 }
+
+/* Handoff (cards.js handoffBlock): shared by walkthrough.html and C-Sync */
+.handoff { display: grid; grid-template-columns: 1fr 150px 1fr; align-items: center; gap: 10px; margin-top: 16px; }
+.bubble { position: relative; background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
+          padding: 12px 16px; font-size: 0.98rem; line-height: 1.45; box-shadow: var(--shadow); }
+.bubble .who { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+.bubble.ok { border-color: color-mix(in srgb, var(--good) 55%, var(--border)); }
+.bubble.bad { border-color: var(--critical); }
+.hand-arrow { text-align: center; color: var(--critical); }
+.hand-arrow svg { width: 150px; height: 44px; display: block; margin: 0 auto; }
+.hand-arrow .lbl { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; }
+.hl { background: color-mix(in srgb, var(--warning) 30%, transparent); border-radius: 3px; padding: 0 2px; }
