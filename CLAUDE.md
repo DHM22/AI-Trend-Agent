@@ -120,7 +120,7 @@ ui2/                                   ONBOARDING PROTOTYPE, mounted at /ui2 —
 ui2/domains.py                         Domain config AS DATA. agentic_ai's values are IMPORTED, never copied:
                                         WATCHED_REPOS + FEEDS/SECONDARY_FEEDS + recommendation._DOMAIN_TERMS (all three
                                         import clean — the OpenAI client is built lazily inside a method). ai_engineering
-                                        and cybersecurity are "not built"; cybersecurity lists NO sources on purpose.
+                                        and cloud_computing are "not built"; cloud_computing lists NO sources on purpose.
                                         Nothing reads back: the monitoring modules and the in-domain gate are NOT rewired
                                         to use this, since that would change pipeline behaviour we cannot re-run to check.
                                         `python ui2/domains.py --write` regenerates ui2/domains.json for the pages
