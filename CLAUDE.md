@@ -131,6 +131,14 @@ ui3/                                   Per-agent explainer dashboard, mounted at
                                         RELEVANCE_FLOOR etc. for labelling only; update them if those move. Colours come
                                         from ui/theme.css tokens (dark mode works); source colours are dataviz-validated.
                                         Note /summary returns tier_counts as a LIST of {tier,label,count}, not a dict
+c_sync/                                C-SYNC: Streamlit app (`streamlit run c_sync/app.py`), built on aldanah's SkillRadar UI
+                                        (imported byte-for-byte in 61e97c4; her evaluation.py lab-threshold change NOT taken).
+                                        Reads the SAME snapshot + its source_signals file as app.py -- NO agent re-run: maturity =
+                                        evaluation._maturity_score(stored confidence), relevance solved from total_score.
+                                        Left sidebar = all pages; top = only the 5 stages. Home = "noise to curriculum"
+                                        squares (area ~ real counts). Trend story embeds ui/cards.js flowBlock+handoffBlock via
+                                        st.iframe (one renderer). Streamlit does NOT hot-reload ui_*.py -- restart after edits.
+                                        test_chain section 16 smoke-runs every page with AppTest
 demo_ui.py                             Streamlit FALLBACK UI over the same snapshot (primary is ui/advanced.html).
                                         `streamlit run demo_ui.py`; streamlit is in requirements.txt. Cards show the
                                         search-failed banner and a collapsed "Agent trace" expander via
@@ -186,7 +194,7 @@ demo_ui.py                             Streamlit FALLBACK UI over the same snaps
 02_src/agents/curriculum.py            RAG search agent; has search_failed flag + curriculum_checked() tri-state
 02_src/agents/evaluation.py            Deterministic _maturity_score / _relevance_score; model only writes rationale
 02_src/agents/recommendation.py        Orchestrator; tier-selection gates (see Key Decisions)
-02_src/agents/test_chain.py            Offline test suite — 0 API calls. Currently 199 passed, 0 skipped
+02_src/agents/test_chain.py            Offline test suite — 0 API calls. Currently 210 passed, 0 skipped
                                         (sections 1-2, written for the deterministic verifier, run again)
 02_src/tests/test_verification.py      14 offline VerificationAgent tests (from PR #1, adapted to the restored
                                         verifier). Plain script, run directly
@@ -326,7 +334,7 @@ script, before trusting a validation run on a non-default dataset.
      flag that `VerifiedTrend` does not have. `curriculum.precision_at_3` needs the agent's top-3 candidates, but
      `CurriculumAgent` exposes only the one selected match. Both require a code change first.
 - **Promptfoo behavioral suite (`04_eval/promptfooconfig.yaml`) has never been run** — blocked by Node version
-  (need 22.22+, machine has 21.6.1). Decided to accept this gap given time constraints; test_chain.py (199 passed) +
+  (need 22.22+, machine has 21.6.1). Decided to accept this gap given time constraints; test_chain.py (210 passed) +
   the written config + gold-set eval numbers are the evaluation answer for now.
 - **Content-Type Agent (proposed, not built):** would classify a signal as release/announcement/case_study/
   self_promotion/opinion before it reaches the tier gates. Would fix false positives from Show HN self-promotion
