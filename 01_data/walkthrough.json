@@ -159,7 +159,7 @@
     "onboarding_url": "/ui2/",
     "onboarding_label": "Open the onboarding prototype (simulated)",
     "static": [
-      "Pick a domain -- agentic AI today; AI engineering and cybersecurity next.",
+      "Pick a domain -- agentic AI today; AI engineering and cloud computing next.",
       "A content-type agent, so vendor case studies and self-promotion never reach the tier gates.",
       "An instructor companion: ask questions about any recommendation and its evidence."
     ],
@@ -175,7 +175,7 @@
         "note": "Configured, not built"
       },
       {
-        "name": "Cybersecurity",
+        "name": "Cloud Computing",
         "status": "configured",
         "note": "Configured, not built"
       }
