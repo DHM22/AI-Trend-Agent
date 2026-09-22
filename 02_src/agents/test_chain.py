@@ -1294,6 +1294,71 @@ def test_walkthrough_content_and_routes():
 
 
 # ===========================================================================
+# 16. C-SYNC (c_sync/) -- the Streamlit view over the same recorded run
+# It must show the snapshot's own numbers (no agent re-run), and every page
+# must render offline. Visual checks are done in a browser; these pin the rest.
+# ===========================================================================
+
+def test_csync():
+    import json, re as _re
+    root = Path(__file__).resolve().parents[2]
+    cs = root / "c_sync"
+    try:
+        import streamlit  # noqa: F401
+        from streamlit.testing.v1 import AppTest
+    except ImportError:
+        SKIP.append("c-sync: streamlit not installed")
+        return
+    if str(cs) not in sys.path:
+        sys.path.insert(0, str(cs))
+    import ui_adapter as U
+    from agents.evaluation import _maturity_score
+
+    snap = json.loads((root / "01_data" / "demo_snapshot.json").read_text(encoding="utf-8"))
+    recs = snap["recommendations"]
+    bad = []
+    for r in recs:
+        m, rel, total = U.stored_scores(r)
+        if m != _maturity_score(r.get("confidence")):
+            bad.append((r["trend"], "maturity"))
+        elif total is not None and abs(0.5 * m + 0.5 * rel - total) > 1e-9:
+            bad.append((r["trend"], "total != (maturity + relevance) / 2"))
+    check("c-sync: stored scores reproduce every recorded total_score", bad, [],
+          "maturity is evaluation.py's band; relevance is solved from total_score")
+
+    code = {p.name: p.read_text(encoding="utf-8") for p in cs.glob("*.py")}
+    check("c-sync: no agent is run (no Agent classes, no OpenAI client)",
+          [n for n, t in code.items()
+           if _re.search(r"^\s*(?:from|import)\s[^\n]*(?:Agent|openai)|\w+Agent\(|OpenAI\(", t, _re.M)], [])
+    check("c-sync: the SkillRadar name is gone from what users see",
+          [n for n, t in code.items()
+           for line in t.splitlines() if "skillradar" in line.lower() and "SKILLRADAR_BACKEND" not in line], [])
+    check("c-sync: trace payload cannot close its <script> tag",
+          "</" in U.trace_payload({"trend": "</script><b>x"}, []), False)
+
+    pages = ["Home", "Dashboard", "Radar", "Trend story", "Curriculum", "The gap",
+             "Evaluation", "Decision", "How it works"]
+    broken = []
+    for page in pages:
+        at = AppTest.from_file(str(cs / "app.py"), default_timeout=60)
+        at.session_state["page"] = page
+        at.run()
+        if at.exception or at.error:
+            broken.append((page, str((list(at.exception) + list(at.error))[0].value)[:120]))
+    check("c-sync: every page renders offline with no exception", broken, [])
+
+    at = AppTest.from_file(str(cs / "app.py"), default_timeout=60)
+    at.session_state["page"] = "Dashboard"
+    at.run()
+    shown = at.caption[0].value if at.caption else ""
+    check("c-sync: the dashboard lists every recommendation",
+          shown, f"{len(recs)} of {len(recs)} recommendations")
+    at.button(key="stage_Decide").click().run()
+    check("c-sync: the top stage bar navigates (05 Decide -> Decision)",
+          at.session_state["page"], "Decision")
+
+
+# ===========================================================================
 
 TESTS = [
     ("verification scoring", test_verification_scoring),
@@ -1321,6 +1386,7 @@ TESTS = [
     ("trace view", test_trace_view),
     ("capture: verifier mode + reasoning", test_capture_records_verifier_mode_and_reasoning),
     ("walkthrough content and routes", test_walkthrough_content_and_routes),
+    ("c-sync", test_csync),
 ]
 
 
