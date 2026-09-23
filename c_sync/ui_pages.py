@@ -298,14 +298,19 @@ def gap(records: list[dict]) -> None:
         return
     selected, record = choose_trend(records, "gap")
     match = record.get("match")
-    left, right = st.columns(2, gap="large")
-    with left:
-        st.html(f'<div class="sr-glass sr-compare"><div class="sr-compare-label">TECHNOLOGY TREND</div><div class="sr-compare-title">{e(record.get("trend"))}</div><div class="sr-compare-text">{e(record.get("verification_note") or "No verification note recorded.")}</div></div>')
-    with right:
-        if match:
-            st.html(f'<div class="sr-glass sr-compare"><div class="sr-compare-label">CURRENT COURSE MATERIAL</div><div class="sr-compare-title">{e(match.get("citation") or "Citation unavailable")}</div><div class="sr-compare-text">{e((match.get("matched_text") or "No excerpt saved.")[:260])}</div></div>')
-        else:
-            st.html('<div class="sr-glass sr-compare"><div class="sr-compare-label">CURRENT COURSE MATERIAL</div><div class="sr-compare-title">No match saved</div><div class="sr-compare-text">The recorded run contains no cited slide or notebook cell for this trend.</div></div>')
+    # One grid row, so both cards stretch to the taller one's height.
+    trend_card_html = (f'<div class="sr-glass sr-compare"><div class="sr-compare-label">TECHNOLOGY TREND</div>'
+                       f'<div class="sr-compare-title">{e(record.get("trend"))}</div>'
+                       f'<div class="sr-compare-text">{e(record.get("verification_note") or "No verification note recorded.")}</div></div>')
+    if match:
+        course_html = (f'<div class="sr-glass sr-compare"><div class="sr-compare-label">CURRENT COURSE MATERIAL</div>'
+                       f'<div class="sr-compare-title">{e(match.get("citation") or "Citation unavailable")}</div>'
+                       f'<div class="sr-compare-text">{e((match.get("matched_text") or "No excerpt saved.")[:260])}</div></div>')
+    else:
+        course_html = ('<div class="sr-glass sr-compare"><div class="sr-compare-label">CURRENT COURSE MATERIAL</div>'
+                       '<div class="sr-compare-title">No match saved</div><div class="sr-compare-text">The recorded run '
+                       'contains no cited slide or notebook cell for this trend.</div></div>')
+    st.html(f'<div class="cs-compare-row">{trend_card_html}{course_html}</div>')
     action = record.get("recommended_action", "")
     if action == "add_new_lesson" and not match:
         reveal, tone, detail = "Curriculum gap identified", "", "The saved Recommendation Agent proposed a new lesson after the curriculum check."

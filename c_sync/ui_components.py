@@ -68,7 +68,7 @@ h1,h2,h3{letter-spacing:-.04em} p{line-height:1.6}
 .sr-timeline{border-left:2px solid #7564af;margin:12px 0 12px 15px;padding-left:24px}.sr-timeline-item{position:relative;margin:0 0 20px;padding:13px 18px;background:#151e30;border:1px solid #ffffff17;border-radius:14px}.sr-timeline-item::before{content:"";position:absolute;left:-32px;top:22px;width:12px;height:12px;border-radius:50%;background:#67e8f9;box-shadow:0 0 13px #67e8f9}
 .sr-ring-wrap{display:flex;justify-content:center;padding:18px 0}.sr-ring{--pct:0%;--ring-color:#a78bfa;width:150px;height:150px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--ring-color) var(--pct),#29354d 0);box-shadow:0 0 40px color-mix(in srgb,var(--ring-color) 20%,transparent)}.sr-ring-inner{width:124px;height:124px;border-radius:50%;background:#101827;display:flex;flex-direction:column;justify-content:center;align-items:center}.sr-ring-value{font-size:1.7rem;line-height:1.05;font-weight:800;letter-spacing:-.04em;color:white}.sr-ring-denom{font-size:.72rem;color:#b5c4d8}.sr-ring-label{margin-top:4px;font-size:.6rem;font-weight:800;letter-spacing:.1em;color:#c5d2e5;text-align:center;max-width:96px}
 .sr-decision{padding:24px;border-radius:20px;background:linear-gradient(135deg,#2b1e52,#172648 52%,#101f36);border:1px solid #a78bfa88;box-shadow:0 25px 70px #0008,0 0 60px #7c3aed20}.sr-decision.green{border-color:#34d3998a;background:linear-gradient(135deg,#173e3b,#172648 60%,#0f202b)}.sr-decision.amber{border-color:#fbbf248a;background:linear-gradient(135deg,#4a351d,#252945 60%,#111a2b)}.sr-decision-title{font-size:clamp(1.6rem,2.8vw,2.6rem);font-weight:800;line-height:1.08;letter-spacing:-.06em;color:white;margin:17px 0}.sr-decision-copy{color:#c9d7e9;font-size:1.08rem;max-width:800px}
-.sr-compare{min-height:270px}.sr-compare-label{font-size:.73rem;letter-spacing:.15em;font-weight:800;color:#94a8c7}.sr-compare-title{font-size:clamp(1.3rem,2vw,2rem);font-weight:800;color:#fff;line-height:1.25;margin:20px 0}.sr-compare-text{font-size:.95rem;color:#bbcadb;line-height:1.55}
+.sr-compare{min-height:270px;min-width:0;overflow:hidden}.cs-compare-row{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:stretch}@media(max-width:850px){.cs-compare-row{grid-template-columns:1fr}}.sr-compare-label{font-size:.73rem;letter-spacing:.15em;font-weight:800;color:#94a8c7}.sr-compare-title{font-size:clamp(1.3rem,2vw,2rem);font-weight:800;color:#fff;line-height:1.25;margin:20px 0;overflow-wrap:anywhere}.sr-compare-text{font-size:.95rem;color:#bbcadb;line-height:1.55;overflow-wrap:anywhere}
 .sr-reveal{border:1px solid #ffffff28;border-radius:14px;padding:14px 18px;margin:12px 0;background:linear-gradient(110deg,#30235f,#162746);font-size:1.2rem;font-weight:800;letter-spacing:-.03em;color:#fff}.sr-reveal.green{background:linear-gradient(110deg,#14433c,#173048);border-color:#34d39966}.sr-reveal.amber{background:linear-gradient(110deg,#4b351a,#242a47);border-color:#fbbf2466}
 .sr-empty{padding:32px;border:1px dashed #60718e;border-radius:19px;color:#b7c5d9;background:#141d2bb8}
 @keyframes sr-sweep{to{transform:rotate(360deg)}}
@@ -80,13 +80,13 @@ h1,h2,h3{letter-spacing:-.04em} p{line-height:1.6}
 @keyframes cs-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 [data-testid="stMainBlockContainer"] [data-testid="stElementContainer"]{animation:cs-in .38s ease both}
 [data-stale="true"],.stale-element{opacity:.15!important;transition:opacity .22s ease!important}
-.cs-squares{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;padding:6px 0 2px}
+.cs-funnel{display:inline-block;max-width:100%}.cs-squares{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;padding:6px 0 2px}.cs-slot{height:var(--slot);display:flex;align-items:center;justify-content:center}
 .cs-sq{display:flex;flex-direction:column;align-items:center;gap:6px;opacity:0;animation:cs-in .5s ease forwards;animation-delay:calc(var(--i)*170ms)}
 .cs-box{display:grid;place-items:center;border-radius:14px;color:#fff;font-weight:800;letter-spacing:-.04em;
   background:linear-gradient(145deg,var(--c),color-mix(in srgb,var(--c) 45%,#080c17));
   border:1px solid color-mix(in srgb,var(--c) 70%,#fff);box-shadow:0 0 26px color-mix(in srgb,var(--c) 35%,transparent)}
 .cs-sq-label{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:#a9bad0;font-weight:800;text-align:center;max-width:130px}
-.cs-arrow{color:#7d8fb0;font-size:1.3rem;align-self:center;margin-bottom:26px}
+.cs-arrow{color:#7d8fb0;font-size:1.3rem;height:var(--slot);display:flex;align-items:center}
 .cs-ends{display:flex;justify-content:space-between;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:#7f93b3;font-weight:800;margin-top:4px}
 .cs-dash{background:linear-gradient(150deg,#1d2739e8,#101827dd);border:1px solid #ffffff1c;border-radius:14px;padding:12px 14px;margin-bottom:6px}
 .cs-dash .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
@@ -180,17 +180,19 @@ def squares_funnel(stages: list[tuple[int, str]]) -> None:
     counts = [max(int(n or 0), 0) for n, _ in stages]
     top = max(counts + [1])
     colors = ["#64748b", "#6d7fd6", "#8b5cf6", "#a78bfa", "#34d399"]
-    cells = []
+    cells, sides = [], []
     for i, ((n, label), color) in enumerate(zip(stages, colors)):
         side = 46 + 150 * (max(int(n or 0), 0) / top) ** 0.5
+        sides.append(side)
         font = max(0.9, side / 70)
-        cells.append(f'<div class="cs-sq" style="--i:{i}"><div class="cs-box" style="--c:{color};'
-                     f'width:{side:.0f}px;height:{side:.0f}px;font-size:{font:.2f}rem">{e(n)}</div>'
+        cells.append(f'<div class="cs-sq" style="--i:{i}"><div class="cs-slot"><div class="cs-box" style="--c:{color};'
+                     f'width:{side:.0f}px;height:{side:.0f}px;font-size:{font:.2f}rem">{e(n)}</div></div>'
                      f'<div class="cs-sq-label">{e(label)}</div></div>')
     arrow = '<div class="cs-arrow" aria-hidden="true">→</div>'
     summary = ", ".join(f"{n} {label}" for n, label in stages)
-    st.html(f'<div class="cs-squares" role="img" aria-label="From noise to curriculum: {e(summary)}">'
-            f'{arrow.join(cells)}</div><div class="cs-ends"><span>Noise</span><span>Curriculum</span></div>')
+    st.html(f'<div class="cs-funnel" style="--slot:{max(sides + [46]):.0f}px"><div class="cs-squares" role="img" '
+            f'aria-label="From noise to curriculum: {e(summary)}">{arrow.join(cells)}</div>'
+            f'<div class="cs-ends"><span>Noise</span><span>Curriculum</span></div></div>')
 
 
 def dashboard_card(record: dict) -> None:
