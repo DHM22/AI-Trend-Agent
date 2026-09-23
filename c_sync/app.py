@@ -5,7 +5,7 @@ from __future__ import annotations
 import streamlit as st
 
 from ui_adapter import BACKEND, backend_ready, load_recorded_run
-from ui_components import STAGES, brand, inject_css
+from ui_components import STAGES, brand, inject_css, scroll_to_top
 from ui_pages import (
     curriculum, dashboard, decision, evaluation, gap, go, home, how_it_works, radar, trend_story,
 )
@@ -90,6 +90,9 @@ def main() -> None:
         "How it works": lambda: how_it_works(snapshot),
     }
     routes.get(st.session_state["page"], routes["Home"])()
+    if st.session_state.get("scroll_top", 0) != st.session_state.get("scrolled_to", 0):
+        st.session_state["scrolled_to"] = st.session_state["scroll_top"]
+        scroll_to_top(st.session_state["scroll_top"])
 
 
 if __name__ == "__main__":

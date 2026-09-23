@@ -20,6 +20,8 @@ from ui_visuals import radar_map
 
 
 def go(page: str, selected: int | None = None) -> None:
+    if st.session_state.get("page") != page:
+        st.session_state["scroll_top"] = st.session_state.get("scroll_top", 0) + 1
     st.session_state["page"] = page
     if selected is not None:
         st.session_state["selected_trend"] = selected
