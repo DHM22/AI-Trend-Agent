@@ -1333,6 +1333,21 @@ def test_csync():
     check("c-sync: the SkillRadar name is gone from what users see",
           [n for n, t in code.items()
            for line in t.splitlines() if "skillradar" in line.lower() and "SKILLRADAR_BACKEND" not in line], [])
+    import ui_pages as UP
+    wrong = []
+    for r in recs:
+        items = r.get("evidence") or []
+        stars = UP._stars_by_repo(items)
+        for it in items:
+            note = it.get("note") or ""
+            _, state, badges = UP._evidence_view(it, stars)
+            if note.startswith("verify_release(") and ("CONFIRMED" in note) != (state == "ok"):
+                wrong.append((r["trend"], "release badge", state))
+            if any(tone == "stars" for _, tone in badges) and not stars:
+                wrong.append((r["trend"], "stars shown with no recorded count"))
+    check("c-sync: release check is green exactly when verify_release CONFIRMED it", wrong, [])
+    check("c-sync: stars come from the recorded github_lookup note, never invented",
+          UP._stars_by_repo([{"note": "github_lookup('a/b') matched a/b (1,234 stars, pushed x)"}]), {"a/b": 1234})
     check("c-sync: trace payload cannot close its <script> tag",
           "</" in U.trace_payload({"trend": "</script><b>x"}, []), False)
 

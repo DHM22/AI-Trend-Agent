@@ -55,7 +55,7 @@ h1,h2,h3{letter-spacing:-.04em} p{line-height:1.6}
 .sr-radar-core{z-index:2;width:132px;height:132px;border-radius:50%;display:grid;place-items:center;text-align:center;background:radial-gradient(circle at 40% 30%,#9c74ff,#4c2b92 68%,#271a57);border:2px solid #c4b5fd88;box-shadow:0 0 45px #855cf470;color:white;font-size:1.05rem;font-weight:800;line-height:1.2}
 .sr-dot{position:absolute;width:10px;height:10px;border-radius:50%;background:#71e8fa;box-shadow:0 0 13px #71e8fa,0 0 27px #71e8fa;z-index:2}.sr-dot.d2{background:#c39aff;box-shadow:0 0 15px #b58aff,0 0 25px #b58aff}.sr-dot.d3{background:#66e0af;box-shadow:0 0 15px #66e0af}
 .sr-radar-caption{position:absolute;left:20px;bottom:16px;z-index:3;color:#aebed2;font-size:.75rem;letter-spacing:.11em;text-transform:uppercase}
-.sr-data-radar{height:420px;position:relative;overflow:hidden;border-radius:26px;border:1px solid #8f7bcc55;background:radial-gradient(circle at center,#2b2055 0,#15243b 25%,#0d1526 66%);box-shadow:inset 0 0 80px #7254a420,0 22px 60px #0006}
+.sr-data-radar{height:480px;position:relative;overflow:hidden;border-radius:26px;border:1px solid #8f7bcc55;background:radial-gradient(circle at center,#2b2055 0,#15243b 25%,#0d1526 66%);box-shadow:inset 0 0 80px #7254a420,0 22px 60px #0006}
 .sr-data-grid{position:absolute;inset:8%;border-radius:50%;border:1px solid #a3a5da48;box-shadow:0 0 0 75px #8c84d10a,0 0 0 150px #8c84d108;pointer-events:none}
 .sr-data-grid::before,.sr-data-grid::after{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1px solid #7f96b126}.sr-data-grid::after{transform:rotate(90deg)}
 .sr-data-core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:110px;height:110px;border-radius:50%;display:grid;place-items:center;text-align:center;font-size:.9rem;line-height:1.25;font-weight:800;letter-spacing:.06em;color:white;background:radial-gradient(circle at 35% 20%,#9d75f5,#49317c);border:2px solid #d4bfff9c;box-shadow:0 0 45px #9061ed6e;z-index:3}
@@ -66,7 +66,7 @@ h1,h2,h3{letter-spacing:-.04em} p{line-height:1.6}
 .sr-radar-legend{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0;color:#adbed3;font-size:.78rem}.sr-radar-legend div{display:flex;align-items:center;gap:7px}.sr-radar-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;box-shadow:0 0 10px currentColor}
 .sr-flow{display:flex;align-items:stretch;gap:12px;flex-wrap:wrap}.sr-flow-item{flex:1;min-width:170px}.sr-flow-arrow{display:flex;align-items:center;color:#8b78c3;font-size:1.65rem}
 .sr-timeline{border-left:2px solid #7564af;margin:12px 0 12px 15px;padding-left:24px}.sr-timeline-item{position:relative;margin:0 0 20px;padding:13px 18px;background:#151e30;border:1px solid #ffffff17;border-radius:14px}.sr-timeline-item::before{content:"";position:absolute;left:-32px;top:22px;width:12px;height:12px;border-radius:50%;background:#67e8f9;box-shadow:0 0 13px #67e8f9}
-.sr-ring-wrap{display:flex;justify-content:center;padding:18px 0}.sr-ring{--pct:0%;--ring-color:#a78bfa;width:150px;height:150px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--ring-color) var(--pct),#29354d 0);box-shadow:0 0 40px color-mix(in srgb,var(--ring-color) 20%,transparent)}.sr-ring-inner{width:124px;height:124px;border-radius:50%;background:#101827;display:flex;flex-direction:column;justify-content:center;align-items:center}.sr-ring-value{font-size:2.1rem;font-weight:800;letter-spacing:-.07em;color:white}.sr-ring-denom{font-size:.9rem;color:#b5c4d8}.sr-ring-label{margin-top:7px;font-size:.75rem;font-weight:800;letter-spacing:.16em;color:#c5d2e5}
+.sr-ring-wrap{display:flex;justify-content:center;padding:18px 0}.sr-ring{--pct:0%;--ring-color:#a78bfa;width:150px;height:150px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--ring-color) var(--pct),#29354d 0);box-shadow:0 0 40px color-mix(in srgb,var(--ring-color) 20%,transparent)}.sr-ring-inner{width:124px;height:124px;border-radius:50%;background:#101827;display:flex;flex-direction:column;justify-content:center;align-items:center}.sr-ring-value{font-size:1.7rem;line-height:1.05;font-weight:800;letter-spacing:-.04em;color:white}.sr-ring-denom{font-size:.72rem;color:#b5c4d8}.sr-ring-label{margin-top:4px;font-size:.6rem;font-weight:800;letter-spacing:.1em;color:#c5d2e5;text-align:center;max-width:96px}
 .sr-decision{padding:24px;border-radius:20px;background:linear-gradient(135deg,#2b1e52,#172648 52%,#101f36);border:1px solid #a78bfa88;box-shadow:0 25px 70px #0008,0 0 60px #7c3aed20}.sr-decision.green{border-color:#34d3998a;background:linear-gradient(135deg,#173e3b,#172648 60%,#0f202b)}.sr-decision.amber{border-color:#fbbf248a;background:linear-gradient(135deg,#4a351d,#252945 60%,#111a2b)}.sr-decision-title{font-size:clamp(1.6rem,2.8vw,2.6rem);font-weight:800;line-height:1.08;letter-spacing:-.06em;color:white;margin:17px 0}.sr-decision-copy{color:#c9d7e9;font-size:1.08rem;max-width:800px}
 .sr-compare{min-height:270px}.sr-compare-label{font-size:.73rem;letter-spacing:.15em;font-weight:800;color:#94a8c7}.sr-compare-title{font-size:clamp(1.3rem,2vw,2rem);font-weight:800;color:#fff;line-height:1.25;margin:20px 0}.sr-compare-text{font-size:.95rem;color:#bbcadb;line-height:1.55}
 .sr-reveal{border:1px solid #ffffff28;border-radius:14px;padding:14px 18px;margin:12px 0;background:linear-gradient(110deg,#30235f,#162746);font-size:1.2rem;font-weight:800;letter-spacing:-.03em;color:#fff}.sr-reveal.green{background:linear-gradient(110deg,#14433c,#173048);border-color:#34d39966}.sr-reveal.amber{background:linear-gradient(110deg,#4b351a,#242a47);border-color:#fbbf2466}
@@ -96,7 +96,7 @@ h1,h2,h3{letter-spacing:-.04em} p{line-height:1.6}
 .cs-dash .plan{font-size:.83rem;color:#aebed2;margin-top:6px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
 @media(max-width:850px){.sr-pipeline{display:flex;overflow-x:auto;padding-bottom:7px}.sr-step{min-width:140px;min-height:82px}.sr-radar{height:330px}.sr-data-radar{height:360px}.sr-flow-arrow{display:none}.sr-hero-title{font-size:3.7rem}.sr-decision{padding:26px}}
 @media(prefers-reduced-motion:reduce){.sr-radar-sweep{animation:none}.sr-glass,[data-testid="stButton"] button{transition:none}[data-testid="stMainBlockContainer"] [data-testid="stElementContainer"],.cs-sq{animation:none;opacity:1}[data-stale="true"],.stale-element{transition:none!important}}
-</style>
+.sr-radar-stage{position:absolute;top:0;bottom:0;left:50%;aspect-ratio:1;transform:translateX(-50%)}.sr-sweep{position:absolute;inset:5%;pointer-events:none;z-index:2}.sr-sweep-beam{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,transparent 0deg 290deg,#67e8f914 320deg,#67e8f955 356deg,#a5f3fc 360deg);animation:sr-spin 6s linear infinite}.sr-sweep-beam::after{content:"";position:absolute;left:50%;top:0;height:50%;border-left:2px solid #a5f3fcd9;box-shadow:0 0 14px #67e8f9}@keyframes sr-spin{to{transform:rotate(360deg)}}.sr-data-node{animation:sr-ping 6s linear infinite}@keyframes sr-ping{0%{filter:brightness(1.9) drop-shadow(0 0 10px var(--node-color))}14%,100%{filter:none}}.cs-ev{display:flex;flex-direction:column;gap:8px}.cs-ev details{background:#111b2bdc;border:1px solid #ffffff18;border-left:3px solid var(--ev,#5b6b86);border-radius:12px;opacity:0;animation:cs-rise .5s ease forwards}.cs-ev details.ok{--ev:#34d399;background:linear-gradient(90deg,#34d3991c,#111b2bdc 55%);border-color:#34d39955}.cs-ev details.bad{--ev:#f87171}.cs-ev details.warn{--ev:#fbbf24}.cs-ev summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:10px 14px;flex-wrap:wrap}.cs-ev summary::-webkit-details-marker{display:none}.cs-ev summary::after{content:"▸";margin-left:auto;color:#87a4ca;transition:transform .2s}.cs-ev details[open] summary::after{transform:rotate(90deg)}.cs-ev-num{font-size:.66rem;letter-spacing:.14em;color:#87a4ca;font-weight:800;white-space:nowrap}.cs-ev-title{color:#f0f4ff;font-weight:650;font-size:.92rem;flex:1 1 220px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cs-ev-badge{font-size:.72rem;font-weight:800;border-radius:100px;padding:3px 9px;border:1px solid;white-space:nowrap}.cs-ev-badge.stars{color:#fcd34d;border-color:#fbbf2455;background:#fbbf2412}.cs-ev-badge.ok{color:#6ee7b7;border-color:#34d39966;background:#34d3991a}.cs-ev-badge.bad{color:#fca5a5;border-color:#f8717166;background:#f871711a}.cs-ev-badge.warn{color:#fcd34d;border-color:#fbbf2466;background:#fbbf241a}.cs-ev-body{padding:0 14px 12px;color:#c2d0e1;font-size:.88rem;line-height:1.5;word-break:break-word}.cs-ev-body a{color:#67e8f9;font-weight:650}.cs-reveal{opacity:0;animation:cs-rise .6s ease forwards}@keyframes cs-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){.sr-sweep-beam,.sr-data-node{animation:none!important}.cs-ev details,.cs-reveal{animation:none!important;opacity:1!important}}</style>
 """
 
 
@@ -163,10 +163,11 @@ def action_tone(action: str) -> str:
     return {"watch":"amber", "update_existing_material":"violet", "add_optional_content":"cyan", "add_new_lesson":"green", "investigate_larger_change":"rose"}.get(action, "violet")
 
 
-def score_ring(label: str, value: int | float, color: str) -> None:
+def score_ring(label: str, value: int | float, color: str, delay: float | None = None) -> None:
     # The arc is a display-only fraction of the stored score.
     percent = max(0.0, min(100.0, float(value) / 5 * 100))
-    st.html(f'<div class="sr-ring-wrap"><div class="sr-ring" style="--pct:{percent:.1f}%;--ring-color:{color}"><div class="sr-ring-inner"><div class="sr-ring-value">{e(f"{value:g}")}</div><div class="sr-ring-denom">out of 5</div><div class="sr-ring-label">{e(label)}</div></div></div></div>')
+    reveal = f' cs-reveal" style="animation-delay:{delay:.2f}s' if delay is not None else ""
+    st.html(f'<div class="sr-ring-wrap{reveal}"><div class="sr-ring" style="--pct:{percent:.1f}%;--ring-color:{color}"><div class="sr-ring-inner"><div class="sr-ring-value">{e(f"{value:g}")}</div><div class="sr-ring-denom">out of 5</div><div class="sr-ring-label">{e(label)}</div></div></div></div>')
 
 
 def empty_state(title: str, detail: str) -> None:
@@ -211,18 +212,3 @@ def dashboard_card(record: dict) -> None:
             f'<div class="score">{e(shown)}<small> / 5</small></div></div>'
             f'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">{pills}</div>'
             f'<div class="cite">📎 {e(cite)}</div><div class="plan">{e(plan)}</div></div>')
-
-
-def trace_diagram(theme_css: str, cards_js: str, payload: str, with_handoff: bool) -> None:
-    """The walkthrough's step-3 picture -- five-node flow + handoff -- drawn by
-    the SAME cards.js the dashboard uses, inside a component frame (Streamlit
-    does not run page scripts itself)."""
-    handoff = "handoffBlock(P.r)" if with_handoff else '""'
-    doc = ('<!doctype html><html data-theme="dark"><head><meta charset="utf-8"><style>' + theme_css +
-           ':root[data-theme="dark"]{--surface-1:#111827;--page:#080C17;--border:#ffffff24}'
-           'html,body{background:#080C17!important;margin:0;font-family:Inter,system-ui,sans-serif;color:#f0f4ff}'
-           '.fnode,.bubble{background:#111827cc}</style></head><body><div id="o"></div>'
-           '<script>' + cards_js + '</script><script>const P = ' + payload + ';'
-           'document.getElementById("o").innerHTML = flowBlock(P.r, {tiers: P.t, animate: true}) + '
-           + handoff + ';</script></body></html>')
-    st.iframe(doc, height=340 if with_handoff else 170)

@@ -33,13 +33,14 @@ def radar_map(visible: list[tuple[int, dict]], maturity: list[int | None]) -> No
         glow = 12 + 24 * max(0, min(1, confidence if isinstance(confidence, (int, float)) else 0))
         color = ACTION_COLORS.get(record.get("recommended_action"), "#a78bfa")
         title = f"{record.get('trend', 'Untitled')} · {confidence:.0%} confidence · maturity {score}/5 · {action_label(record.get('recommended_action', ''))}" if isinstance(confidence, (int, float)) else record.get("trend", "Untitled")
+        ping = 6 * order / total          # the beam reaches this node after `ping` seconds
         nodes.append(
             f'<a class="sr-data-node" href="?trend={index}" title="{e(title)}" '
             f'aria-label="Open trend story: {e(record.get("trend", "Untitled"))}" '
             f'style="left:{x:.2f}%;top:{y:.2f}%;width:{diameter:.1f}px;height:{diameter:.1f}px;'
-            f'--node-color:{color};--node-glow:{glow:.1f}px"><span>{e(record.get("trend", "Untitled"))}</span></a>'
+            f'--node-color:{color};--node-glow:{glow:.1f}px;animation-delay:{ping:.2f}s"><span>{e(record.get("trend", "Untitled"))}</span></a>'
         )
     legend = "".join(f'<div><i style="background:{color}"></i>{e(action_label(action))}</div>'
                      for action, color in ACTION_COLORS.items()
                      if any(r.get("recommended_action") == action for _, r in visible))
-    st.html(f'<div class="sr-data-radar"><div class="sr-data-grid"></div><div class="sr-data-core">C-SYNC</div>{"".join(nodes)}<div class="sr-data-caption">SELECT A LIGHT TO OPEN ITS STORY</div></div><div class="sr-radar-legend">{legend}</div>')
+    st.html(f'<div class="sr-data-radar"><div class="sr-radar-stage"><div class="sr-data-grid"></div><div class="sr-sweep"><div class="sr-sweep-beam"></div></div><div class="sr-data-core">C-SYNC</div>{"".join(nodes)}</div><div class="sr-data-caption">SELECT A LIGHT TO OPEN ITS STORY</div></div><div class="sr-radar-legend">{legend}</div>')

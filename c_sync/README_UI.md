@@ -27,10 +27,15 @@ agent and makes no API calls.
   actionable recommendations.
 - **Dashboard:** every recommendation, most urgent tier first. You can filter by
   action, material type (lab or slides) and "actionable only".
-- **Trend story:** the walkthrough's step-3 agent trace. It shows the five-node
-  flow plus the "lost in the handoff" bubbles. It is drawn by `ui/cards.js`
-  (`flowBlock` and `handoffBlock`), so it is one copy of the renderer shared
-  with the dashboard and the walkthrough.
+- **Radar (01 Discover):** only the radar. A scanner beam sweeps it, and each
+  signal flashes as the beam passes.
+- **Trend story (02 Verify):** the evidence arrives one card at a time, and each
+  card expands for its full note. GitHub cards show the repository's stars
+  (⭐), taken from the recorded `github_lookup` note. The release check is green
+  (✅) only when `verify_release` CONFIRMED the release.
+- **Evaluation (04 Evaluate):** the scores stay hidden until you click "Reveal
+  the scores", then fade in.
+- **Decision (05 Decide):** the evidence chain is collapsed.
 
 ## Run
 

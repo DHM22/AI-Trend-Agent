@@ -5,14 +5,16 @@ from __future__ import annotations
 from collections import defaultdict
 from urllib.parse import urlparse
 
+import re
+
 import streamlit as st
 
 from ui_adapter import (
-    extract_upload, stored_scores, tier_order, trace_assets, trace_payload,
+    extract_upload, stored_scores, tier_order,
 )
 from ui_components import (
     action_label, action_tone, dashboard_card, e, empty_state, page_intro, pill,
-    score_ring, section, squares_funnel, stat, trace_diagram, trend_card,
+    score_ring, section, squares_funnel, stat, trend_card,
 )
 from ui_visuals import radar_map
 
@@ -47,17 +49,79 @@ def source_link(value: str) -> None:
         st.link_button("Open source", value, icon=":material/open_in_new:")
 
 
+_REPO = r"([\w.-]+/[\w.-]+)"
+
+
+def _repo_of(item: dict) -> str | None:
+    """owner/name this evidence item is about, if it names one."""
+    note, url = item.get("note") or "", item.get("url") or ""
+    for pattern, text in ((r"github\.com/" + _REPO, url), (r"^(?:github_lookup|verify_release)\('" + _REPO, note),
+                          (r"^" + _REPO + r":", note)):
+        m = re.search(pattern, text)
+        if m:
+            return m.group(1).removesuffix(".git").lower()
+    return None
+
+
+def _stars_by_repo(items: list[dict]) -> dict[str, int]:
+    """Star counts exactly as github_lookup recorded them -- nothing fetched."""
+    found = {}
+    for item in items:
+        m = re.search(r"matched " + _REPO + r" \(([\d,]+) stars", item.get("note") or "")
+        if m:
+            found[m.group(1).lower()] = int(m.group(2).replace(",", ""))
+    return found
+
+
+def _evidence_view(item: dict, stars: dict[str, int]) -> tuple[str, str, list[tuple[str, str]]]:
+    """(title, card state, badges) for one evidence item."""
+    note = item.get("note") or ""
+    tool = re.match(r"(github_lookup|verify_release)\(", note)
+    badges, state = [], ""
+    repo = _repo_of(item)
+    if (item.get("source") == "github") and repo in stars:
+        badges.append((f"⭐ {stars[repo]:,} stars", "stars"))
+    if tool and tool.group(1) == "verify_release":
+        title = f"Release check · {repo or 'unknown repository'}"
+        if "CONFIRMED" in note:
+            state = "ok"
+            badges.append(("✅ Release confirmed", "ok"))
+        elif "NOT confirm" in note:
+            state = "bad"
+            badges.append(("❌ Not confirmed", "bad"))
+        else:
+            state = "warn"
+            badges.append(("⚠️ Check could not run", "warn"))
+    elif tool:
+        title = f"Repository lookup · {repo or 'unknown repository'}"
+        if " matched " not in note:
+            state = "warn"
+            badges.append(("⚠️ No matching repository", "warn"))
+    else:
+        title = note.split("  (")[0] or item.get("source") or "Unnamed source"
+    return title, state, badges
+
+
 def evidence_cards(record: dict) -> None:
     items = record.get("evidence") or []
     if not items:
         empty_state("No verification evidence saved", "The recorded run does not include source notes for this trend.")
         return
-    for index, item in enumerate(items, 1):
-        with st.container(border=True):
-            st.caption(f"SOURCE {index:02d} · {str(item.get('tier') or 'Tier unavailable').upper()}")
-            st.markdown(f"**{item.get('source') or 'Unnamed source'}**")
-            st.write(item.get("note") or "No source note recorded.")
-            source_link(item.get("url") or item.get("source") or "")
+    stars = _stars_by_repo(items)
+    cards = []
+    for index, item in enumerate(items):
+        title, state, badges = _evidence_view(item, stars)
+        tier = str(item.get("tier") or "tier unavailable").upper()
+        chips = "".join(f'<span class="cs-ev-badge {tone}">{e(text)}</span>' for text, tone in badges)
+        url = item.get("url") or ""
+        link = (f'<div style="margin-top:6px"><a href="{e(url)}" target="_blank" rel="noopener">Open source ↗</a></div>'
+                if url.startswith(("http://", "https://")) else "")
+        cards.append(
+            f'<details class="{state}" style="animation-delay:{0.35 * index:.2f}s">'
+            f'<summary><span class="cs-ev-num">SOURCE {index + 1:02d} · {e(tier)} · {e(item.get("source") or "")}</span>'
+            f'<span class="cs-ev-title" title="{e(title)}">{e(title)}</span>{chips}</summary>'
+            f'<div class="cs-ev-body">{e(item.get("note") or "No source note recorded.")}{link}</div></details>')
+    st.html(f'<div class="cs-ev">{"".join(cards)}</div>')
 
 
 def match_details(match: dict | None) -> None:
@@ -76,22 +140,6 @@ def maturity_scores(records: list[dict]) -> list[int | None]:
     """Maturity per record from the STORED confidence (evaluation.py's band
     function) -- the same number the dashboard implies; nothing is re-run."""
     return [stored_scores(r)[0] for r in records]
-
-
-def tiers_for_trace() -> list[dict]:
-    order, labels = tier_order()
-    return [{"tier": t, "label": labels.get(t, t)} for t in order]
-
-
-def agent_trace(record: dict) -> None:
-    """The walkthrough's step-3 diagram for one recommendation."""
-    if not record.get("trace"):
-        empty_state("No agent trace saved", "This recommendation was captured before traces were recorded.")
-        return
-    css, js = trace_assets()
-    curriculum_reason = ((record.get("trace") or {}).get("curriculum") or {}).get("reason")
-    with_handoff = bool(curriculum_reason and (record.get("action_plan") or []))
-    trace_diagram(css, js, trace_payload(record, tiers_for_trace()), with_handoff)
 
 
 def home(snapshot: dict, records: list[dict], signals: list) -> None:
@@ -159,36 +207,14 @@ def dashboard(records: list[dict]) -> None:
 
 
 def radar(records: list[dict], signals: list) -> None:
-    page_intro("01 / DISCOVER", "Technology radar", "Explore the recorded trends. Each light is an assessed technology signal; select one to follow its story.")
+    page_intro("01 / DISCOVER", "Technology radar", "Every light is an assessed trend. Select one to follow its story.")
     if not records:
         empty_state("The radar is quiet", "No trends are saved in the current recorded run.")
         return
-    search_col, filter_col = st.columns([2, 1])
-    with search_col:
-        search = st.text_input("Find a trend", placeholder="Search by technology or source", icon=":material/search:")
-    with filter_col:
-        actions = ["All decisions"] + sorted({r.get("recommended_action", "") for r in records})
-        action = st.selectbox("Filter by decision", actions,
-                              format_func=lambda a: a if a == "All decisions" else action_label(a))
-    visible = [(i, r) for i, r in enumerate(records) if
-               (not search or search.lower() in (r.get("trend", "") + " " + " ".join(
-                   str(item.get("source") or "") for item in r.get("evidence") or [])).lower()) and
-               (action == "All decisions" or r.get("recommended_action") == action)]
-    st.caption(f"{len(visible)} of {len(records)} trends · Node size = maturity · Glow = confidence · Color = action")
-    if not visible:
-        empty_state("No trends found", "Try another search or decision filter.")
-        return
-    maturity = maturity_scores(records)
-    radar_map(visible, maturity)
-    section("Signals worth a closer look", "Open a trend to inspect its source evidence and curriculum impact.", "RECORDED TRENDS")
-    for offset in range(0, len(visible), 2):
-        cols = st.columns(2, gap="medium")
-        for col, pair in zip(cols, visible[offset:offset + 2]):
-            index, record = pair
-            with col:
-                trend_card(record, index == selected_index(records), maturity[index])
-                st.button("Open trend story", key=f"radar_card_{index}", icon=":material/arrow_forward:",
-                          on_click=go, args=("Trend story", index))
+    radar_map(list(enumerate(records)), maturity_scores(records))
+    st.caption("Node size = maturity · Glow = confidence · Color = action")
+    st.button("Next: 02 Verify", type="primary", icon=":material/arrow_forward:",
+              on_click=go, args=("Trend story",))
 
 
 def trend_story(records: list[dict], signals: list) -> None:
@@ -204,8 +230,6 @@ def trend_story(records: list[dict], signals: list) -> None:
         confidence = record.get("confidence")
         stat(f"{confidence:.0%}" if isinstance(confidence, (int, float)) else "—", "Recorded confidence", "VERIFICATION")
         st.caption(f"{len(record.get('evidence') or [])} saved verification evidence item(s)")
-    section("How the agent worked it", "Verify → search the curriculum → score → recommend, from the recorded trace.", "AGENT TRACE")
-    agent_trace(record)
     section("The signal trail", "Original monitoring signals are shown by published date when that date was recorded.", "WHAT WE SAW")
     originals = sorted((s for s in signals if s.title == record.get("trend")), key=lambda s: s.published or "")
     if originals:
@@ -215,7 +239,7 @@ def trend_story(records: list[dict], signals: list) -> None:
             source_link(signal.url)
     else:
         empty_state("Original signal unavailable", "The saved signal file has no exact title match for this recorded trend.")
-    section("The verification evidence", "These are the source notes saved by the Verification Agent. Some sources have no date in the snapshot.", "WHY WE TRUST IT")
+    section("The verification evidence", "What the Verification Agent checked. Open a source for its full note.", "WHY WE TRUST IT")
     evidence_cards(record)
     section("Should this affect the curriculum?", "Next, compare this trend with the saved curriculum match.", "NEXT STEP")
     st.button("Check the curriculum", type="primary", icon=":material/arrow_forward:",
@@ -303,16 +327,22 @@ def evaluation(records: list[dict], signals: list) -> None:
         return
     selected, record = choose_trend(records, "evaluation")
     maturity, relevance, total = stored_scores(record)
-    cols = st.columns(3, gap="small")
-    for col, title, value, color in zip(cols, ("MATURITY", "RELEVANCE", "OVERALL"),
-                                         (maturity, relevance, total), ("#a78bfa", "#67e8f9", "#34d399")):
-        with col:
-            if value is None:
-                empty_state(title.title(), "Not recorded.")
-            else:
-                score_ring(title, value, color)
-    st.caption("Overall is the stored total score. Maturity is evaluation.py's band for the stored confidence; "
-               "relevance is solved from total = ½ maturity + ½ relevance.")
+    shown = f"cs_scores_{selected}"
+    if not st.session_state.get(shown):
+        st.button("Reveal the scores", type="primary", icon=":material/visibility:",
+                  on_click=lambda: st.session_state.update({shown: True}))
+    else:
+        cols = st.columns(3, gap="small")
+        for n, (col, title, value, color) in enumerate(zip(cols, ("MATURITY", "RELEVANCE", "OVERALL"),
+                                                           (maturity, relevance, total),
+                                                           ("#a78bfa", "#67e8f9", "#34d399"))):
+            with col:
+                if value is None:
+                    empty_state(title.title(), "Not recorded.")
+                else:
+                    score_ring(title, value, color, delay=0.3 * n)
+        st.caption("Overall is the stored total score. Maturity is evaluation.py's band for the stored confidence; "
+                   "relevance is solved from total = ½ maturity + ½ relevance.")
     section("Evidence used", "The score is grounded in verification and curriculum evidence.", "TRACEABILITY")
     match_details(record.get("match"))
     with st.expander("Verification sources", icon=":material/fact_check:"):
@@ -336,7 +366,6 @@ def decision(records: list[dict], signals: list) -> None:
     section("The action plan", "Steps returned by the saved Recommendation Agent run.", "WHAT CHANGES")
     for number, step in enumerate(record.get("action_plan") or [], 1):
         st.html(f'<div class="sr-glass" style="margin-bottom:12px;display:flex;align-items:flex-start;gap:18px"><span class="sr-pill violet">{number:02d}</span><div style="color:#e6edf9;font-size:1.04rem;line-height:1.55">{e(step)}</div></div>')
-    section("Why this decision?", "Trace the result back through the recorded pipeline.", "EVIDENCE CHAIN")
     chain = [
         ("Trend", record.get("trend") or "Unavailable"),
         ("Evidence", f"{len(record.get('evidence') or [])} saved item(s)"),
@@ -346,7 +375,8 @@ def decision(records: list[dict], signals: list) -> None:
     ]
     flow_arrow = '<div class="sr-flow-arrow">→</div>'
     cells = "".join(f'<div class="sr-flow-item sr-glass"><div class="sr-kicker">{e(title)}</div><div class="sr-card-title" style="font-size:1rem">{e(text)}</div></div>{flow_arrow if i<4 else ""}' for i,(title,text) in enumerate(chain))
-    st.html(f'<div class="sr-flow">{cells}</div>')
+    with st.expander("Why this decision? · Evidence chain", icon=":material/account_tree:"):
+        st.html(f'<div class="sr-flow">{cells}</div>')
     with st.expander("Inspect verification evidence", icon=":material/fact_check:"):
         evidence_cards(record)
 
