@@ -87,7 +87,6 @@ h1,h2,h3{letter-spacing:-.04em} p{line-height:1.6}
   border:1px solid color-mix(in srgb,var(--c) 70%,#fff);box-shadow:0 0 26px color-mix(in srgb,var(--c) 35%,transparent)}
 .cs-sq-label{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:#a9bad0;font-weight:800;text-align:center;max-width:130px}
 .cs-arrow{color:#7d8fb0;font-size:1.3rem;height:var(--slot);display:flex;align-items:center}
-.cs-ends{display:flex;justify-content:space-between;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:#7f93b3;font-weight:800;margin-top:4px}
 .cs-dash{background:linear-gradient(150deg,#1d2739e8,#101827dd);border:1px solid #ffffff1c;border-radius:14px;padding:12px 14px;margin-bottom:6px}
 .cs-dash .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .cs-dash .ttl{font-weight:750;color:#fff;font-size:.98rem;line-height:1.3;overflow-wrap:anywhere}
@@ -191,8 +190,7 @@ def squares_funnel(stages: list[tuple[int, str]]) -> None:
     arrow = '<div class="cs-arrow" aria-hidden="true">→</div>'
     summary = ", ".join(f"{n} {label}" for n, label in stages)
     st.html(f'<div class="cs-funnel" style="--slot:{max(sides + [46]):.0f}px"><div class="cs-squares" role="img" '
-            f'aria-label="From noise to curriculum: {e(summary)}">{arrow.join(cells)}</div>'
-            f'<div class="cs-ends"><span>Noise</span><span>Curriculum</span></div></div>')
+            f'aria-label="From noise to curriculum: {e(summary)}">{arrow.join(cells)}</div></div>')
 
 
 def dashboard_card(record: dict) -> None:
