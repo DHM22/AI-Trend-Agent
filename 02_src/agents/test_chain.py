@@ -1219,81 +1219,6 @@ def test_capture_records_verifier_mode_and_reasoning():
 
 
 # ===========================================================================
-# 15. PRESENTER WALKTHROUGH -- the story file and the routes that serve it
-# The page itself is checked in a browser; these pin what it depends on:
-# the featured card is the one the snapshot really has, the story file copies
-# no snapshot facts, and the read-only routes behave.
-# ===========================================================================
-
-def test_walkthrough_content_and_routes():
-    import json, os
-    root = Path(__file__).resolve().parents[2]
-    story = json.loads((root / "01_data" / "walkthrough.json").read_text(encoding="utf-8"))
-    snap = json.loads((root / "01_data" / "demo_snapshot.json").read_text(encoding="utf-8"))
-    f = story["featured"]
-    recs = snap["recommendations"]
-
-    check_true("walkthrough: featured index exists in the snapshot", 0 <= f["index"] < len(recs))
-    check("walkthrough: featured index and title agree with the snapshot",
-          recs[f["index"]]["trend"], f["title"],
-          "the page refuses to narrate on a mismatch; the committed pair must agree")
-    check("walkthrough: 'verified' is a boolean", type(story["review"]["featured"]["verified"]), bool)
-    check("walkthrough: six steps in order", [s["id"] for s in story["steps"]],
-          ["problem", "signal", "agent", "card", "review", "next"])
-
-    # never copy snapshot facts into the story file
-    text = json.dumps(story)
-    rec = recs[f["index"]]
-    copied = [label for label, v in (("citation", rec["match"]["citation"]),
-                                     ("first plan step", rec["action_plan"][0]))
-              if v and v in text]
-    check("walkthrough: no snapshot facts copied into the story file", copied, [])
-
-    # step 5 counts are COMPUTED on the page from the snapshot + these verdicts
-    import re as _re
-    actionable = {r["trend"] for r in recs if r["recommended_action"] != "watch"}
-    R = story["review"]
-    check("walkthrough: every fact-check names a real actionable card",
-          [fc["title"] for fc in R.get("fact_checks", []) if fc["title"] not in actionable], [])
-    pat = _re.compile(R["import_claim_pattern"], _re.I)
-    claimers = [r for r in recs if r["recommended_action"] != "watch"
-                and pat.search(" ".join(r["action_plan"]))]
-    checked = {fc["title"] for fc in R["fact_checks"]}
-    check("walkthrough: every import-path claimer has a fact-check (no '?' dots)",
-          [r["trend"] for r in claimers if r["trend"] not in checked], [])
-    check("walkthrough: pattern block carries no typed-in counts",
-          _re.findall(r"\d+\s*(?:of|/)\s*\d+", json.dumps(R["pattern"])), [])
-
-    # routes
-    from fastapi.testclient import TestClient
-    if str(root) not in sys.path:
-        sys.path.insert(0, str(root))          # app.py lives at the repo root
-    import app as A
-    c = TestClient(A.app)
-    check("route: /walkthrough serves the story", c.get("/walkthrough").json()["featured"], f)
-    saved = os.environ.get("WALKTHROUGH_PATH")
-    os.environ["WALKTHROUGH_PATH"] = str(root / "01_data" / "no_such_walkthrough.json")
-    try:
-        r = c.get("/walkthrough")
-    finally:
-        if saved is None:
-            os.environ.pop("WALKTHROUGH_PATH", None)
-        else:
-            os.environ["WALKTHROUGH_PATH"] = saved
-    check("route: missing story file -> 404 with a clear message",
-          (r.status_code, "no walkthrough file" in r.json().get("detail", "")), (404, True))
-
-    for e in story.get("eval_results", []):
-        r = c.get(f"/eval/results/{e['file']}")
-        check(f"route: eval result {e['file']} is served", r.status_code, 200)
-    check("route: traversal-looking result names are rejected",
-          c.get("/eval/results/..%2Fapp.py").status_code in (400, 404), True)
-    sig = c.get("/signals").json()["signals"]
-    check("route: /signals carries url and summary (the walkthrough's raw-signal step)",
-          {"url", "summary"} <= set(sig[0]), True)
-
-
-# ===========================================================================
 # 16. C-SYNC (c_sync/) -- the Streamlit view over the same recorded run
 # It must show the snapshot's own numbers (no agent re-run), and every page
 # must render offline. Visual checks are done in a browser; these pin the rest.
@@ -1348,8 +1273,6 @@ def test_csync():
     check("c-sync: release check is green exactly when verify_release CONFIRMED it", wrong, [])
     check("c-sync: stars come from the recorded github_lookup note, never invented",
           UP._stars_by_repo([{"note": "github_lookup('a/b') matched a/b (1,234 stars, pushed x)"}]), {"a/b": 1234})
-    check("c-sync: trace payload cannot close its <script> tag",
-          "</" in U.trace_payload({"trend": "</script><b>x"}, []), False)
 
     pages = ["Home", "Dashboard", "Radar", "Trend story", "The gap",
              "Evaluation", "Decision", "How it works"]
@@ -1400,7 +1323,6 @@ TESTS = [
     ("verifier: model-invented repo", test_model_invented_repo_is_not_missing),
     ("trace view", test_trace_view),
     ("capture: verifier mode + reasoning", test_capture_records_verifier_mode_and_reasoning),
-    ("walkthrough content and routes", test_walkthrough_content_and_routes),
     ("c-sync", test_csync),
 ]
 

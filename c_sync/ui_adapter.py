@@ -1,14 +1,13 @@
 """Read-only bridge from C-Sync to the AI Trend Agent checkout it lives in.
 
-C-Sync shows the SAME recorded run as the dashboard (app.py / ui/): the
-snapshot at SNAPSHOT_PATH (default 01_data/demo_snapshot.json) and the
-signals file that snapshot was captured from. Scores come from the stored
-run -- no agent is re-run -- so every page agrees with the dashboard.
+C-Sync shows a recorded run: the snapshot at SNAPSHOT_PATH (default
+01_data/demo_snapshot.json, written by 02_src/demo_snapshot.py --capture) and
+the signals file that snapshot was captured from. Scores come from the stored
+run -- no agent is re-run -- so every page agrees with every other.
 """
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 from pathlib import Path
@@ -20,7 +19,6 @@ REPO = Path(__file__).resolve().parents[1]
 BACKEND = Path(os.environ.get("CSYNC_BACKEND") or os.environ.get("SKILLRADAR_BACKEND") or REPO
                ).expanduser().resolve()
 SRC = BACKEND / "02_src"
-UI = BACKEND / "ui"
 
 
 def backend_ready() -> bool:
@@ -54,7 +52,7 @@ def load_recorded_run() -> tuple[dict, list]:
 
 def tier_order() -> tuple[list[str], dict[str, str]]:
     """Tier order and labels from the pipeline, so C-Sync cannot disagree
-    with the dashboard about what counts as most urgent."""
+    with it about what counts as most urgent."""
     _imports()
     from demo_snapshot import TIER_LABEL, TIER_ORDER
     return list(TIER_ORDER), dict(TIER_LABEL)
@@ -76,15 +74,3 @@ def stored_scores(record: dict) -> tuple[int, int | None, float | None]:
         return maturity, None, None
     relevance = max(1, min(5, round(2 * total - maturity)))
     return maturity, relevance, float(total)
-
-
-def trace_assets() -> tuple[str, str]:
-    """theme.css and cards.js from ui/ -- the SAME renderer the dashboard and
-    the walkthrough use for the five-node flow and the handoff."""
-    return ((UI / "theme.css").read_text(encoding="utf-8"),
-            (UI / "cards.js").read_text(encoding="utf-8"))
-
-
-def trace_payload(record: dict, tiers: list[dict]) -> str:
-    """The record + tier labels as JSON that is safe inside a <script> tag."""
-    return json.dumps({"r": record, "t": tiers}).replace("</", "<\\/")

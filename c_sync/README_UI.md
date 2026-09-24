@@ -5,7 +5,7 @@ the SkillRadar UI by aldanah (imported unchanged in 61e97c4). It lives inside
 this repo, and by default it reads the checkout it sits in. Set `CSYNC_BACKEND`
 (or the older `SKILLRADAR_BACKEND`) to read another checkout.
 
-It shows the **same data as the dashboard** (`app.py` / `ui/advanced.html`):
+It shows a **recorded run** (written by `02_src/demo_snapshot.py --capture`):
 the snapshot at `SNAPSHOT_PATH` (default `01_data/demo_snapshot.json`) and the
 signals file named by that snapshot's `source_signals`. It does not re-run any
 agent and makes no API calls.

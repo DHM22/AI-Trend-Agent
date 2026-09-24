@@ -6,6 +6,4 @@ requests
 pydantic
 openai
 python-dotenv
-fastapi
-uvicorn
 streamlit

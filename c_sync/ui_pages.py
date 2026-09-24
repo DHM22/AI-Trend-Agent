@@ -139,7 +139,7 @@ def match_details(match: dict | None) -> None:
 
 def maturity_scores(records: list[dict]) -> list[int | None]:
     """Maturity per record from the STORED confidence (evaluation.py's band
-    function) -- the same number the dashboard implies; nothing is re-run."""
+    function) -- the same number the Dashboard page implies; nothing is re-run."""
     return [stored_scores(r)[0] for r in records]
 
 
