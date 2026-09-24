@@ -1351,7 +1351,7 @@ def test_csync():
     check("c-sync: trace payload cannot close its <script> tag",
           "</" in U.trace_payload({"trend": "</script><b>x"}, []), False)
 
-    pages = ["Home", "Dashboard", "Radar", "Trend story", "Curriculum", "The gap",
+    pages = ["Home", "Dashboard", "Radar", "Trend story", "The gap",
              "Evaluation", "Decision", "How it works"]
     broken = []
     for page in pages:

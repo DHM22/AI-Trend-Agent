@@ -88,31 +88,3 @@ def trace_assets() -> tuple[str, str]:
 def trace_payload(record: dict, tiers: list[dict]) -> str:
     """The record + tier labels as JSON that is safe inside a <script> tag."""
     return json.dumps({"r": record, "t": tiers}).replace("</", "<\\/")
-
-
-def extract_upload(name: str, contents: bytes) -> list:
-    """Route a user upload through the project's existing format extractors."""
-    _imports()
-    from tempfile import NamedTemporaryFile
-    from curriculum_ingest import extract_ipynb, extract_pdf, extract_pptx, topic_from_filename
-
-    suffix = Path(name).suffix.lower()
-    extractor = {".pdf": extract_pdf, ".pptx": extract_pptx, ".ipynb": extract_ipynb}.get(suffix)
-    if extractor is None:
-        raise ValueError("Supported files: PDF, PPTX, and IPYNB.")
-    # Named files in the writable UI workspace also work in restricted Windows
-    # environments where newly created temporary directories deny child writes.
-    with NamedTemporaryFile(dir=Path(__file__).resolve().parent,
-                            prefix=".csync-upload-", suffix=suffix,
-                            delete=False) as temporary:
-        path = Path(temporary.name)
-        temporary.write(contents)
-    try:
-        chunks = extractor(path, None)
-        original_topic = topic_from_filename(Path(name))
-        for chunk in chunks:
-            chunk.topic = original_topic
-            chunk.source_file = Path(name).name
-        return chunks
-    finally:
-        path.unlink(missing_ok=True)

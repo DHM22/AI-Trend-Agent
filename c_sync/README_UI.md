@@ -18,7 +18,8 @@ agent and makes no API calls.
 ## Layout
 
 - **Left panel:** all pages. These are Home, Dashboard, Radar, Trend story,
-  Curriculum, The gap, Evaluation, Decision and How it works.
+  The gap, Evaluation, Decision and How it works. (The Curriculum page was
+  removed: it repeated The gap.)
 - **Top bar:** the five stages: 01 Discover, 02 Verify, 03 Compare, 04 Evaluate
   and 05 Decide. Each opens the page for that stage.
 - **Home:** "From noise to curriculum". Each square is one pipeline stage, and
@@ -43,7 +44,3 @@ agent and makes no API calls.
 python -m pip install -r c_sync/requirements-ui.txt
 python -m streamlit run c_sync/app.py
 ```
-
-The Curriculum page can extract text from uploaded PDF, PPTX and IPYNB files
-using `curriculum_ingest`'s extractors. Uploads are not indexed, and they are
-not compared to trends.

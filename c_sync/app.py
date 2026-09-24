@@ -7,7 +7,7 @@ import streamlit as st
 from ui_adapter import BACKEND, backend_ready, load_recorded_run
 from ui_components import STAGES, brand, inject_css, scroll_to_top
 from ui_pages import (
-    curriculum, dashboard, decision, evaluation, gap, go, home, how_it_works, radar, trend_story,
+    dashboard, decision, evaluation, gap, go, home, how_it_works, radar, trend_story,
 )
 
 
@@ -21,10 +21,10 @@ st.set_page_config(
 # Left panel: every page. Top bar: only the five pipeline stages.
 PAGES = [
     ("Home", "home"), ("Dashboard", "dashboard"), ("Radar", "radar"),
-    ("Trend story", "auto_stories"), ("Curriculum", "school"), ("The gap", "difference"),
+    ("Trend story", "auto_stories"), ("The gap", "difference"),
     ("Evaluation", "analytics"), ("Decision", "tips_and_updates"), ("How it works", "help_outline"),
 ]
-STAGE_OF = {"Radar": "Discover", "Trend story": "Verify", "Curriculum": "Compare",
+STAGE_OF = {"Radar": "Discover", "Trend story": "Verify",
             "The gap": "Compare", "Evaluation": "Evaluate", "Decision": "Decide"}
 STAGE_PAGE = {"Discover": "Radar", "Verify": "Trend story", "Compare": "The gap",
               "Evaluate": "Evaluation", "Decide": "Decision"}
@@ -83,7 +83,6 @@ def main() -> None:
         "Dashboard": lambda: dashboard(records),
         "Radar": lambda: radar(records, signals),
         "Trend story": lambda: trend_story(records, signals),
-        "Curriculum": lambda: curriculum(records),
         "The gap": lambda: gap(records),
         "Evaluation": lambda: evaluation(records, signals),
         "Decision": lambda: decision(records, signals),

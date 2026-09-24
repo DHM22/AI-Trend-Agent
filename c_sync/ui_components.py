@@ -18,7 +18,6 @@ h1,h2,h3{letter-spacing:-.04em} p{line-height:1.6}
 [data-testid="stButton"] button{border-radius:10px;min-height:36px;font-weight:650;transition:transform .2s,box-shadow .2s,border-color .2s}
 [data-testid="stButton"] button:hover{transform:translateY(-2px);box-shadow:0 10px 25px #0005;border-color:#7c8fab}
 [data-testid="stButton"] button[kind="primary"]{background:linear-gradient(105deg,#7c3aed,#315bdc);border:1px solid #a78bfa;color:white}
-[data-testid="stFileUploader"]{border:1px dashed #617497;border-radius:20px;background:#111827a8;padding:12px}
 [data-testid="stExpander"]{border:1px solid #2a3950;border-radius:14px;background:#111827aa}
 [data-testid="stSelectbox"]>div>div,[data-testid="stTextInput"]>div>div{border-radius:12px}
 .sr-brand{font-weight:800;letter-spacing:-.06em;font-size:1.35rem;color:#f6f4ff}

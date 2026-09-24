@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
 from urllib.parse import urlparse
 
 import re
@@ -10,7 +9,7 @@ import re
 import streamlit as st
 
 from ui_adapter import (
-    extract_upload, stored_scores, tier_order,
+    stored_scores, tier_order,
 )
 from ui_components import (
     action_label, action_tone, dashboard_card, e, empty_state, page_intro, pill,
@@ -246,49 +245,6 @@ def trend_story(records: list[dict], signals: list) -> None:
     section("Should this affect the curriculum?", "Next, compare this trend with the saved curriculum match.", "NEXT STEP")
     st.button("Check the curriculum", type="primary", icon=":material/arrow_forward:",
               on_click=go, args=("The gap", selected))
-
-
-def curriculum(records: list[dict]) -> None:
-    page_intro("03 / COMPARE", "Your curriculum, made visible.",
-               "Explore course areas cited by the recorded run, or upload material for a local content preview.")
-    matches = [r["match"] for r in records if r.get("match")]
-    section("Where the current run found material", "This timeline contains only weeks cited in saved matches. It is not a full course audit.", "COURSE MAP")
-    if matches:
-        by_week: dict[int | None, set[str]] = defaultdict(set)
-        for match in matches:
-            by_week[match.get("week")].add(match.get("topic") or "Untitled topic")
-        weeks = sorted(by_week, key=lambda value: (value is None, value or 0))
-        for offset in range(0, len(weeks), 4):
-            cols = st.columns(min(4, len(weeks) - offset), gap="medium")
-            for col, week in zip(cols, weeks[offset:offset + 4]):
-                with col:
-                    title = f"Week {week:02d}" if isinstance(week, int) else "Uncategorised"
-                    topics = sorted(by_week[week])
-                    st.html(f'<div class="sr-glass"><div class="sr-kicker">CITED COURSE AREA</div><div class="sr-card-title">{e(title)}</div><div class="sr-card-copy" style="display:block;min-height:0">{e(" · ".join(topics))}</div><div style="margin-top:18px">{pill(f"{len(topics)} topic(s)","cyan")}</div></div>')
-    else:
-        empty_state("No course areas cited", "The recorded recommendations did not include a curriculum match.")
-    section("Bring your own curriculum", "Preview the text the existing backend can extract from PDF, PowerPoint, or Jupyter notebooks.", "LOCAL PREVIEW")
-    st.html('<div class="sr-glass" style="text-align:center"><div style="font-size:2.4rem;color:#a78bfa">⇧</div><div class="sr-card-title" style="font-size:1.6rem">Drop your curriculum here</div><p style="color:#b8c6d9">PDF · PPTX · Notebook</p></div>')
-    uploaded = st.file_uploader("Choose a course file", type=["pdf", "pptx", "ipynb"])
-    st.caption("Local preview only. An upload is not indexed or compared with trends in this interface.")
-    if uploaded and st.button("Extract course content", type="primary", icon=":material/document_scanner:"):
-        with st.spinner("Reading your curriculum..."):
-            try:
-                chunks = extract_upload(uploaded.name, uploaded.getvalue())
-                st.session_state["curriculum_upload"] = (uploaded.name, chunks)
-            except Exception:
-                st.error("This file could not be processed. Check its format and the installed UI dependencies.")
-    saved = st.session_state.get("curriculum_upload")
-    if saved:
-        name, chunks = saved
-        section(f"{len(chunks)} sections extracted", f"From {name}. This is a local preview, not a curriculum coverage score.", "UPLOAD RESULT")
-        topics = sorted({chunk.topic for chunk in chunks})
-        st.write("**Topics found:** " + (" · ".join(topics) if topics else "None"))
-        for chunk in chunks[:10]:
-            with st.expander(chunk.citation, icon=":material/description:"):
-                st.write(chunk.text)
-        if len(chunks) > 10:
-            st.caption(f"Showing the first 10 of {len(chunks)} sections.")
 
 
 def gap(records: list[dict]) -> None:
