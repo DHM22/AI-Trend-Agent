@@ -91,7 +91,6 @@ h1,h2,h3{letter-spacing:-.04em} p{line-height:1.6}
 .cs-dash .ttl{font-weight:750;color:#fff;font-size:.98rem;line-height:1.3;overflow-wrap:anywhere}
 .cs-dash .score{font-weight:800;color:#fff;font-size:1.2rem;white-space:nowrap}.cs-dash .score small{color:#9fb0c8;font-size:.72rem;font-weight:600}
 .cs-dash .cite{font-family:ui-monospace,Consolas,monospace;font-size:.78rem;color:#b8c9df;margin-top:6px;overflow-wrap:anywhere}
-.cs-dash .plan{font-size:.83rem;color:#aebed2;margin-top:6px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
 @media(max-width:850px){.sr-pipeline{display:flex;overflow-x:auto;padding-bottom:7px}.sr-step{min-width:140px;min-height:82px}.sr-radar{height:330px}.sr-data-radar{height:360px}.sr-flow-arrow{display:none}.sr-hero-title{font-size:3.7rem}.sr-decision{padding:26px}}
 @media(prefers-reduced-motion:reduce){.sr-radar-sweep{animation:none}.sr-glass,[data-testid="stButton"] button{transition:none}[data-testid="stMainBlockContainer"] [data-testid="stElementContainer"],.cs-sq{animation:none;opacity:1}[data-stale="true"],.stale-element{transition:none!important}}
 .sr-radar-stage{position:absolute;top:0;bottom:0;left:50%;aspect-ratio:1;transform:translateX(-50%)}.sr-sweep{position:absolute;inset:5%;pointer-events:none;z-index:2}.sr-sweep-beam{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,transparent 0deg 290deg,#67e8f914 320deg,#67e8f955 356deg,#a5f3fc 360deg);animation:sr-spin 6s linear infinite}.sr-sweep-beam::after{content:"";position:absolute;left:50%;top:0;height:50%;border-left:2px solid #a5f3fcd9;box-shadow:0 0 14px #67e8f9}@keyframes sr-spin{to{transform:rotate(360deg)}}.sr-data-node{animation:sr-ping 6s linear infinite}@keyframes sr-ping{0%{filter:brightness(1.9) drop-shadow(0 0 10px var(--node-color))}14%,100%{filter:none}}.cs-ev{display:flex;flex-direction:column;gap:8px}.cs-ev details{background:#111b2bdc;border:1px solid #ffffff18;border-left:3px solid var(--ev,#5b6b86);border-radius:12px;opacity:0;animation:cs-rise .5s ease forwards}.cs-ev details.ok{--ev:#34d399;background:linear-gradient(90deg,#34d3991c,#111b2bdc 55%);border-color:#34d39955}.cs-ev details.bad{--ev:#f87171}.cs-ev details.warn{--ev:#fbbf24}.cs-ev summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:10px 14px;flex-wrap:wrap}.cs-ev summary::-webkit-details-marker{display:none}.cs-ev summary::after{content:"▸";margin-left:auto;color:#87a4ca;transition:transform .2s}.cs-ev details[open] summary::after{transform:rotate(90deg)}.cs-ev-num{font-size:.66rem;letter-spacing:.14em;color:#87a4ca;font-weight:800;white-space:nowrap}.cs-ev-title{color:#f0f4ff;font-weight:650;font-size:.92rem;flex:1 1 220px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cs-ev-badge{font-size:.72rem;font-weight:800;border-radius:100px;padding:3px 9px;border:1px solid;white-space:nowrap}.cs-ev-badge.stars{color:#fcd34d;border-color:#fbbf2455;background:#fbbf2412}.cs-ev-badge.ok{color:#6ee7b7;border-color:#34d39966;background:#34d3991a}.cs-ev-badge.bad{color:#fca5a5;border-color:#f8717166;background:#f871711a}.cs-ev-badge.warn{color:#fcd34d;border-color:#fbbf2466;background:#fbbf241a}.cs-ev-body{padding:0 14px 12px;color:#c2d0e1;font-size:.88rem;line-height:1.5;word-break:break-word}.cs-ev-body a{color:#67e8f9;font-weight:650}.cs-reveal{opacity:0;animation:cs-rise .6s ease forwards}@keyframes cs-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){.sr-sweep-beam,.sr-data-node{animation:none!important}.cs-ev details,.cs-reveal{animation:none!important;opacity:1!important}}[data-testid="stElementContainer"]:has(iframe[srcdoc*="cs-scroll-top"]){position:absolute!important;height:0!important;overflow:hidden;margin:0!important}</style>
@@ -193,13 +192,13 @@ def squares_funnel(stages: list[tuple[int, str]]) -> None:
 
 
 def dashboard_card(record: dict) -> None:
-    """Compact dashboard row: tier, score, confidence, citation and the plan's
-    first step. Everything comes from the stored record."""
+    """Compact dashboard row: tier, score, confidence and citation. The action
+    plan stays behind the "Full plan" expander under the card. Everything
+    comes from the stored record."""
     action = record.get("recommended_action", "")
     match = record.get("match") or {}
     conf = record.get("confidence")
     score = record.get("total_score")
-    plan = (record.get("action_plan") or [""])[0]
     cite = match.get("citation") or "No curriculum match"
     pills = pill(action_label(action), action_tone(action))
     if isinstance(conf, (int, float)):
@@ -210,7 +209,7 @@ def dashboard_card(record: dict) -> None:
     st.html(f'<div class="cs-dash"><div class="top"><div class="ttl">{e(record.get("trend", "Untitled"))}</div>'
             f'<div class="score">{e(shown)}<small> / 5</small></div></div>'
             f'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">{pills}</div>'
-            f'<div class="cite">📎 {e(cite)}</div><div class="plan">{e(plan)}</div></div>')
+            f'<div class="cite">📎 {e(cite)}</div></div>')
 
 
 def scroll_to_top(nonce: int) -> None:
