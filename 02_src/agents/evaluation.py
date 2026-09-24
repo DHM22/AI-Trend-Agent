@@ -33,14 +33,18 @@ SCORING
 -------
 maturity  -- "is this real?", from verification confidence:
     >= 0.85 -> 5    >= 0.70 -> 4    >= 0.50 -> 3    >= 0.30 -> 2    else 1
+    invalid, non-finite, boolean, or outside [0, 1] -> 1
 
 relevance -- "how strongly does this connect to what we already teach?":
     exact identifier match          -> 5
-    similarity >= 0.65              -> 5
-    similarity >= 0.55              -> 4
-    similarity >= RELEVANCE_FLOOR   -> 3
+    slides: >= 0.65 -> 5, >= 0.55 -> 4, >= RELEVANCE_FLOOR -> 3
+    labs:   >= 0.55 -> 5, >= 0.45 -> 4, lower valid value -> 2
+    invalid similarity              -> 2
     match present but below floor   -> 2
     no match at all                 -> 1
+
+Curriculum content_type must be exactly "slides" or "lab". A non-string
+exact_match is rejected; empty strings do not activate the exact-match override.
 
 A verified trend with NO coverage is arguably the most valuable signal we
 produce -- a candidate new lesson. We deliberately do not invert relevance to
@@ -59,6 +63,7 @@ Usage:
 import os
 import re
 import sys
+import math
 from html import escape
 from pathlib import Path
 
@@ -80,12 +85,24 @@ MAX_RATIONALE_CHARS = 1_200
 # SCORING -- pure functions, no API key, straightforward to test
 # ---------------------------------------------------------------------------
 
+def _unit_interval(value: object) -> float | None:
+    """Return a finite number in [0, 1], or None for an invalid trust signal."""
+    if isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(number) or not 0 <= number <= 1:
+        return None
+    return number
+
+
 def _maturity_score(confidence: float) -> int:
     """Map verification confidence onto 1-5. Bands mirror the verification
     rubric so the two agents cannot drift apart."""
-    try:
-        c = float(confidence)
-    except (TypeError, ValueError):
+    c = _unit_interval(confidence)
+    if c is None:
         return 1
     if c >= 0.85:
         return 5
@@ -113,10 +130,32 @@ def _relevance_score(match: CurriculumMatch | None) -> int:
     """
     if match is None:
         return 1
-    if match.exact_match:
+
+    if match.content_type not in ("slides", "lab"):
+        raise ValueError(
+            f"content_type must be 'slides' or 'lab', got {match.content_type!r}"
+        )
+
+    exact_match = match.exact_match
+    if exact_match is not None and not isinstance(exact_match, str):
+        raise TypeError(
+            f"exact_match must be a string or None, got {type(exact_match).__name__}"
+        )
+    if isinstance(exact_match, str) and exact_match.strip():
         return 5
 
-    sim = match.similarity or 0.0
+    similarity = 0.0 if match.similarity in (None, "") else match.similarity
+    sim = _unit_interval(similarity)
+    if sim is None:
+        return 2
+
+    if match.is_lab:
+        if sim >= 0.55:
+            return 5
+        if sim >= 0.45:
+            return 4
+        return 2
+
     if sim >= 0.65:
         return 5
     if sim >= 0.55:
@@ -158,12 +197,22 @@ _SCORE_LEAK = re.compile(
     r"(?:is|=|:|to|should\s+(?:be|receive))?\s*(?:\d+(?:\.\d+)?\s*(?:/\s*5)?|"
     r"(?:the\s+)?(?:maximum|minimum|highest|lowest))\b"
     r"|\b(?:maximum|minimum|highest|lowest)\s+score\b"
-    r"|\b(?:score|rating)\s*(?:of|should\s+be|should\s+receive)\s*\d+\b",
+    r"|\b(?:score|rating)\s*(?:of|should\s+be|should\s+receive)\s*\d+\b"
+    r"|[\"']?(?:maturity|relevance|total|overall)[_-]score[\"']?\s*[:=]\s*\d+(?:\.\d+)?\b"
+    r"|\b(?:maturity|relevance|total|overall)\b\s*(?:is|=|:)\s*\d+(?:\.\d+)?\s*(?:/\s*5)?\b"
+    r"|\b(?:one|two|three|four|five)\s+out\s+of\s+five\b"
+    r"|\b(?:one|two|three|four|five)\s+stars?\b"
+    r"|\b(?:maximum|minimum|highest|lowest|top)\s+(?:score|rating)\b",
     re.IGNORECASE)
 
 _INSTRUCTION_LEAK = re.compile(
-    r"\b(?:ignore|disregard|override|follow)\s+(?:all\s+)?"
-    r"(?:previous|prior|above|system)\s+instructions?\b", re.IGNORECASE)
+    r"\b(?:ignore|disregard|override|forget|obey|follow)\b"
+    r"(?:\s+\w+){0,4}\s+\b(?:instructions?|directions?|prompts?|messages?)\b"
+    r"|\b(?:system|developer)(?:\s+and\s+(?:system|developer))?\s+"
+    r"(?:instructions?|prompts?|messages?)\b",
+    re.IGNORECASE)
+
+_SAFE_EXACT_IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:/@+\-]{0,119}\Z")
 
 
 def _is_safe_rationale(text: object) -> bool:
@@ -180,6 +229,13 @@ def _is_safe_rationale(text: object) -> bool:
 def _evidence_text(value: object, limit: int = 400) -> str:
     """Bound and escape untrusted data before it enters a prompt."""
     return escape(str(value)[:limit], quote=False)
+
+
+def _exact_match_description(value: str) -> str:
+    """Render a technical identifier without echoing sentence-like payloads."""
+    if value == value.strip() and _SAFE_EXACT_IDENTIFIER.fullmatch(value):
+        return f"an exact match on '{value}'"
+    return "an exact identifier match"
 
 
 # ---------------------------------------------------------------------------
@@ -231,11 +287,10 @@ class EvaluationAgent:
         if match is None:
             return template
 
-        client = self._get_client()
-        if client is None:
-            return template
-
         try:
+            client = self._get_client()
+            if client is None:
+                return template
             reply = client.chat.completions.create(
                 model=self.model, temperature=0,
                 messages=[
@@ -278,7 +333,7 @@ class EvaluationAgent:
             lines.append("  no matching slide or lab cell was found")
         else:
             kind = "lab notebook cell" if match.is_lab else "lecture slide"
-            how = (f"exact match on '{match.exact_match}'" if match.exact_match
+            how = (_exact_match_description(match.exact_match) if match.exact_match
                    else f"similarity {match.similarity}")
             lines += [f"  matched a {kind}: {_evidence_text(match.citation, 120)}",
                       f"  found by {how}",
@@ -297,7 +352,7 @@ class EvaluationAgent:
                 parts.append("A verified development with no existing coverage may be "
                              "a curriculum gap worth a new lesson.")
         else:
-            how = (f"an exact match on '{match.exact_match}'" if match.exact_match
+            how = (_exact_match_description(match.exact_match) if match.exact_match
                    else f"similarity {match.similarity}")
             kind = "lab cell" if match.is_lab else "slide"
             parts.append(f"Relevance {relevance}/5: matches {match.citation} "
