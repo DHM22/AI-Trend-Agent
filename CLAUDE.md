@@ -25,8 +25,8 @@ python 02_src/monitoring_rss.py [--days N] [--secondary] [--check]
 python 02_src/monitoring_github.py [--days N] [--repo owner/name]
 python 02_src/clustering.py --signals 01_data/signals.json [--check|--frequencies]
 python 02_src/agents/verification.py --signals 01_data/signals.json --show-reasoning   # no key -> deterministic tool loop, same scorer; use --index/--limit
-uvicorn app:app --reload                                # dashboard at :8000/ + JSON API + /docs (SNAPSHOT_PATH to change file)
-python 04_eval/run_eval.py --repeats 3 --out 04_eval/results/<name>.json [--dataset ...]
+python -m streamlit run c_sync/app.py                   # C-Sync, the only UI (reads SNAPSHOT_PATH; 0 API calls)
+python 04_eval/run_eval.py --repeats 3 --out 04_eval/results/<name>.json [--dataset ...]   # default 04_eval/data/test_signals_graded.json
 python 04_eval/compare.py <baseline.json> <after.json>  # fails on different dataset hash/model
 ```
 
@@ -38,7 +38,7 @@ python 04_eval/compare.py <baseline.json> <after.json>  # fails on different dat
 | `TOOL_CACHE_DIR` | `01_data/.tool_cache` (gitignored) | on-disk cache of `github_lookup` / `verify_release` responses. Only successes are cached — errors are never frozen in |
 | `TOOL_CACHE_ONLY` | unset | `=1` serves tools from cache only and never touches the network; a miss comes back as `{"error": ..., "_cache": "miss"}` **data**, not an exception. This is how a live-ish run happens while the spend limit is up |
 | `TOOL_CACHE_TTL` | never expires | seconds before a cache entry is stale |
-| `SNAPSHOT_PATH` | `01_data/demo_snapshot.json` | which capture `app.py` serves |
+| `SNAPSHOT_PATH` | `01_data/demo_snapshot.json` | which capture C-Sync shows |
 | `PYTHONIOENCODING` | — | set to `utf-8` on Windows, see gotchas below |
 
 There is no linter or build step. Ingestion is incremental (upsert): delete `vectorstore/` and re-ingest when
@@ -75,77 +75,23 @@ Tiers: `watch`, `update_existing_material`, `add_optional_content`, `add_new_les
 ## Repo layout
 
 ```
-app.py                                 FastAPI read-only service over a captured snapshot (no agents, no API calls).
-                                        Mounts ui/ at /ui LAST — a mount swallows paths beneath it, so mounting at / shadows the API
-ui/theme.css                           THE design tokens (palette, dark-mode scopes, shared components). Both pages link it —
-                                        one copy, so they cannot drift. Ordinal ramps validated; --tier-N-ink computed per fill
-ui/trace.html                          Standalone permalink for ONE trace: trace.html?i=<index>, reads /recommendations/<i>.
-                                        Since the trace also renders inline on the card, this is the shareable/full-width view,
-                                        linked from the bottom of each card's trace block rather than standing in for it.
-                                        Three states — searched / SEARCH FAILED / never searched. No trace in the snapshot
-                                        (old capture) says so plainly instead of rendering an empty page
-ui/index.html                          FRONT DOOR only — a two-way chooser ("I teach this course" / "I built this").
-                                        Thin by design: one /summary fetch for the headline, and a failure there is
-                                        silent because neither destination depends on it. NOT the dashboard any more
-ui/simple.html                         Plain-language view for instructors/programme staff. Same data, different reader:
-                                        no scores, no similarity, no tier machine names, no tool logs. Groups by what to
-                                        DO (attention / optional / watch), headlines name the affected material
-                                        ("Your Week 4 lab notebook may be out of date"). The failed-search state is
-                                        NOT simplified away — it is the loudest thing on the card, in plain words
-ui/advanced.html                       The dashboard — this is the original ui/index.html, moved here unchanged when the
-                                        chooser took over "/". Everything below describes THIS file.
-                                        No build step. Fetches /summary, /recommendations, /tiers same-origin.
-                                        Tier + funnel scales are ORDINAL (one blue hue stepped), validated with the dataviz
-                                        validator against both surfaces; in-segment label ink is computed per fill, not eyeballed.
-                                        Has the Instructor Companion panel wired to POST /chat (route not built yet).
-                                        Each card ENDS with its agent trace, inline in a collapsed <details> (auto-open when the
-                                        curriculum search failed), built from the .trace/.tgroup/.tstep components in theme.css.
-                                        The failure WARNING stays above it, un-collapsed — that must never need a click
-ui/cards.js                            card() + traceBlock() shared by advanced.html and walkthrough.html -- ONE copy of
-                                        the card rendering (moved verbatim out of advanced.html; dashboard verified
-                                        pixel-identical after the move). Card CSS moved to theme.css for the same reason
-ui/walkthrough.html                    Presenter page: one recommendation end to end in 6 steps (problem, signal, agent
-                                        trace, dashboard card, REVIEW, roadmap). Narration/review from /walkthrough; every
-                                        fact about the card read live from /recommendations/{i}, /signals, /tiers, and eval
-                                        numbers from /eval/results/{file}. Featured card checked by index AND title --
-                                        a mismatch stops the page with a warning. Linked from the dashboard header
-01_data/walkthrough.json               AUTHORED walkthrough content only (narration, featured index+title, review findings,
-                                        "verified" flag for the presenter check). Never copy snapshot facts into it --
-                                        test_chain section 15 fails if the featured citation/plan text appears in it
-ui2/                                   ONBOARDING PROTOTYPE, mounted at /ui2 — separate prefix, cannot shadow /ui.
-                                        Every screen is simulated; the amber sticky banner on each says so, and the
-                                        hand-off screen labels the dashboard as the real recorded run (green). The
-                                        dashboard itself was NOT touched — labelling it there would have changed the
-                                        appearance the spec froze
-ui2/domains.py                         Domain config AS DATA. agentic_ai's values are IMPORTED, never copied:
-                                        WATCHED_REPOS + FEEDS/SECONDARY_FEEDS + recommendation._DOMAIN_TERMS (all three
-                                        import clean — the OpenAI client is built lazily inside a method). ai_engineering
-                                        and cloud_computing are "not built"; cloud_computing lists NO sources on purpose.
-                                        Nothing reads back: the monitoring modules and the in-domain gate are NOT rewired
-                                        to use this, since that would change pipeline behaviour we cannot re-run to check.
-                                        `python ui2/domains.py --write` regenerates ui2/domains.json for the pages
-ui3/                                   Per-agent explainer dashboard, mounted at /ui3. One panel per agent, each with a chart
-                                        from REAL snapshot data (no simulated numbers) + reveal-on-scroll animations
-                                        (off under prefers-reduced-motion). Maturity/relevance are DERIVED back out of
-                                        total_score using evaluation.py's bands — its JS constants mirror MATURE_FLOOR,
-                                        RELEVANCE_FLOOR etc. for labelling only; update them if those move. Colours come
-                                        from ui/theme.css tokens (dark mode works); source colours are dataviz-validated.
-                                        Note /summary returns tier_counts as a LIST of {tier,label,count}, not a dict
-c_sync/                                C-SYNC: Streamlit app (`streamlit run c_sync/app.py`), built on aldanah's SkillRadar UI
-                                        (imported byte-for-byte in 61e97c4; her evaluation.py lab-threshold change NOT taken).
-                                        Reads the SAME snapshot + its source_signals file as app.py -- NO agent re-run: maturity =
+c_sync/                                C-SYNC, THE ONLY UI: Streamlit (`python -m streamlit run c_sync/app.py`). Built on
+                                        aldanah's SkillRadar UI (imported byte-for-byte in 61e97c4). Reads the snapshot at
+                                        SNAPSHOT_PATH + the signals file it names -- NO agent re-run: maturity =
                                         evaluation._maturity_score(stored confidence), relevance solved from total_score.
-                                        Left sidebar = all pages; top = only the 5 stages. Home = "noise to curriculum"
+                                        Left sidebar = 8 pages (Home, Dashboard, Radar, Trend story, The gap, Evaluation,
+                                        Decision, How it works); top = only the 5 stages. Home = "noise to curriculum"
                                         squares (area ~ real counts). Radar = scanner beam, nodes flash as it passes. Verify =
                                         collapsible evidence cards, stars ONLY from the recorded github_lookup note, verify_release
-                                        green only on CONFIRMED. Evaluate hides scores behind a button. The step-3 trace diagram
-                                        was tried on Verify and REMOVED at the user's request (trace_assets/trace_payload remain
-                                        in ui_adapter). Streamlit does NOT hot-reload ui_*.py -- restart after edits.
-                                        test_chain section 16 smoke-runs every page with AppTest
-demo_ui.py                             Streamlit FALLBACK UI over the same snapshot (primary is ui/advanced.html).
-                                        `streamlit run demo_ui.py`; streamlit is in requirements.txt. Cards show the
-                                        search-failed banner and a collapsed "Agent trace" expander via
-                                        demo_snapshot.trace_view(). Still duplicates TIER_ORDER/TIER_LABEL
+                                        green only on CONFIRMED. Evaluate hides scores behind a button. Decide's evidence chain
+                                        is collapsed. Dashboard cards carry no plan text (only under "Full plan"). The
+                                        Curriculum page was REMOVED (it repeated The gap), and with it the file-upload preview.
+                                        C-Sync shows NO agent traces. Streamlit does NOT hot-reload ui_*.py -- restart after
+                                        edits. test_chain section 16 smoke-runs every page with AppTest.
+                                        REMOVED 2026-09-24 (all on backup/walkthrough-ui-2026-09-22): app.py (FastAPI API),
+                                        ui/ (dashboard, walkthrough, simple/index/trace pages, cards.js, theme.css),
+                                        01_data/walkthrough.json, ui2/ (onboarding prototype, never committed), ui3/,
+                                        demo_ui.py. aldanah's ui/ SkillRadar copy was dropped in merge 87e10f4
 01_data/curriculum/week_02..week_06/   slides (.pdf/.pptx) + labs (.ipynb), solutions + some student versions
 01_data/signals.json                   30-day signal capture
 01_data/signals_90.json                90-day primary-source-only (71 signals, 4-repo era)
@@ -195,17 +141,21 @@ demo_ui.py                             Streamlit FALLBACK UI over the same snaps
 02_src/agents/reference/               The team's verifier as recovered (lines 1-500 of 571) and completed (+ a
                                         RECONSTRUCTED _describe()/main()). The source of the restore; never edit it
 02_src/agents/curriculum.py            RAG search agent; has search_failed flag + curriculum_checked() tri-state
-02_src/agents/evaluation.py            Deterministic _maturity_score / _relevance_score; model only writes rationale
+02_src/agents/evaluation.py            Deterministic _maturity_score / _relevance_score; model only writes rationale.
+                                        Includes aldanah's lab-threshold change (77732ba, merged 87e10f4): the committed
+                                        snapshot predates it; a re-capture is expected to move 3 recs to
+                                        update_existing_material (langsmith-sdk v0.14.0, langchain==1.4.2, openai-python v3.14.0)
 02_src/agents/recommendation.py        Orchestrator; tier-selection gates (see Key Decisions)
-02_src/agents/test_chain.py            Offline test suite — 0 API calls. Currently 212 passed, 0 skipped
-                                        (sections 1-2, written for the deterministic verifier, run again)
+02_src/agents/test_chain.py            Offline test suite — 0 API calls. Currently 196 passed, 0 skipped
+                                        (sections 1-2, written for the deterministic verifier, run again; section 15,
+                                        the walkthrough + API routes, was removed with app.py and ui/)
 02_src/tests/test_verification.py      14 offline VerificationAgent tests (from PR #1, adapted to the restored
                                         verifier). Plain script, run directly
 04_eval/run_eval.py                    Golden-dataset harness — clustering/verification/curriculum/evaluation/
                                         recommendation layer scores
 04_eval/GOLD_LABELS.md                 Labeling spec: is_genuine, confidence, stale_presented_as_new, rank,
                                         maturity, relevance, action_tier
-test_signals_graded*.json (repo root, untracked)  THREE variants — see "Gold dataset: which file" below
+04_eval/data/test_signals_graded*.json THREE variants — see "Gold dataset: which file" below
 04_eval/make_dataset.py, validate_dataset.py, compare.py   Build/validate the gold dataset; compare two eval runs
 04_eval/DATASET_REQUIREMENTS.md        the spec that answers "why is this metric null" — per-gold-field, and it is
                                         explicit that recency needs a NEW output contract (e.g. VerifiedTrend.is_stale)
@@ -214,8 +164,8 @@ test_signals_graded*.json (repo root, untracked)  THREE variants — see "Gold d
                                         numbers scored with the fixed pairing (see "Eval pairing bug"). The older
                                         files (baseline, baseline_wk5, baseline_wk5_v2, my_run, my_run_2,
                                         INVALID_offline_run) have MISALIGNED verification scores -- don't compare
-                                        against them. show_reqs.py (repo root) prints unmet metric requirements
-                                        out of baseline_wk5.json
+                                        against them. Each metric's unmet `requirement` string is stored in
+                                        baseline_wk5.json
 promptfooconfig.yaml (12 behavioral cases) is not in the tree; never run (see Known gaps)
 04_eval/README.md still writes paths as evals/... — the directory is 04_eval/
 ```
@@ -240,23 +190,15 @@ promptfooconfig.yaml (12 behavioral cases) is not in the tree; never run (see Kn
   Documented with a variance table rather than hidden.
 - **Curriculum source slides live in Google Drive, not the repo** (redistribution concerns). Vectorstore is
   gitignored and regenerated locally from `curriculum_ingest.py`.
-- **`app.py` declares no pydantic response models.** Routes return `Recommendation.to_dict()` output as plain
-  dicts. A pydantic mirror of the dataclasses would be exactly the stale copy `schemas.py` forbids in its own
-  header. Cost: `/docs` shows loose object schemas. Don't "fix" it by re-declaring the fields — if the frontend
-  wants types, generate them from the dataclasses.
-- **`app.py` is read-only and imports no agent.** Producing a snapshot is the pipeline's job; serving it is the
-  API's. That split is what keeps the API working while the spend limit blocks live runs. The one exception-shaped
-  thing is `GET /signals` (feeds ui3): it reads the snapshot's `source_signals` file and RE-RUNS `clustering.py`
-  (pure Python, no API) because the snapshot stores only cluster counts. It returns `clusters_match_snapshot` so
-  a clustering change after capture is visible instead of silently disagreeing with `clusters_total`.
 - **Traces ride BESIDE `Recommendation.to_dict()`, not inside it.** `capture()` adds a `"trace"` key to each
   recommendation dict rather than adding a field to the `Recommendation` dataclass, so `schemas.py` and its team
   rule stay untouched. A snapshot without the key is valid and renders normally — every read is `.get()`-guarded.
 - **Three curriculum outcomes must stay distinguishable**, and two of them look identical in the conclusion alone:
   `searched=True/search_failed=False` (looked, `reason` says what it found), `searched=True/search_failed=True`
   (tried, could not run — NOT a no-match), and `searched=False` (confidence gate skipped it; never attempted).
-  The UI gives the failure a red rule and an explicit "this is NOT a finding of 'no match'". Collapsing those
-  states is the original bug, not a simplification.
+  The CLI prints "SEARCH FAILED -- this is NOT a finding of 'no match'" for the failure. C-Sync shows no
+  traces today; any UI that shows them again must keep all three states apart. Collapsing them is the original
+  bug, not a simplification.
 
 ## Critical bug fixed — silent curriculum-search failure
 
@@ -268,8 +210,9 @@ was meant to prevent, but it only covered "skipped," not "attempted and failed."
 three trends got confidently wrong `ADD_NEW_LESSON` recommendations claiming "no existing coverage found" when no
 search had actually run.
 
-**Now also visible in the UI:** the agent-trace work surfaces this per card — a failed search gets a red rule and
-an explicit contradiction of the plan text, instead of the innocuous "no curriculum match" it used to show.
+The removed dashboard (ui/advanced.html, now only on backup/walkthrough-ui-2026-09-22) surfaced this per card
+with a red rule. C-Sync does not show traces, so today the failure is visible in the CLI and in the snapshot's
+`trace` key only.
 
 **Fix:** `CurriculumTrace.search_failed` bool set on all three failure paths with a reason string;
 `search_curriculum_checked()` helper returns `(match, curriculum_checked)` and is what BOTH pipelines
@@ -278,7 +221,8 @@ Verified offline end to end through `capture()` (test_chain section 11). **Not y
 
 ## Gold dataset: which file (three exist, they are NOT interchangeable)
 
-All three are untracked at the repo root. `run_eval.py`'s `DEFAULT_DATASET` is `test_signals_graded.json`.
+All three live in `04_eval/data/` (moved from the repo root 2026-09-24; contents and hashes unchanged).
+`run_eval.py`'s `DEFAULT_DATASET` is `04_eval/data/test_signals_graded.json`.
 
 | file | entries | gold keys | tiers |
 | --- | --- | --- | --- |
@@ -326,8 +270,8 @@ script, before trusting a validation run on a non-default dataset.
 - **`run_eval.py`'s curriculum/evaluation/recommendation layers score `null`** until a gold entry has an expected
   citation/maturity/relevance/tier to compare against. Note that only `test_signals_graded.json` has
   `acceptable_citations` at all (4 of its 12 entries); the other two variants dropped the field entirely.
-  `show_reqs.py` prints each metric's unmet `requirement` string out of `04_eval/results/baseline_wk5.json` —
-  run it to see exactly what each `null` is still waiting for. Reading those strings, the nulls have **three
+  Each metric's unmet `requirement` string is stored in `04_eval/results/baseline_wk5.json` — read it to see
+  exactly what each `null` is still waiting for. Reading those strings, the nulls have **three
   distinct causes**, and only the first is a labelling problem:
   1. *Missing gold fields* — `acceptable_citations`, `no_match_expected`, `rank`, `event_id`.
   2. *Gold labels are signal-level, not event-level.* Nearly every curriculum/evaluation/recommendation metric
@@ -337,7 +281,7 @@ script, before trusting a validation run on a non-default dataset.
      flag that `VerifiedTrend` does not have. `curriculum.precision_at_3` needs the agent's top-3 candidates, but
      `CurriculumAgent` exposes only the one selected match. Both require a code change first.
 - **Promptfoo behavioral suite (`04_eval/promptfooconfig.yaml`) has never been run** — blocked by Node version
-  (need 22.22+, machine has 21.6.1). Decided to accept this gap given time constraints; test_chain.py (212 passed) +
+  (need 22.22+, machine has 21.6.1). Decided to accept this gap given time constraints; test_chain.py (196 passed) +
   the written config + gold-set eval numbers are the evaluation answer for now.
 - **Content-Type Agent (proposed, not built):** would classify a signal as release/announcement/case_study/
   self_promotion/opinion before it reaches the tier gates. Would fix false positives from Show HN self-promotion
