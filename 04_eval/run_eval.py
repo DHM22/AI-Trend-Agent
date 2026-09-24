@@ -31,7 +31,7 @@ from agents.curriculum import CurriculumAgent  # noqa: E402
 from agents.evaluation import EvaluationAgent  # noqa: E402
 from agents.recommendation import RecommendationAgent  # noqa: E402
 
-DEFAULT_DATASET = ROOT / "test_signals_graded.json"
+DEFAULT_DATASET = ROOT / "04_eval" / "data" / "test_signals_graded.json"
 KNOWN_FABRICATED = "OpenTelemetry ships GenAI semantic conventions v1.0 GA with stable agent-graph and guardrail spans"
 KNOWN_GENUINE = "OpenTelemetry GenAI conventions define invoke_agent, chat and execute_tool spans for agent runs"
 ACTION_ORDER = ["watch", "update_existing_material", "add_optional_content", "add_new_lesson", "investigate_larger_change"]

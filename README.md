@@ -9,13 +9,14 @@ an action plan with citations.
 
 ```text
 01_data/
-   curriculum/week_02/     Course material for week 2
-   curriculum/week_03/     Course material for week 3
-   signals.json             Saved monitoring signals
+   curriculum/week_NN/      Course material (not in Git; see Setup)
+   signals*.json            Saved monitoring signals
+   demo_snapshot.json       The recorded run C-Sync shows
 02_src/
-   agents/                  Verification, curriculum, evaluation, and recommendation agents
+   agents/                  Verification, curriculum, evaluation and recommendation agents, plus test_chain.py
+   tests/                   test_verification.py
    schemas.py               Shared dataclass contracts
-   curriculum_ingest.py     Extract and index PDF/PPTX content
+   curriculum_ingest.py     Extract and index PDF/PPTX/notebook content
    monitoring_github.py     Fetch GitHub releases
    monitoring_rss.py        Fetch official RSS posts
    clustering.py            Group signals into trend clusters
@@ -23,6 +24,11 @@ an action plan with citations.
 03_assets/
    diagrams/                Project diagrams
    screenshots/             Project screenshots
+04_eval/
+   data/                    Gold-labelled datasets (test_signals_graded*.json)
+   results/                 Saved evaluation runs
+   run_eval.py, compare.py  Score a run against the gold labels; compare two runs
+c_sync/                     C-Sync, the interface (Streamlit)
 vectorstore/                Local generated Chroma database
 ```
 
@@ -98,101 +104,51 @@ python 02_src/clustering.py --signals 01_data/signals.json --check
 Clustering also accepts `--threshold`, `--strip-prefix`, `--no-identifiers`,
 `--max-freq`, `--frequencies`, `--min-shared`, and `--all`.
 
-## Dashboard and API
+## C-Sync (the interface)
 
-One command serves both the dashboard and the JSON. Read-only, zero API calls:
-it reads a snapshot captured by `demo_snapshot.py --capture`.
+C-Sync is the project's interface. It reads a snapshot captured by
+`demo_snapshot.py --capture` and makes zero API calls:
 
 ```powershell
-uvicorn app:app --reload
+python -m streamlit run c_sync/app.py
 ```
 
-| URL | What |
+The left panel holds every page. The top bar holds only the five pipeline stages
+(01 Discover, 02 Verify, 03 Compare, 04 Evaluate, 05 Decide), and each one opens
+its page:
+
+| Page | What it shows |
 | --- | --- |
-| <http://127.0.0.1:8000/> | Chooser &mdash; pick a view (`ui/index.html`) |
-| <http://127.0.0.1:8000/ui/simple.html> | Plain-language view, for instructors |
-| <http://127.0.0.1:8000/ui/advanced.html> | Full dashboard, for the people who built it |
-| <http://127.0.0.1:8000/docs> | Interactive API docs |
+| Home | "From noise to curriculum": signals, clusters, assessed, recommendations and actionable, as squares sized by count |
+| Dashboard | Every recommendation, most urgent first, with filters for action, lab/slides and actionable only |
+| Radar | Each assessed trend as a light on a sweeping radar |
+| Trend story | The original signal and the verification evidence, including repository stars and the release check |
+| The gap | The trend beside the course material the curriculum agent matched |
+| Evaluation | Maturity, relevance and overall score, revealed on request |
+| Decision | The recommended action, its plan and the evidence chain |
+| How it works | The five steps in plain language |
 
-There are two views of the same run, because two audiences want different
-things from it. The front page asks which you are rather than guessing; both
-views are bookmarkable directly, and both read the same endpoints, so they
-cannot disagree.
+Every number comes from the recorded run, and no agent is re-run. Maturity is
+`evaluation.py`'s own band for the stored confidence, and relevance is worked
+back from the stored total. See [c_sync/README_UI.md](c_sync/README_UI.md).
 
-The **plain-language view** drops the scores, similarity values, tier machine
-names and tool logs, groups suggestions by what to do about them, and titles
-each one by the material it affects ("Your Week 4 lab notebook may be out of
-date"). It does *not* drop the failed-search warning &mdash; that is stated more
-plainly there than anywhere else, because an instructor is exactly the reader
-who would otherwise take it for "nothing to change".
-
-The dashboard shows the pipeline funnel, the action-tier breakdown, and a card
-per recommendation with its citation, plan, and evidence trail. It has a table
-view and a light/dark toggle, and it reads the same endpoints below, so the
-page and the API can never disagree.
-
-The tier and funnel scales are one blue hue stepped light-to-dark, because both
-are *ordered* scales rather than five unrelated categories. The steps and the
-label colours inside each filled segment were checked against both backgrounds
-rather than chosen by eye. Re-check them if you change a colour.
-
-The **Instructor companion** panel is present but not connected: it POSTs to
-`/chat`, which does not exist yet, and says so rather than pretending to answer.
-Adding that route to `app.py` is all it needs.
-
-### Agent traces
-
-Each card ends with its own **agent trace**, showing what the agents actually
-did: which sources verification checked, which curriculum searches ran with what
-filters, and what came back, in the order it happened. It sits in a collapsed
-section at the bottom of the card, so the dashboard still reads as conclusions
-until you ask for the reasoning.
-
-The warning for a failed search stays **above** that section, un-collapsed,
-because it must not require a click — and a failed search opens its own trace
-by default. `trace.html?i=<index>` remains as a full-width permalink for one
-trace, linked from the bottom of each block.
-
-A curriculum search has three outcomes, and the card distinguishes all three:
-
-| Outcome | Shown as |
-| --- | --- |
-| Searched, found a match | The citation |
-| Searched, found nothing | "no curriculum match" |
-| **Search failed** | A red rule and "this is NOT a finding of 'no match'" |
-| Never searched | "curriculum not searched" plus the reason |
-
-The failed case is called out because confusing it with a genuine no-match once
-produced confident `add_new_lesson` recommendations claiming no existing coverage
-when no search had run at all.
-
-Traces are captured by `demo_snapshot.py --capture`, so they appear only in
-snapshots taken after this feature. Older snapshots, including the committed one,
-render exactly as before with no trace section.
-
-| Route | Returns |
-| --- | --- |
-| `GET /health` | Service status and whether the snapshot was found |
-| `GET /summary` | Funnel counts and the tier breakdown |
-| `GET /run` | The full captured run |
-| `GET /recommendations` | Filtered list, plus `count` and `total` |
-| `GET /recommendations/{index}` | One recommendation |
-| `GET /tiers` | The five action tiers in display order |
-
-`/recommendations` accepts `tier`, `week`, `content_type` (`lab` or `slides`),
-`min_score`, `actionable` (drops `watch`), and `limit`. Filters combine with
-AND. Each item carries an `index` into the unfiltered snapshot, so
-`/recommendations/{index}` stays valid whatever the filter.
-
-Each recommendation is exactly `Recommendation.to_dict()` from
-`02_src/schemas.py`. The API does not redeclare that shape, so a schema change
-reaches the response without an edit here.
-
-Set `SNAPSHOT_PATH` to serve a different capture:
+Set `SNAPSHOT_PATH` to show a different capture:
 
 ```powershell
 $env:SNAPSHOT_PATH = "01_data/experiment.json"
 ```
+
+## Evaluation
+
+```powershell
+python 02_src/agents/test_chain.py          # offline test suite, zero API calls
+python 02_src/tests/test_verification.py    # offline verifier tests
+python 04_eval/run_eval.py --repeats 3 --out 04_eval/results/<name>.json
+python 04_eval/compare.py <baseline.json> <after.json>
+```
+
+`run_eval.py` reads `04_eval/data/test_signals_graded.json` by default; pass
+`--dataset` for another file.
 
 ## Generated files
 

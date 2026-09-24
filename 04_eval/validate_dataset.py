@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 
-DATASET = Path(__file__).resolve().parents[1] / "test_signals_graded.json"
+DATASET = Path(__file__).resolve().parent / "data" / "test_signals_graded.json"
 FIELDS = ("is_genuine", "confidence", "stale_presented_as_new", "rank", "maturity", "relevance", "action_tier")
 # The four tiers recommendation._select_tier actually emits. schemas.ActionTier
 # also declares "investigate_larger_change", but the agent never returns it, so

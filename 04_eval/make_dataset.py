@@ -6,7 +6,7 @@ one give different answers -- and writes them out with empty gold blocks for
 a human to fill.
 
     python 04_eval/make_dataset.py --signals 01_data/signals.json \\
-        --out test_signals_graded.json
+        --out 04_eval/data/test_signals_graded.json
 
 Then open the file and fill every `gold` value by hand. Leave anything you
 are unsure of as null: run_eval.py skips nulls and reports what is missing,
@@ -143,7 +143,7 @@ def pick(signals: list[dict], per_pattern: int = 2) -> list[dict]:
 def main():
     ap = argparse.ArgumentParser(description="Build a gold-label dataset skeleton")
     ap.add_argument("--signals", default="01_data/signals.json")
-    ap.add_argument("--out", default="test_signals_graded.json")
+    ap.add_argument("--out", default="04_eval/data/test_signals_graded.json")
     ap.add_argument("--per-pattern", type=int, default=2,
                     help="how many signals to take per discriminating case")
     ap.add_argument("--keep-why", action="store_true",
