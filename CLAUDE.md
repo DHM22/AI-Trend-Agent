@@ -111,12 +111,14 @@ c_sync/                                C-SYNC, THE ONLY UI: Streamlit (`python -
                                         attach a "trace" key beside to_dict() output. The verification part carries
                                         the verifier's `mode` (agentic vs deterministic) and its full `reasoning`
                                         (incl. non-tool thoughts) from VerifiedTrend -- verification.py untouched.
-                                        trace_view(rec) is the plain-language reading the Streamlit card renders
-                                        (tested in test_chain; None for pre-trace snapshots). Keyed by id(rec) because
+                                        trace_view(rec) is the plain-language reading of a trace (tested in test_chain;
+                                        None for pre-trace snapshots; C-Sync does not call it). Keyed by id(rec) because
                                         collapse_duplicates returns the same objects. capture() sorts clusters LARGEST
                                         FIRST before slicing [offset:offset+limit] — that is why the committed snapshot
-                                        shows 41 clusters but 15 evaluated. The committed snapshot predates trace
-                                        capture: it has NO "trace" keys, so failed searches can't be shown until re-captured
+                                        (v2, 212dfc3, captured 2026-09-21 from 01_data/signals_2026-09-21.json, 74 signals)
+                                        shows 57 clusters but 30 evaluated (29 recs after 1 duplicate collapsed). It HAS
+                                        traces: all 29 recs carry a "trace" key (verification + curriculum steps), none
+                                        with search_failed. C-Sync just doesn't render them
 02_src/agents/tools.py                 Tool implementations: github_lookup, search_curriculum, verify_release
 02_src/agents/verification.py          DETERMINISTIC verifier, restored 2026-09-21 from agents/reference/. The model
                                         only picks tool calls; _score() computes confidence from Facts the RAW tool
