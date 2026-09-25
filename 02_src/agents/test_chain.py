@@ -22,9 +22,14 @@ Covers:
   * the tools.py field contract the CurriculumAgent depends on
 """
 
+import os
 import sys
 import types
 from pathlib import Path
+
+# Offline suite: never pick up a real key from .env. load_dotenv() does not
+# override a variable that is already set, so every agent takes its no-client path.
+os.environ["OPENAI_API_KEY"] = ""
 
 _SRC = str(Path(__file__).resolve().parents[1])
 if _SRC not in sys.path:
