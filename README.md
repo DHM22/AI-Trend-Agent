@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="03_assets/logo/c-sync-logo.svg" alt="C-sync: Sync education with real-world trends" width="520">
+</p>
+
 # AI Trend Agent
 
 AI Trend Agent turns technology signals from official RSS feeds and GitHub

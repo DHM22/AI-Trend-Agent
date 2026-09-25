@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import base64
 from html import escape
+from pathlib import Path
 
 import streamlit as st
 
@@ -105,8 +107,19 @@ def e(value: object) -> str:
     return escape(str(value) if value is not None else "", quote=True)
 
 
+_MARK = Path(__file__).resolve().parents[1] / "03_assets" / "logo" / "c-sync-mark.svg"
+
+
 def brand() -> None:
-    st.html('<div class="sr-topline"><div class="sr-brand"><span class="sr-brand-mark">✦</span>C-<span style="color:#a78bfa">Sync</span></div></div>')
+    # st.html strips inline <svg>, so the mark goes in as an image data URI
+    try:
+        data = base64.b64encode(_MARK.read_bytes()).decode()
+        mark = (f'<img src="data:image/svg+xml;base64,{data}" alt="" width="38" height="38" '
+                f'style="margin-right:8px;flex:none">')
+    except OSError:
+        mark = '<span class="sr-brand-mark">✦</span>'
+    st.html(f'<div class="sr-topline"><div class="sr-brand" style="display:flex;align-items:center">'
+            f'{mark}C-<span style="color:#a78bfa">Sync</span></div></div>')
 
 
 STAGES = [
