@@ -32,6 +32,11 @@ def _imports() -> None:
         sys.path.insert(0, str(SRC))
 
 
+def import_backend() -> None:
+    """Put the backend's 02_src on sys.path, for a page that imports from it."""
+    _imports()
+
+
 def snapshot_path() -> Path:
     p = Path(os.environ.get("SNAPSHOT_PATH", "01_data/demo_snapshot.json"))
     return p if p.is_absolute() else BACKEND / p

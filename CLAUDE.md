@@ -25,7 +25,7 @@ python 02_src/monitoring_rss.py [--days N] [--secondary] [--check]
 python 02_src/monitoring_github.py [--days N] [--repo owner/name]
 python 02_src/clustering.py --signals 01_data/signals.json [--check|--frequencies]
 python 02_src/agents/verification.py --signals 01_data/signals.json --show-reasoning   # no key -> deterministic tool loop, same scorer; use --index/--limit
-python -m streamlit run c_sync/app.py                   # C-Sync, the only UI (reads SNAPSHOT_PATH; 0 API calls)
+python -m streamlit run c_sync/app.py                   # C-Sync, the only UI (reads SNAPSHOT_PATH; 0 API calls except the Ask page)
 python 04_eval/run_eval.py --repeats 3 --out 04_eval/results/<name>.json [--dataset ...]   # default 04_eval/data/test_signals_graded.json
 python 04_eval/compare.py <baseline.json> <after.json>  # fails on different dataset hash/model
 ```
@@ -79,8 +79,11 @@ c_sync/                                C-SYNC, THE ONLY UI: Streamlit (`python -
                                         aldanah's SkillRadar UI (imported byte-for-byte in 61e97c4). Reads the snapshot at
                                         SNAPSHOT_PATH + the signals file it names -- NO agent re-run: maturity =
                                         evaluation._maturity_score(stored confidence), relevance solved from total_score.
-                                        Left sidebar = 8 pages (Home, Dashboard, Radar, Trend story, The gap, Evaluation,
-                                        Decision, How it works); top = only the 5 stages. Home = "noise to curriculum"
+                                        Left sidebar = 9 pages (Home, Dashboard, Radar, Trend story, The gap, Evaluation,
+                                        Decision, Ask, How it works); top = only the 5 stages. Ask (ui_ask.py) = the
+                                        Instructor Companion chat over one recorded rec -- the ONLY page that may call a
+                                        model, only via CompanionAgent, only when OPENAI_API_KEY is set (else it restates
+                                        the record). test_chain enforces this: every other c_sync file stays agent-free. Home = "noise to curriculum"
                                         squares (area ~ real counts). Radar = scanner beam, nodes flash as it passes. Verify =
                                         collapsible evidence cards, stars ONLY from the recorded github_lookup note, verify_release
                                         green only on CONFIRMED. Evaluate hides scores behind a button. Decide's evidence chain
@@ -142,13 +145,19 @@ c_sync/                                C-SYNC, THE ONLY UI: Streamlit (`python -
                                         so that card still shows the pre-fix 0.15 -- don't feature it
 02_src/agents/reference/               The team's verifier as recovered (lines 1-500 of 571) and completed (+ a
                                         RECONSTRUCTED _describe()/main()). The source of the restore; never edit it
+02_src/agents/companion.py             Instructor Companion: answers questions about ONE recorded rec from its record +
+                                        trace (record_context). Explains, never decides -- no tier/score recompute. Tools:
+                                        search_curriculum (local vectorstore) + github_lookup/verify_release forced
+                                        TOOL_CACHE_ONLY. curriculum_state() keeps searched / FAILED / skipped / no-trace
+                                        apart. No key -> offline_reply(); model failure -> MODE_ERROR, never an answer
 02_src/agents/curriculum.py            RAG search agent; has search_failed flag + curriculum_checked() tri-state
 02_src/agents/evaluation.py            Deterministic _maturity_score / _relevance_score; model only writes rationale.
                                         Includes aldanah's lab-threshold change (77732ba, merged 87e10f4): the committed
                                         snapshot predates it; a re-capture is expected to move 3 recs to
                                         update_existing_material (langsmith-sdk v0.14.0, langchain==1.4.2, openai-python v3.14.0)
 02_src/agents/recommendation.py        Orchestrator; tier-selection gates (see Key Decisions)
-02_src/agents/test_chain.py            Offline test suite — 0 API calls. Currently 196 passed, 0 skipped
+02_src/agents/test_chain.py            Offline test suite — 0 API calls (blanks OPENAI_API_KEY at import, so a real key in
+                                        .env is never used). Currently 216 passed, 0 skipped (section 17 = companion)
                                         (sections 1-2, written for the deterministic verifier, run again; section 15,
                                         the walkthrough + API routes, was removed with app.py and ui/)
 02_src/tests/test_verification.py      14 offline VerificationAgent tests (from PR #1, adapted to the restored
@@ -289,8 +298,9 @@ script, before trusting a validation run on a non-default dataset.
   self_promotion/opinion before it reaches the tier gates. Would fix false positives from Show HN self-promotion
   and vendor case studies (found in the 90-day + secondary/HN run) passing the in-domain gate and producing
   spurious `update_existing_material`/`add_new_lesson` recs. Roadmap item, not started.
-- **Instructor Companion Agent (proposed, not built):** conversational layer over recommendations + vector store.
-  Roadmap item.
+- **Instructor Companion Agent: built (2026-09-25), lightly tested live.** `agents/companion.py` + the C-Sync Ask
+  page. One live check answered correctly from the trace, but its `[n]` evidence numbers were loose (cited GitHub
+  evidence items for a curriculum fact). No eval of answer quality exists yet.
 
 ## Current blocker
 

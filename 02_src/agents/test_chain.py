@@ -1257,9 +1257,15 @@ def test_csync():
           "maturity is evaluation.py's band; relevance is solved from total_score")
 
     code = {p.name: p.read_text(encoding="utf-8") for p in cs.glob("*.py")}
-    check("c-sync: no agent is run (no Agent classes, no OpenAI client)",
-          [n for n, t in code.items()
-           if _re.search(r"^\s*(?:from|import)\s[^\n]*(?:Agent|openai)|\w+Agent\(|OpenAI\(", t, _re.M)], [])
+    # ui_ask.py (the Ask page) is the one exception: it runs the CompanionAgent,
+    # and only through it -- never the pipeline's agents or an OpenAI client directly.
+    check("c-sync: no agent is run (no Agent classes, no OpenAI client) outside the Ask page",
+          [n for n, t in code.items() if n != "ui_ask.py"
+           and _re.search(r"^\s*(?:from|import)\s[^\n]*(?:Agent|openai)|\w+Agent\(|OpenAI\(", t, _re.M)], [])
+    ask_code = code.get("ui_ask.py", "")
+    check("c-sync: the Ask page runs only the CompanionAgent, never OpenAI directly",
+          sorted(set(_re.findall(r"\b(\w*Agent)\(|\b(OpenAI)\(|^\s*(?:from|import)\s+(openai)\b", ask_code, _re.M))),
+          [("CompanionAgent", "", "")])
     check("c-sync: the SkillRadar name is gone from what users see",
           [n for n, t in code.items()
            for line in t.splitlines() if "skillradar" in line.lower() and "SKILLRADAR_BACKEND" not in line], [])
@@ -1280,7 +1286,7 @@ def test_csync():
           UP._stars_by_repo([{"note": "github_lookup('a/b') matched a/b (1,234 stars, pushed x)"}]), {"a/b": 1234})
 
     pages = ["Home", "Dashboard", "Radar", "Trend story", "The gap",
-             "Evaluation", "Decision", "How it works"]
+             "Evaluation", "Decision", "Ask", "How it works"]
     broken = []
     for page in pages:
         at = AppTest.from_file(str(cs / "app.py"), default_timeout=60)
@@ -1299,6 +1305,122 @@ def test_csync():
     at.button(key="stage_Decide").click().run()
     check("c-sync: the top stage bar navigates (05 Decide -> Decision)",
           at.session_state["page"], "Decision")
+
+    at = AppTest.from_file(str(cs / "app.py"), default_timeout=60)
+    at.session_state["page"] = "Ask"
+    at.run()
+    check_true("c-sync: with no key the Ask page says so instead of answering",
+               any("No OpenAI key is set" in i.value for i in at.info))
+    check("c-sync: with no key the Ask page offers no chat box", len(at.chat_input), 0)
+
+
+# ===========================================================================
+# 17. INSTRUCTOR COMPANION (agents/companion.py) -- explains, never decides
+# Offline: fake clients and fake tool runners only.
+# ===========================================================================
+
+def test_companion():
+    import json, os, tempfile
+    from agents import companion as CO
+
+    base = {"trend": "acme/lib: v2.0", "recommended_action": "update_existing_material",
+            "confidence": 0.75, "verification_note": "claim CONFIRMED", "total_score": 4.5,
+            "evidence": [{"source": "github", "tier": "primary", "note": "acme/lib: v2.0", "url": ""}],
+            "match": {"citation": "Week 3 / Lab: Demo / cell 36", "content_type": "lab",
+                      "exact_match": "oldapi", "similarity": 0.5, "matched_text": "oldapi()"},
+            "action_plan": ["update cell 36"]}
+
+    def with_curriculum(c):
+        return {**base, "trace": {"verification": {"steps": [], "mode": "agentic"}, "curriculum": c}}
+
+    searched = with_curriculum({"searched": True, "search_failed": False, "reason": "cell 36 uses oldapi", "steps": []})
+    failed = with_curriculum({"searched": True, "search_failed": True, "reason": "429 spend limit", "steps": []})
+    skipped = with_curriculum({"searched": False, "skipped_reason": "confidence below gate", "steps": []})
+    states = [CO.curriculum_state(r)[0] for r in (searched, failed, skipped, base)]
+    check("companion: the four curriculum outcomes stay distinct",
+          states, [CO.SEARCHED, CO.SEARCH_FAILED, CO.SKIPPED, CO.NO_TRACE])
+    ctx = CO.record_context(failed)
+    check_true("companion: a failed search reaches the model as NOT a no-match",
+               "NOT a finding of 'no match'" in ctx and "429 spend limit" in ctx)
+    check_true("companion: a skipped search reaches the model as never attempted",
+               "never attempted" in CO.record_context(skipped))
+
+    # every recorded recommendation builds a context carrying its tier and citation
+    snap = json.loads((Path(__file__).resolve().parents[2] / "01_data" / "demo_snapshot.json")
+                      .read_text(encoding="utf-8"))
+    missing = []
+    for r in snap["recommendations"]:
+        c = CO.record_context(r)
+        if CO.TIER_LABEL[r["recommended_action"]] not in c or (
+                r.get("match") and r["match"]["citation"] not in c):
+            missing.append(r["trend"])
+    check("companion: every snapshot record's context has its tier and citation", missing, [])
+
+    # no key -> no model, no tools; restates the record
+    ran = []
+    reply = CO.CompanionAgent(tool_runner=lambda n, a: ran.append(n)).answer(failed, "why?")
+    check("companion: no key -> offline mode", reply.mode, CO.MODE_OFFLINE)
+    check_true("companion: offline reply restates tier and the failed search",
+               "UPDATE EXISTING MATERIAL" in reply.text and "NOT a finding" in reply.text)
+    check("companion: offline reply runs no tool", ran, [])
+
+    # a tool round, then an answer
+    def tc(i, name, args):
+        return types.SimpleNamespace(id=f"c{i}", function=types.SimpleNamespace(
+            name=name, arguments=json.dumps(args)))
+    seen = []
+    client = _ScriptedClient(
+        _fake_reply(tool_calls=[tc(1, "search_curriculum", {"question": "oldapi"}),
+                                tc(2, "delete_everything", {})]),
+        _fake_reply(content="Cell 36 uses oldapi [1]."))
+    sent = []
+    create = client.chat.completions.create
+    client.chat.completions.create = lambda **k: (sent.append({**k, "messages": list(k["messages"])}),
+                                                  create(**k))[1]
+    agent = CO.CompanionAgent(client=client, tool_runner=lambda n, a: (seen.append((n, a)), {
+        "question": a["question"], "found": 1, "results": [{"citation": "Week 3 / Lab: Demo / cell 36"}]})[1])
+    reply = agent.answer(searched, "which cell?", [("earlier q", "earlier a")])
+    check("companion: answer comes from the model", (reply.mode, reply.text),
+          (CO.MODE_MODEL, "Cell 36 uses oldapi [1]."))
+    check("companion: only its own tools run; an unknown tool is refused as data",
+          (seen, [c["tool"] for c in reply.tool_calls], reply.tool_calls[1]["summary"].startswith("error")),
+          ([("search_curriculum", {"question": "oldapi"})], ["search_curriculum", "delete_everything"], True))
+    first = sent[0]["messages"]
+    check_true("companion: the model gets the record and the no-overrule rule",
+               "Week 3 / Lab: Demo / cell 36" in first[0]["content"] and "never recompute" in first[0]["content"])
+    check("companion: history is sent before the new question",
+          [m["content"] for m in first[1:]], ["earlier q", "earlier a", "which cell?"])
+    check_true("companion: only curriculum + cache-only GitHub tools are offered",
+               sorted(s["function"]["name"] for s in sent[0]["tools"]) ==
+               ["github_lookup", "search_curriculum", "verify_release"])
+
+    # tool budget: the last round offers no tools, so it must answer
+    loop = _ScriptedClient(*[_fake_reply(tool_calls=[tc(i, "search_curriculum", {"question": "x"})])
+                             for i in range(2)], _fake_reply(content="done"))
+    reply = CO.CompanionAgent(client=loop, tool_runner=lambda n, a: {"found": 0, "results": []},
+                              max_tool_rounds=2).answer(searched, "q")
+    check("companion: the tool budget ends in an answer", (reply.text, len(reply.tool_calls)), ("done", 2))
+
+    # the model failing is reported, never turned into an answer
+    reply = CO.CompanionAgent(client=_AlwaysFails()).answer(searched, "q")
+    check_true("companion: a model failure is an error, not an answer",
+               reply.mode == CO.MODE_ERROR and "failed" in reply.text)
+
+    # GitHub tools are cache-only: a cold cache is a miss as data, no network
+    saved = {k: os.environ.get(k) for k in ("TOOL_CACHE_DIR", "TOOL_CACHE_ONLY")}
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            os.environ["TOOL_CACHE_DIR"] = tmp
+            os.environ.pop("TOOL_CACHE_ONLY", None)
+            got = CO.companion_tool_runner("github_lookup", {"query": "acme/lib"})
+            after = os.environ.get("TOOL_CACHE_ONLY")
+    finally:
+        for k, v in saved.items():
+            os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
+    check("companion: github_lookup never leaves the cache", got.get("_cache"), "miss")
+    check("companion: cache-only mode is restored afterwards", after, None)
+    check_true("companion: a non-companion tool is refused by the runner",
+               "not available" in CO.companion_tool_runner("run_shell", {}).get("error", ""))
 
 
 # ===========================================================================
@@ -1329,6 +1451,7 @@ TESTS = [
     ("trace view", test_trace_view),
     ("capture: verifier mode + reasoning", test_capture_records_verifier_mode_and_reasoning),
     ("c-sync", test_csync),
+    ("instructor companion", test_companion),
 ]
 
 
