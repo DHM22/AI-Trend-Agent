@@ -29,6 +29,7 @@ Usage:
 
 import json
 import os
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -82,10 +83,25 @@ def curriculum_state(record: dict) -> tuple[str, str]:
 # CONTEXT -- everything the run recorded about one recommendation
 # ---------------------------------------------------------------------------
 
+def _evidence_text(ev: dict) -> str:
+    return (f"{ev.get('source')}/{ev.get('tier')} {ev.get('kind') or ''}: "
+            f"{ev.get('note') or ''} <{ev.get('url') or 'no url'}>")
+
+
+def _vstep_text(s: dict) -> str:
+    return f"{s.get('tool')}({json.dumps(s.get('arguments') or {})}) -> {s.get('result_summary')}"
+
+
+def _cstep_text(s: dict) -> str:
+    return (f"query {s.get('query')!r} filters {json.dumps(s.get('filters') or {})} "
+            f"-> {s.get('result_summary')}")
+
+
 def record_context(record: dict) -> str:
     """The recorded facts about one recommendation, as the model will see them."""
     action = record.get("recommended_action") or ""
     lines = [
+        "THE RECOMMENDATION'S OWN RECORDED FIELDS [R] (tier, confidence, note, score, plan):",
         f"TREND: {record.get('trend') or 'untitled'}",
         f"RECOMMENDED ACTION (recorded, final until a human changes it): "
         f"{TIER_LABEL.get(action, action) or 'none recorded'}",
@@ -95,15 +111,14 @@ def record_context(record: dict) -> str:
     ]
 
     evidence = record.get("evidence") or []
-    lines.append(f"\nEVIDENCE ({len(evidence)} item(s)):")
+    lines.append(f"\nVERIFICATION EVIDENCE ({len(evidence)} item(s)) -- sources and checks, NOT course material:")
     for i, ev in enumerate(evidence, 1):
-        lines.append(f"  [{i}] {ev.get('source')}/{ev.get('tier')} {ev.get('kind') or ''}: "
-                     f"{ev.get('note') or ''} <{ev.get('url') or 'no url'}>")
+        lines.append(f"  [E{i}] {_evidence_text(ev)}")
 
     match = record.get("match")
     if match:
         lines += [
-            "\nCURRICULUM MATCH:",
+            "\nCURRICULUM MATCH [M]:",
             f"  citation: {match.get('citation')}",
             f"  content type: {match.get('content_type')} (a lab cell is more urgent than a slide)",
             f"  exact identifier: {match.get('exact_match') or 'none'}; similarity: {match.get('similarity')}",
@@ -117,24 +132,22 @@ def record_context(record: dict) -> str:
 
     plan = record.get("action_plan") or []
     if plan:
-        lines.append("\nACTION PLAN:")
+        lines.append("\nACTION PLAN [R]:")
         lines += [f"  {n}. {step}" for n, step in enumerate(plan, 1)]
 
     trace = record.get("trace") if isinstance(record.get("trace"), dict) else {}
     v = trace.get("verification") or {}
     if v:
         lines.append(f"\nVERIFICATION TRACE ({verification_mode_text(v.get('mode', '')) or 'mode unknown'}):")
-        for s in v.get("steps") or []:
-            lines.append(f"  step {s.get('n')}: {s.get('tool')}({json.dumps(s.get('arguments') or {})}) "
-                         f"-> {s.get('result_summary')}")
+        for i, s in enumerate(v.get("steps") or [], 1):
+            lines.append(f"  [V{i}] {_vstep_text(s)}")
         if v.get("stopped_early"):
             lines.append("  (verification hit its step limit before the model stopped)")
     c = trace.get("curriculum") or {}
     if c.get("steps"):
         lines.append("\nCURRICULUM SEARCH TRACE:")
-        for s in c["steps"]:
-            lines.append(f"  step {s.get('n')}: query {s.get('query')!r} filters "
-                         f"{json.dumps(s.get('filters') or {})} -> {s.get('result_summary')}")
+        for i, s in enumerate(c["steps"], 1):
+            lines.append(f"  [C{i}] {_cstep_text(s)}")
     if not trace:
         lines.append("\nAGENT TRACE: none recorded (a pre-trace snapshot)")
     return "\n".join(lines)
@@ -150,17 +163,26 @@ Rules:
 1. The recommended action, confidence and scores are FINAL as recorded. Explain them;
    never recompute, re-rank or overrule them, and never say what the tier "should" be.
    Only a human approves or changes a recommendation.
-2. Cite what you rely on: evidence as [n], course material by its citation
-   (e.g. "Week 3 / Lab: ... / cell 36"), tool results by the tool name.
+2. Cite every fact with the label of the record line it comes from, and only that label:
+   [R] the recommendation's own fields: tier, confidence, verification note, total score, plan
+   [E1].. verification evidence (sources, release checks) -- never for course content
+   [M] the curriculum match; [C1].. curriculum searches; [V1].. verification steps;
+   [T1].. results of tools you call in this conversation (the label comes with the result).
+   A claim about the course (slides, labs, cells) cites [M], [C..] or a [T..] from
+   search_curriculum. Never write bare numbers like [1], and never invent a label.
+   Put each label right after the sentence it supports -- never a list of labels at the end.
 3. Keep the curriculum outcome exact. If the search FAILED, say it failed and that this
    is NOT evidence the topic is uncovered. If it was SKIPPED, say it never ran. Only a
    search that ran can support "the course does not cover this".
-4. If the record does not contain the answer, say so. Do not fill gaps from memory
+4. Hits listed in [C..] are candidates the search RETURNED, not confirmed affected. When
+   asked what else in the course is related, list them with their [C..] label and say they
+   are unconfirmed; never say nothing else was found when [C..] lists other hits.
+5. If the record does not contain the answer, say so. Do not fill gaps from memory
    about libraries, releases or dates.
-5. Tools: search_curriculum re-searches the course material. github_lookup and
+6. Tools: search_curriculum re-searches the course material. github_lookup and
    verify_release only re-read cached results from earlier runs; a cache miss means
    "not checked", never "does not exist".
-6. Be brief: a few sentences or a short list. Plain language for instructors.
+7. Be brief: a few sentences or a short list. Plain language for instructors.
 
 RECORD:
 {context}
@@ -208,6 +230,88 @@ def _summarise(result: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
+# CITATIONS -- every label an answer uses must resolve to a real record line
+# ---------------------------------------------------------------------------
+
+_LABEL = re.compile(r"\[([EVCT])(\d+)\]|\[([MR])\]")
+_SCORE_WORDS = re.compile(r"\b(total score|action plan|recommended action)\b", re.I)
+_NOTHING_ELSE = re.compile(r"\b(no (other|additional|further)|did not (identify|find)|nothing else|"
+                           r"not (identify|find) any)\b", re.I)
+_HIT = re.compile(r"(Week \d+ / [^|]+?)\s*\((?:[\d.]+|exact:[^)]*)\)")
+
+
+def other_recorded_hits(record: dict) -> list[str]:
+    """Course citations the recorded searches returned, other than the chosen match."""
+    trace = record.get("trace") if isinstance(record.get("trace"), dict) else {}
+    chosen = ((record.get("match") or {}).get("citation") or "").strip()
+    hits = []
+    for s in (trace.get("curriculum") or {}).get("steps") or []:
+        for h in _HIT.findall(s.get("result_summary") or ""):
+            h = h.strip()
+            if h != chosen and h not in hits:
+                hits.append(h)
+    return hits
+_BARE = re.compile(r"\[(\d+)\]")
+_COURSE_WORDS = re.compile(r"\b(course|curriculum|lab|labs|slide|slides|cell|cells|notebook|week \d)\b", re.I)
+
+
+def label_sources(record: dict, calls: list[dict]) -> dict[str, str]:
+    """Every citable label for this record (+ this answer's tool calls) -> its text."""
+    trace = record.get("trace") if isinstance(record.get("trace"), dict) else {}
+    out = {"R": (f"recorded: {TIER_LABEL.get(record.get('recommended_action'), record.get('recommended_action'))}, "
+                 f"confidence {record.get('confidence')}, total score {record.get('total_score')}")}
+    out.update({f"E{i}": _evidence_text(ev) for i, ev in enumerate(record.get("evidence") or [], 1)})
+    out.update({f"V{i}": _vstep_text(s)
+                for i, s in enumerate((trace.get("verification") or {}).get("steps") or [], 1)})
+    out.update({f"C{i}": _cstep_text(s)
+                for i, s in enumerate((trace.get("curriculum") or {}).get("steps") or [], 1)})
+    match = record.get("match")
+    if match:
+        out["M"] = f"{match.get('citation')} ({match.get('content_type')})"
+    out.update({c["label"]: f"{c['tool']}({json.dumps(c['arguments'])}) -> {c['summary']}"
+                for c in calls if c.get("label")})
+    return out
+
+
+def _labels_in(text: str) -> list[str]:
+    return [m.group(3) or m.group(1) + m.group(2) for m in _LABEL.finditer(text)]
+
+
+def check_citations(text: str, record: dict, calls: list[dict]) -> tuple[list[tuple[str, str]], list[str]]:
+    """(sources cited, in order; problems). Problems are shown, never hidden."""
+    known = label_sources(record, calls)
+    sources, problems, seen = [], [], set()
+    for label in _labels_in(text):
+        if label in seen:
+            continue
+        seen.add(label)
+        if label in known:
+            sources.append((label, known[label]))
+        else:
+            problems.append(f"[{label}] does not exist in this record")
+    for n in dict.fromkeys(_BARE.findall(text)):
+        problems.append(f"[{n}] is a bare number, not a record label")
+    sentences = [s for s in re.split(r"(?<=[.!?])\s+|\n+", text) if s.strip()]
+    for sentence in sentences:
+        labels = _labels_in(sentence)
+        if (labels and _COURSE_WORDS.search(sentence)
+                and all(label.startswith(("E", "V")) for label in labels)):
+            problems.append("a course claim cites only verification evidence: "
+                            + sentence.strip()[:120])
+        if labels and _SCORE_WORDS.search(sentence) and "R" not in labels:
+            problems.append("a claim about the recorded score/tier/plan does not cite [R]: "
+                            + sentence.strip()[:120])
+    others = other_recorded_hits(record)
+    if others and _NOTHING_ELSE.search(text) and not any(h in text for h in others):
+        problems.append(f"says nothing else was found, but the recorded searches returned "
+                        f"{len(others)} other hit(s), e.g. {others[0]}")
+    cited = [i for i, s in enumerate(sentences) if _labels_in(s)]
+    if len(sentences) > 2 and cited == [len(sentences) - 1] and len(_labels_in(sentences[-1])) > 1:
+        problems.append("citations are collected at the end, not attached to the claims they support")
+    return sources, problems
+
+
+# ---------------------------------------------------------------------------
 # AGENT
 # ---------------------------------------------------------------------------
 
@@ -215,8 +319,10 @@ def _summarise(result: dict) -> str:
 class CompanionReply:
     text: str
     mode: str                                   # MODE_MODEL / MODE_OFFLINE / MODE_ERROR
-    tool_calls: list[dict] = field(default_factory=list)   # {"tool", "arguments", "summary"}
+    tool_calls: list[dict] = field(default_factory=list)   # {"label", "tool", "arguments", "summary"}
     stopped_early: bool = False
+    sources: list[tuple[str, str]] = field(default_factory=list)   # (label, what it points at)
+    citation_problems: list[str] = field(default_factory=list)
 
 
 class CompanionAgent:
@@ -274,9 +380,11 @@ class CompanionAgent:
                                                   temperature=0, **kwargs)
             msg = resp.choices[0].message
             if not msg.tool_calls or last_round:
-                return CompanionReply(text=(msg.content or "").strip() or "(no answer returned)",
-                                      mode=MODE_MODEL, tool_calls=calls,
-                                      stopped_early=bool(msg.tool_calls))
+                text = (msg.content or "").strip() or "(no answer returned)"
+                sources, problems = check_citations(text, record, calls)
+                return CompanionReply(text=text, mode=MODE_MODEL, tool_calls=calls,
+                                      stopped_early=bool(msg.tool_calls),
+                                      sources=sources, citation_problems=problems)
             messages.append({
                 "role": "assistant", "content": msg.content or "",
                 "tool_calls": [{"id": tc.id, "type": "function",
@@ -293,10 +401,11 @@ class CompanionAgent:
                     result = self._run_tool(tc.function.name, args)
                 else:
                     result = {"error": f"tool '{tc.function.name}' is not available to the companion"}
-                calls.append({"tool": tc.function.name, "arguments": args,
+                label = f"T{len(calls) + 1}"
+                calls.append({"label": label, "tool": tc.function.name, "arguments": args,
                               "summary": _summarise(result)})
                 messages.append({"role": "tool", "tool_call_id": tc.id,
-                                 "content": json.dumps(result)[:6000]})
+                                 "content": json.dumps({"label": f"[{label}]", "result": result})[:6000]})
         raise AssertionError("unreachable: the last round offers no tools")
 
 

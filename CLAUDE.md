@@ -157,7 +157,7 @@ c_sync/                                C-SYNC, THE ONLY UI: Streamlit (`python -
                                         update_existing_material (langsmith-sdk v0.14.0, langchain==1.4.2, openai-python v3.14.0)
 02_src/agents/recommendation.py        Orchestrator; tier-selection gates (see Key Decisions)
 02_src/agents/test_chain.py            Offline test suite — 0 API calls (blanks OPENAI_API_KEY at import, so a real key in
-                                        .env is never used). Currently 216 passed, 0 skipped (section 17 = companion)
+                                        .env is never used). Currently 228 passed, 0 skipped (section 17 = companion)
                                         (sections 1-2, written for the deterministic verifier, run again; section 15,
                                         the walkthrough + API routes, was removed with app.py and ui/)
 02_src/tests/test_verification.py      14 offline VerificationAgent tests (from PR #1, adapted to the restored
@@ -299,8 +299,12 @@ script, before trusting a validation run on a non-default dataset.
   and vendor case studies (found in the 90-day + secondary/HN run) passing the in-domain gate and producing
   spurious `update_existing_material`/`add_new_lesson` recs. Roadmap item, not started.
 - **Instructor Companion Agent: built (2026-09-25), lightly tested live.** `agents/companion.py` + the C-Sync Ask
-  page. One live check answered correctly from the trace, but its `[n]` evidence numbers were loose (cited GitHub
-  evidence items for a curriculum fact). No eval of answer quality exists yet.
+  page. Citations use typed labels ([R] record fields, [E] evidence, [M] match, [C] curriculum searches, [V]
+  verification steps, [T] chat lookups); `check_citations()` flags invented/bare labels, course claims citing only
+  E/V, score/tier claims without [R], labels piled at the end, and "nothing else found" when the trace recorded
+  other hits (a real live failure). It checks label TYPE, not which item: [E3] for an [E4] fact passes. Known:
+  [R] gets over-used for the curriculum conclusion (the outcome line has no label of its own). No eval of answer
+  quality exists yet.
 
 ## Current blocker
 

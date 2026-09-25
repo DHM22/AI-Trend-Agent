@@ -44,8 +44,19 @@ def _show_calls(calls: list[dict]) -> None:
     if calls:
         with st.expander(f"Looked up {len(calls)} thing(s)", icon=":material/manage_search:"):
             for c in calls:
-                st.html(f'<div style="margin-bottom:8px"><b>{e(c["tool"])}</b> '
+                st.html(f'<div style="margin-bottom:8px"><b>[{e(c.get("label", ""))}] {e(c["tool"])}</b> '
                         f'<code>{e(c["arguments"])}</code><div style="color:#a7b5cc">{e(c["summary"])}</div></div>')
+
+
+def _show_sources(sources: list, problems: list) -> None:
+    """What each cited label points at, and anything the citation check caught."""
+    if problems:
+        st.warning("Citation check: " + "; ".join(problems), icon=":material/rule:")
+    if sources:
+        with st.expander(f"Sources cited ({len(sources)})", icon=":material/format_quote:"):
+            for label, text in sources:
+                st.html(f'<div style="margin-bottom:8px"><b>[{e(label)}]</b> '
+                        f'<span style="color:#a7b5cc">{e(text)}</span></div>')
 
 
 def ask(records: list[dict]) -> None:
@@ -81,6 +92,7 @@ def ask(records: list[dict]) -> None:
             st.markdown(turn["q"])
         with st.chat_message("assistant"):
             st.markdown(turn["a"])
+            _show_sources(turn["sources"], turn["problems"])
             _show_calls(turn["calls"])
 
     question = None
@@ -103,6 +115,8 @@ def ask(records: list[dict]) -> None:
             st.warning(reply.text, icon=":material/warning:")
         else:
             st.markdown(reply.text)
+            _show_sources(reply.sources, reply.citation_problems)
         _show_calls(reply.tool_calls)
     if reply.mode != MODE_ERROR:
-        history.append({"q": question, "a": reply.text, "calls": reply.tool_calls})
+        history.append({"q": question, "a": reply.text, "calls": reply.tool_calls,
+                        "sources": reply.sources, "problems": reply.citation_problems})

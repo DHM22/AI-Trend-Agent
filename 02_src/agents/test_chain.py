@@ -1394,6 +1394,57 @@ def test_companion():
                sorted(s["function"]["name"] for s in sent[0]["tools"]) ==
                ["github_lookup", "search_curriculum", "verify_release"])
 
+    check("companion: a bare [1] in an answer is flagged, not trusted",
+          reply.citation_problems, ["[1] is a bare number, not a record label"])
+
+    # citations: every kind of fact has its own label, and labels must resolve
+    ctx = CO.record_context(with_curriculum({"searched": True, "reason": "r",
+                                             "steps": [{"n": 1, "query": "oldapi"}]}))
+    check_true("companion: the context labels evidence [E], match [M], searches [C]",
+               "[E1]" in ctx and "[M]" in ctx and "[C1]" in ctx and "[1]" not in ctx)
+    rec_c = with_curriculum({"searched": True, "reason": "r", "steps": [{"n": 1, "query": "oldapi"}]})
+    loose = ("The curriculum was searched, and it was found that the relevant content is "
+             "impacted by the changes in the library ([1], [2], [3]).")
+    _, problems = CO.check_citations(loose, rec_c, [])
+    check("companion: the live loose answer (bare [1]-[3]) is caught",
+          [p.split(" is ")[0] for p in problems], ["[1]", "[2]", "[3]"])
+    _, problems = CO.check_citations("Cell 36 of the Week 3 lab uses oldapi [E1].", rec_c, [])
+    check_true("companion: a course claim citing only evidence is caught",
+               len(problems) == 1 and problems[0].startswith("a course claim cites only verification evidence"))
+    _, problems = CO.check_citations("The release was confirmed [E9].", rec_c, [])
+    check("companion: an invented label is caught", problems, ["[E9] does not exist in this record"])
+    _, problems = CO.check_citations(
+        "It was recommended because the API changed. The confidence is 0.75. The score is 4.5. "
+        "The details can be found in the following records: [E1], [M], and [C1].", rec_c, [])
+    check("companion: citations piled at the end (seen live) are caught", problems,
+          ["citations are collected at the end, not attached to the claims they support"])
+    _, problems = CO.check_citations("The total score of 4.5 reflects high relevance [C1].", rec_c, [])
+    check_true("companion: the recorded score cited to a search (seen live) is caught",
+               len(problems) == 1 and "does not cite [R]" in problems[0])
+    rec_h = with_curriculum({"searched": True, "reason": "r", "steps": [
+        {"n": 1, "query": "oldapi", "result_summary": "2 hit(s): Week 3 / Lab: Demo / cell 36 (0.6) | "
+                                                     "Week 4 / Deck.pptx / slide 45 (0.63)"},
+        {"n": 2, "query": "oldapi", "result_summary": "1 hit(s): Week 2 / Lab: X / cell 6 (exact:oldapi)"}]})
+    check("companion: other recorded hits exclude the chosen match",
+          CO.other_recorded_hits(rec_h), ["Week 4 / Deck.pptx / slide 45", "Week 2 / Lab: X / cell 6"])
+    _, problems = CO.check_citations(
+        "The search did not identify any additional content beyond the matched cell [M].", rec_h, [])
+    check_true("companion: 'nothing else found' despite recorded hits (seen live) is caught",
+               len(problems) == 1 and problems[0].startswith("says nothing else was found"))
+    _, problems = CO.check_citations(
+        "No other material is confirmed, but the search also returned Week 4 / Deck.pptx / slide 45 [C1].", rec_h, [])
+    check("companion: naming the other hits is not flagged", problems, [])
+    sources, problems = CO.check_citations("The total score is 4.5 [R].", rec_c, [])
+    check("companion: [R] resolves to the recorded tier and scores", (problems, sources[0][1]),
+          ([], "recorded: UPDATE EXISTING MATERIAL, confidence 0.75, total score 4.5"))
+    sources, problems = CO.check_citations(
+        "Cell 36 of the Week 3 lab uses oldapi [M][C1]. The release is on GitHub [E1]. "
+        "A new search found it too [T1].", rec_c,
+        [{"label": "T1", "tool": "search_curriculum", "arguments": {"question": "oldapi"}, "summary": "1 hit(s)"}])
+    check("companion: correct citations pass and resolve to their record lines",
+          (problems, [label for label, _ in sources], sources[0][1]),
+          ([], ["M", "C1", "E1", "T1"], "Week 3 / Lab: Demo / cell 36 (lab)"))
+
     # tool budget: the last round offers no tools, so it must answer
     loop = _ScriptedClient(*[_fake_reply(tool_calls=[tc(i, "search_curriculum", {"question": "x"})])
                              for i in range(2)], _fake_reply(content="done"))
