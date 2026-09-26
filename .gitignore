@@ -41,3 +41,6 @@ evals/results/
 # Generated Netlify dashboard and local CLI metadata
 dist/
 .netlify/
+
+# Claude Code local config and project skills (not shared)
+.claude/
