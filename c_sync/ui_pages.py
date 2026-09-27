@@ -118,7 +118,7 @@ def evidence_cards(record: dict) -> None:
         link = (f'<div style="margin-top:6px"><a href="{e(url)}" target="_blank" rel="noopener">Open source ↗</a></div>'
                 if url.startswith(("http://", "https://")) else "")
         cards.append(
-            f'<details class="{state}" style="animation-delay:{0.35 * index:.2f}s">'
+            f'<details class="{state}" style="animation-delay:{0.04 * index:.2f}s">'
             f'<summary><span class="cs-ev-num">SOURCE {index + 1:02d} · {e(tier)} · {e(item.get("source") or "")}</span>'
             f'<span class="cs-ev-title" title="{e(title)}">{e(title)}</span>{chips}</summary>'
             f'<div class="cs-ev-body">{e(item.get("note") or "No source note recorded.")}{link}</div></details>')
