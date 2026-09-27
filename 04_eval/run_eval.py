@@ -42,7 +42,9 @@ def fail(message: str) -> None:
     raise SystemExit(f"eval error: {message}")
 
 
-def read_dataset(path: Path) -> tuple[list[RawSignal], list[dict[str, Any]], str]:
+def read_dataset(path: Path, split: str = "all") -> tuple[list[RawSignal], list[dict[str, Any]], str]:
+    if split not in ("dev", "test", "all"):
+        fail("split must be dev, test, or all")
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -57,7 +59,7 @@ def read_dataset(path: Path) -> tuple[list[RawSignal], list[dict[str, Any]], str
         missing = required - item.keys()
         if missing:
             fail(f"dataset entry {index} missing {sorted(missing)}")
-        unknown = set(item) - required - {"gold"}
+        unknown = set(item) - required - {"gold", "split"}
         if unknown:
             fail(f"dataset entry {index} has unsupported fields {sorted(unknown)}")
         if item["source_tier"] not in ("primary", "secondary"):
@@ -66,11 +68,21 @@ def read_dataset(path: Path) -> tuple[list[RawSignal], list[dict[str, Any]], str
             fail(f"dataset entry {index} RawSignal values must all be strings")
         if "gold" in item and not isinstance(item["gold"], dict):
             fail(f"dataset entry {index}.gold must be an object")
+        if "split" in item and item["split"] not in ("dev", "test"):
+            fail(f"dataset entry {index} has invalid split (expected dev or test)")
         signals.append(RawSignal(**{name: item[name] for name in required}))
     # Hash line-ending-normalised bytes: core.autocrlf checks this file out as
     # CRLF on Windows, and the same labels must not get a different identity
     # (compare.py refuses runs whose dataset hashes differ).
     digest = hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+    if split != "all":
+        selected = [(signal, entry) for signal, entry in zip(signals, raw) if entry.get("split") == split]
+        if not selected:
+            fail(f"dataset has no items for split {split!r}")
+        signals, raw = map(list, zip(*selected))
+        # Preserve the historical all-items hash while preventing compare.py
+        # from treating different split selections as the same evaluation.
+        digest = hashlib.sha256(f"{digest}:split={split}".encode("utf-8")).hexdigest()
     return signals, raw, digest
 
 
@@ -153,10 +165,20 @@ def verification_metrics(clusters, trends, entries):
     confidences = [(conf, gold(e, "confidence")) for conf, e in scored if isinstance(gold(e, "confidence"), (int, float))]
     gap = mean(genuine) - mean(fabricated) if genuine and fabricated else None
     mae = mean([abs(c - float(target)) for c, target in confidences])
+    accuracy = mean([float((conf >= 0.5) == label) for conf, label in truth])
+    gold_genuine = [float(gold(e, "confidence")) for e in entries
+                    if gold(e, "is_genuine") is True and isinstance(gold(e, "confidence"), (int, float))]
+    gold_fabricated = [float(gold(e, "confidence")) for e in entries
+                       if gold(e, "is_genuine") is False and isinstance(gold(e, "confidence"), (int, float))]
+    gold_gap = mean(gold_genuine) - mean(gold_fabricated) if gold_genuine and gold_fabricated else None
     # No VerifiedTrend field says whether an old claim was recognized as stale.
     return {"status": "implemented", "metrics": {
         "truth_confidence_gap": metric(gap, "gold.is_genuine=true/false on every truth-scored signal"),
         "confidence_mae": metric(mae, "gold.confidence (0.0–1.0) on every confidence-scored signal"),
+        "classification_accuracy": metric(accuracy, "gold.is_genuine=true/false; confidence >= 0.5 predicts genuine"),
+        "gold_confidence_gap": metric(gold_gap, "gold.confidence and gold.is_genuine for both classes"),
+        "perfect_calibration_ceiling_score": metric(50 + 50 * gold_gap if gold_gap is not None else None,
+                                                    "gold.confidence and gold.is_genuine for both classes"),
         "stale_flag_rate": metric(None, "gold.stale_presented_as_new plus a verification output field/contract that records a stale flag; VerifiedTrend has neither"),
     }, "score": mean([x for x in ((gap * 100) if gap is not None else None, (1 - mae) * 100 if mae is not None else None) if x is not None])}
 
@@ -233,6 +255,18 @@ def print_table(result):
     c = result["aggregate"]["composite_score"]
     print("-" * 46)
     print("composite         " + ("null" if c["mean"] is None else f"{c['mean']:.2f} ± {c['std']:.2f}"))
+    print("\nVerification diagnostics (gap, MAE and accuracy on a 0–1 scale)")
+    verification = result["aggregate"]["layers"]["verification"]
+    for label, values in [
+        ("gap", verification["metrics"]["truth_confidence_gap"]),
+        ("MAE", verification["metrics"]["confidence_mae"]),
+        ("accuracy", verification["metrics"]["classification_accuracy"]),
+        ("existing score", verification["score"]),
+        ("gold gap G", verification["metrics"]["gold_confidence_gap"]),
+        ("calibrated ceiling (50 + 50*G)", verification["metrics"]["perfect_calibration_ceiling_score"]),
+    ]:
+        value = "null" if values["mean"] is None else f"{values['mean']:.4f} ± {values['std']:.4f}"
+        print(f"{label:<30} {value}")
     print(f"runs: {len(result['runs'])}; tokens: " + ", ".join(str(r['total_tokens']) for r in result['runs']))
 
 
@@ -241,10 +275,12 @@ def main():
     ap.add_argument("--repeats", type=int, default=3)
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--dataset", type=Path, default=DEFAULT_DATASET)
+    ap.add_argument("--split", choices=("dev", "test", "all"), default="all",
+                    help="select items by their split field (default: all, including unsplit items)")
     args = ap.parse_args()
     if args.repeats < 1: fail("--repeats must be at least 1")
     args.dataset = args.dataset.resolve()
-    signals, entries, digest = read_dataset(args.dataset)
+    signals, entries, digest = read_dataset(args.dataset, args.split)
     model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
     runs = []
     observed_models: set[str] = set()
@@ -255,7 +291,8 @@ def main():
         scored.update({"repeat": n + 1, "total_tokens": tokens, "wall_clock_seconds": elapsed})
         runs.append(scored); observed_models.update(observed)
     result = {"format_version": 1, "timestamp_utc": datetime.now(timezone.utc).isoformat(), "code": git_info(),
-              "dataset": {"path": str(args.dataset.relative_to(ROOT)), "sha256": digest, "item_count": len(signals)},
+              "dataset": {"path": str(args.dataset.relative_to(ROOT) if args.dataset.is_relative_to(ROOT) else args.dataset),
+                          "sha256": digest, "item_count": len(signals), "split": args.split},
               "model": {"requested_identifier": model, "observed_identifiers": sorted(observed_models), "temperature": 0,
                         "version_pinned": bool(__import__("re").search(r"(?:20\d{2}[-_]\d{2}[-_]\d{2}|v\d+(?:\.\d+)+)$", model)),
                         "note": "Set OPENAI_MODEL to a provider version-pinned identifier before freezing a live baseline."},
