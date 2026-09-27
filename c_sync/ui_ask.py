@@ -79,7 +79,7 @@ def ask(records: list[dict]) -> None:
 
     if not agent.available():
         st.info("No OpenAI key is set, so the companion cannot answer free-form questions. "
-                "Set OPENAI_API_KEY and restart C-Sync. Below is what the run recorded.",
+                "Set OPENAI_API_KEY and restart C-sync. Below is what the run recorded.",
                 icon=":material/key_off:")
         from agents.companion import offline_reply
         st.markdown(offline_reply(record).text)

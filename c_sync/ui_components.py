@@ -35,7 +35,7 @@ h1,h2,h3{letter-spacing:-.04em} p{line-height:1.6}
 .sr-section{margin-top:24px;margin-bottom:10px}
 .sr-section h2{font-size:clamp(1.2rem,1.8vw,1.6rem);margin:2px 0 4px;color:#fff}
 .sr-section p{color:#aab9ce;margin:0}
-.sr-glass{background:linear-gradient(150deg,#1d2739e8,#101827dd);border:1px solid #ffffff20;border-radius:16px;padding:16px 18px;box-shadow:0 12px 36px #0003;transition:transform .25s,border-color .25s,box-shadow .25s;backdrop-filter:blur(16px)}
+.sr-glass{background:linear-gradient(150deg,#1d2739e8,#101827dd);border:1px solid #ffffff20;border-radius:16px;padding:16px 18px;box-shadow:0 12px 36px #0003;transition:transform .25s,border-color .25s,box-shadow .25s}
 .sr-glass:hover{transform:translateY(-3px);border-color:#9483c777;box-shadow:0 22px 55px #0007}
 .sr-glass.selected{border-color:#9e80ee;box-shadow:0 0 0 1px #8767e188,0 15px 45px #7c3aed2b}
 .sr-kicker{font-size:.75rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#90a3bf}
@@ -84,8 +84,8 @@ h1,h2,h3{letter-spacing:-.04em} p{line-height:1.6}
 .cs-funnel{display:inline-block;max-width:100%}.cs-squares{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;padding:6px 0 2px}.cs-slot{height:var(--slot);display:flex;align-items:center;justify-content:center}
 .cs-sq{display:flex;flex-direction:column;align-items:center;gap:6px;opacity:0;animation:cs-in .5s ease forwards;animation-delay:calc(var(--i)*170ms)}
 .cs-box{display:grid;place-items:center;border-radius:14px;color:#fff;font-weight:800;letter-spacing:-.04em;
-  background:linear-gradient(145deg,var(--c),color-mix(in srgb,var(--c) 45%,#080c17));
-  border:1px solid color-mix(in srgb,var(--c) 70%,#fff);box-shadow:0 0 26px color-mix(in srgb,var(--c) 35%,transparent)}
+  background:linear-gradient(145deg,color-mix(in srgb,var(--c) 72%,#080c17),color-mix(in srgb,var(--c) 40%,#080c17));
+  border:1px solid color-mix(in srgb,var(--c) 70%,#fff);box-shadow:0 0 18px color-mix(in srgb,var(--c) 24%,transparent)}
 .cs-sq-label{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:#a9bad0;font-weight:800;text-align:center;max-width:130px}
 .cs-arrow{color:#7d8fb0;font-size:1.3rem;height:var(--slot);display:flex;align-items:center}
 .cs-dash{background:linear-gradient(150deg,#1d2739e8,#101827dd);border:1px solid #ffffff1c;border-radius:14px;padding:12px 14px;margin-bottom:6px}
@@ -95,14 +95,19 @@ h1,h2,h3{letter-spacing:-.04em} p{line-height:1.6}
 .cs-dash .cite{font-family:ui-monospace,Consolas,monospace;font-size:.78rem;color:#b8c9df;margin-top:6px;overflow-wrap:anywhere}
 @media(max-width:850px){.sr-pipeline{display:flex;overflow-x:auto;padding-bottom:7px}.sr-step{min-width:140px;min-height:82px}.sr-radar{height:330px}.sr-data-radar{height:360px}.sr-flow-arrow{display:none}.sr-hero-title{font-size:3.7rem}.sr-decision{padding:26px}}
 @media(prefers-reduced-motion:reduce){.sr-radar-sweep{animation:none}.sr-glass,[data-testid="stButton"] button{transition:none}[data-testid="stMainBlockContainer"] [data-testid="stElementContainer"],.cs-sq{animation:none;opacity:1}[data-stale="true"],.stale-element{transition:none!important}}
-.sr-radar-stage{position:absolute;top:0;bottom:0;left:50%;aspect-ratio:1;transform:translateX(-50%)}.sr-sweep{position:absolute;inset:5%;pointer-events:none;z-index:2}.sr-sweep-beam{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,transparent 0deg 290deg,#67e8f914 320deg,#67e8f955 356deg,#a5f3fc 360deg);animation:sr-spin 6s linear infinite}.sr-sweep-beam::after{content:"";position:absolute;left:50%;top:0;height:50%;border-left:2px solid #a5f3fcd9;box-shadow:0 0 14px #67e8f9}@keyframes sr-spin{to{transform:rotate(360deg)}}.sr-data-node{animation:sr-ping 6s linear infinite}@keyframes sr-ping{0%{filter:brightness(1.9) drop-shadow(0 0 10px var(--node-color))}14%,100%{filter:none}}.cs-ev{display:flex;flex-direction:column;gap:8px}.cs-ev details{background:#111b2bdc;border:1px solid #ffffff18;border-left:3px solid var(--ev,#5b6b86);border-radius:12px;opacity:0;animation:cs-rise .5s ease forwards}.cs-ev details.ok{--ev:#34d399;background:linear-gradient(90deg,#34d3991c,#111b2bdc 55%);border-color:#34d39955}.cs-ev details.bad{--ev:#f87171}.cs-ev details.warn{--ev:#fbbf24}.cs-ev summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:10px 14px;flex-wrap:wrap}.cs-ev summary::-webkit-details-marker{display:none}.cs-ev summary::after{content:"▸";margin-left:auto;color:#87a4ca;transition:transform .2s}.cs-ev details[open] summary::after{transform:rotate(90deg)}.cs-ev-num{font-size:.66rem;letter-spacing:.14em;color:#87a4ca;font-weight:800;white-space:nowrap}.cs-ev-title{color:#f0f4ff;font-weight:650;font-size:.92rem;flex:1 1 220px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cs-ev-badge{font-size:.72rem;font-weight:800;border-radius:100px;padding:3px 9px;border:1px solid;white-space:nowrap}.cs-ev-badge.stars{color:#fcd34d;border-color:#fbbf2455;background:#fbbf2412}.cs-ev-badge.ok{color:#6ee7b7;border-color:#34d39966;background:#34d3991a}.cs-ev-badge.bad{color:#fca5a5;border-color:#f8717166;background:#f871711a}.cs-ev-badge.warn{color:#fcd34d;border-color:#fbbf2466;background:#fbbf241a}.cs-ev-body{padding:0 14px 12px;color:#c2d0e1;font-size:.88rem;line-height:1.5;word-break:break-word}.cs-ev-body a{color:#67e8f9;font-weight:650}.cs-reveal{opacity:0;animation:cs-rise .6s ease forwards}@keyframes cs-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){.sr-sweep-beam,.sr-data-node{animation:none!important}.cs-ev details,.cs-reveal{animation:none!important;opacity:1!important}}[data-testid="stElementContainer"]:has(iframe[srcdoc*="cs-scroll-top"]),[data-testid="stElementContainer"]:has(iframe[srcdoc*="cs-radar-bridge"]){position:absolute!important;height:0!important;overflow:hidden;margin:0!important}h1.sr-page-title,h1.sr-hero-title{padding:0}.sr-data-node::after{content:"";position:absolute;inset:-9px;border-radius:50%}.st-key-radar_nav{display:none!important}@media(max-width:640px){.st-key-stagebar [data-testid="stHorizontalBlock"]{flex-wrap:nowrap!important;overflow-x:auto;padding-bottom:4px}.st-key-stagebar [data-testid="stColumn"]{flex:0 0 auto!important;width:auto!important;min-width:118px!important}}</style>
+.sr-radar-stage{position:absolute;top:0;bottom:0;left:50%;aspect-ratio:1;transform:translateX(-50%)}.sr-sweep{position:absolute;inset:5%;pointer-events:none;z-index:2}.sr-sweep-beam{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,transparent 0deg 290deg,#67e8f914 320deg,#67e8f955 356deg,#a5f3fc 360deg);animation:sr-spin 6s linear infinite}.sr-sweep-beam::after{content:"";position:absolute;left:50%;top:0;height:50%;border-left:2px solid #a5f3fcd9;box-shadow:0 0 14px #67e8f9}@keyframes sr-spin{to{transform:rotate(360deg)}}.sr-data-node::before{content:"";position:absolute;inset:-3px;border-radius:50%;border:2px solid var(--node-color);opacity:0;pointer-events:none;animation:sr-ping 6s linear infinite;animation-delay:inherit}@keyframes sr-ping{0%{opacity:.95;transform:scale(1)}14%{opacity:0;transform:scale(2.4)}100%{opacity:0;transform:scale(2.4)}}.cs-ev{display:flex;flex-direction:column;gap:8px}.cs-ev details{background:#111b2bdc;border:1px solid #ffffff18;border-left:3px solid var(--ev,#5b6b86);border-radius:12px;opacity:0;animation:cs-rise .5s ease forwards}.cs-ev details.ok{--ev:#34d399;background:linear-gradient(90deg,#34d3991c,#111b2bdc 55%);border-color:#34d39955}.cs-ev details.bad{--ev:#f87171}.cs-ev details.warn{--ev:#fbbf24}.cs-ev summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:10px 14px;flex-wrap:wrap}.cs-ev summary::-webkit-details-marker{display:none}.cs-ev summary::after{content:"▸";margin-left:auto;color:#87a4ca;transition:transform .2s}.cs-ev details[open] summary::after{transform:rotate(90deg)}.cs-ev-num{font-size:.66rem;letter-spacing:.14em;color:#87a4ca;font-weight:800;white-space:nowrap}.cs-ev-title{color:#f0f4ff;font-weight:650;font-size:.92rem;flex:1 1 220px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cs-ev-badge{font-size:.72rem;font-weight:800;border-radius:100px;padding:3px 9px;border:1px solid;white-space:nowrap}.cs-ev-badge.stars{color:#fcd34d;border-color:#fbbf2455;background:#fbbf2412}.cs-ev-badge.ok{color:#6ee7b7;border-color:#34d39966;background:#34d3991a}.cs-ev-badge.bad{color:#fca5a5;border-color:#f8717166;background:#f871711a}.cs-ev-badge.warn{color:#fcd34d;border-color:#fbbf2466;background:#fbbf241a}.cs-ev-body{padding:0 14px 12px;color:#c2d0e1;font-size:.88rem;line-height:1.5;word-break:break-word}.cs-ev-body a{color:#67e8f9;font-weight:650}.cs-reveal{opacity:0;animation:cs-rise .6s ease forwards}@keyframes cs-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){.sr-sweep-beam,.sr-data-node,.sr-data-node::before{animation:none!important}.cs-ev details,.cs-reveal{animation:none!important;opacity:1!important}}[data-testid="stElementContainer"]:has(iframe[srcdoc*="cs-scroll-top"]),[data-testid="stElementContainer"]:has(iframe[srcdoc*="cs-radar-bridge"]){position:absolute!important;height:0!important;overflow:hidden;margin:0!important}h1.sr-page-title,h1.sr-hero-title{padding:0}.sr-data-node::after{content:"";position:absolute;inset:-9px;border-radius:50%}.st-key-radar_nav{display:none!important}.cs-ev summary:focus-visible{outline:2px solid #a78bfa;outline-offset:2px;border-radius:10px}.cs-ev-body a:focus-visible{outline:2px solid #67e8f9;outline-offset:2px;border-radius:4px}.sr-data-node:focus-visible{outline:2px solid #f6f8ff;outline-offset:4px}[data-testid="stButton"] button:focus-visible{outline:2px solid #c4b5fd;outline-offset:2px}@media(max-width:640px){.st-key-stagebar [data-testid="stHorizontalBlock"]{flex-wrap:nowrap!important;overflow-x:auto;padding-bottom:4px}.st-key-stagebar [data-testid="stColumn"]{flex:0 0 auto!important;width:auto!important;min-width:118px!important}}</style>
 """
 
 
 # The last rules of CSS: page titles are real <h1>s, so Streamlit's heading
 # padding is dropped; every radar light gets an invisible tap area at least
 # 36px wide; the hidden buttons radar lights press are hidden (radar_bridge);
-# on phones the five stage buttons stay one sideways-scrolling row.
+# on phones the five stage buttons stay one sideways-scrolling row. Focus:
+# evidence cards, their links, radar lights and every button get a solid
+# outline (Streamlit's own ring is a 50%-alpha primary glow, under 3:1).
+# Radar pings are a scaling ring on ::before (transform + opacity only) rather
+# than an animated filter on all 29 lights. primaryColor (.streamlit/config.toml)
+# is #7C3AED so white text on Streamlit's violet chips reaches 5.7:1.
 # Never put a "<" inside CSS, even in a /* comment */: st.html's sanitizer
 # then drops the whole <style> block and every page loses its styling.
 
@@ -127,7 +132,7 @@ def brand() -> None:
     except OSError:
         mark = '<span class="sr-brand-mark">✦</span>'
     st.html(f'<div class="sr-topline"><div class="sr-brand" style="display:flex;align-items:center">'
-            f'{mark}C-<span style="color:#a78bfa">Sync</span></div></div>')
+            f'{mark}C-<span style="color:#a78bfa">sync</span></div></div>')
 
 
 STAGES = [
@@ -247,5 +252,11 @@ def scroll_to_top(nonce: int) -> None:
               f"w.scrollTo({{top:0,behavior:'instant'}});}};"
               f"up();[80,250,600].forEach(t=>setTimeout(up,t));"
               f"if(w.innerWidth<768){{const sb=d.querySelector('[data-testid=stSidebar][aria-expanded=true]');"
-              f"const b=sb&&sb.querySelector('[data-testid=stSidebarCollapseButton] button');if(b)b.click();}}"
+              f"const b=sb&&sb.querySelector('[data-testid=stSidebarCollapseButton] button');"
+              # Streamlit saves the sidebar state in localStorage as if the user
+              # chose it; put the saved value back so a narrow window that is
+              # widened later still opens the sidebar.
+              f"if(b){{const k='stSidebarCollapsed-',s=w.localStorage,was=s.getItem(k);b.click();"
+              f"const back=()=>{{try{{was===null?s.removeItem(k):s.setItem(k,was);}}catch(e){{}}}};"
+              f"[60,300].forEach(t=>setTimeout(back,t));}}}}"
               f"</script>", height=1)

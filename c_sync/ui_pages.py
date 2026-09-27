@@ -144,8 +144,8 @@ def maturity_scores(records: list[dict]) -> list[int | None]:
 
 
 def home(snapshot: dict, records: list[dict], signals: list) -> None:
-    st.html('<div class="sr-eyebrow">CURRICULUM INTELLIGENCE</div><h1 class="sr-hero-title">C-<span class="sr-gradient">Sync</span></h1>'
-            '<p class="sr-hero-copy">C-Sync watches the technology landscape, checks what is real, compares it with the course, and recommends what should change. A human approves.</p>')
+    st.html('<div class="sr-eyebrow">CURRICULUM INTELLIGENCE</div><h1 class="sr-hero-title">C-<span class="sr-gradient">sync</span></h1>'
+            '<p class="sr-hero-copy">C-sync watches the technology landscape, checks what is real, compares it with the course, and recommends what should change. A human approves.</p>')
     actionable = sum(1 for r in records if r.get("recommended_action") != "watch")
     section("From noise to curriculum.", "Each square is a stage of the run; its size is how much survives.", "THE BIG PICTURE")
     squares_funnel([
@@ -352,7 +352,7 @@ def decision(records: list[dict], signals: list) -> None:
 
 
 def how_it_works(snapshot: dict) -> None:
-    page_intro("THE METHOD", "How does C-Sync work?", "Five simple steps turn technology noise into curriculum action you can explain.")
+    page_intro("THE METHOD", "How does C-sync work?", "Five simple steps turn technology noise into curriculum action you can explain.")
     stages = [
         ("01", "Listen", "We watch trusted technology sources for new developments.", "sensors"),
         ("02", "Verify", "We check the evidence before treating a signal as meaningful.", "verified"),

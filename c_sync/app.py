@@ -13,7 +13,7 @@ from ui_pages import (
 
 
 st.set_page_config(
-    page_title="C-Sync",
+    page_title="C-sync",
     page_icon=":material/sync_alt:",
     layout="wide",
     initial_sidebar_state="auto",   # open on desktop, collapsed on phones
