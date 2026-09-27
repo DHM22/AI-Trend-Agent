@@ -1039,8 +1039,21 @@ def test_verifier_real_data_fixes():
         "VelocityAgent claims 12x faster tool calling", "tweet", "secondary"))
     check("fix 3: bare-name match does not establish a repo for a secondary claim",
           (t.repo_exists, t.confidence), (False, 0.40))
-    t = _verifier(None, lambda n, a: {"found": 1, "results": [
-        {"full_name": "langchain-ai/langgraph"}]}).run(cluster(
+    # First-party post: the curated product->repo mapping resolves "LangGraph
+    # v0.1" to the exact release langchain-ai/langgraph@0.1.0, which the verifier
+    # confirms via verify_release (never an open search). Stub that tool by NAME
+    # so the check is fully offline and deterministic -- a single dict that only
+    # matched github_lookup left verify_release unconfirmed, so repo_exists came
+    # from whatever the live GitHub API/cache happened to return (the flaky bit).
+    # A confirmed curated release establishes the repo.
+    def _curated_confirms(name, args):
+        if name == "verify_release":
+            return {"release_found": True,
+                    "matched_release": {
+                        "tag": args.get("version", ""),
+                        "url": "https://github.com/langchain-ai/langgraph/releases/tag/0.1.0"}}
+        return {"found": 1, "results": [{"full_name": "langchain-ai/langgraph"}]}
+    t = _verifier(None, _curated_confirms).run(cluster(
         "Announcing LangGraph v0.1", "langchain_blog", "primary"))
     check("fix 3: ...but still does for a first-party post", t.repo_exists, True)
 
