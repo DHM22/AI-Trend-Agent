@@ -9,6 +9,7 @@ from ui_components import STAGES, brand, inject_css, scroll_to_top
 from ui_pages import (
     dashboard, decision, evaluation, gap, go, home, how_it_works, radar, trend_story,
 )
+from ui_companion import companion
 
 
 st.set_page_config(
@@ -22,7 +23,8 @@ st.set_page_config(
 PAGES = [
     ("Home", "home"), ("Dashboard", "dashboard"), ("Radar", "radar"),
     ("Trend story", "auto_stories"), ("The gap", "difference"),
-    ("Evaluation", "analytics"), ("Decision", "tips_and_updates"), ("How it works", "help_outline"),
+    ("Evaluation", "analytics"), ("Decision", "tips_and_updates"),
+    ("Companion agent", "psychology"), ("How it works", "help_outline"),
 ]
 STAGE_OF = {"Radar": "Discover", "Trend story": "Verify",
             "The gap": "Compare", "Evaluation": "Evaluate", "Decision": "Decide"}
@@ -86,6 +88,7 @@ def main() -> None:
         "The gap": lambda: gap(records),
         "Evaluation": lambda: evaluation(records, signals),
         "Decision": lambda: decision(records, signals),
+        "Companion agent": lambda: companion(records, signals, snapshot),
         "How it works": lambda: how_it_works(snapshot),
     }
     routes.get(st.session_state["page"], routes["Home"])()
