@@ -90,7 +90,11 @@ c_sync/                                C-SYNC, THE ONLY UI: Streamlit (`python -
                                         is collapsed. Dashboard cards carry no plan text (only under "Full plan"). The
                                         Curriculum page was REMOVED (it repeated The gap), and with it the file-upload preview.
                                         C-Sync shows NO agent traces. Streamlit does NOT hot-reload ui_*.py -- restart after
-                                        edits. test_chain section 16 smoke-runs every page with AppTest.
+                                        edits. NEVER put a "<" in the CSS string, not even in a /* comment */: st.html's
+                                        sanitizer then drops the whole <style> block and every page loses its styling.
+                                        Radar lights press hidden st.buttons (radar_bridge) instead of following
+                                        ?trend= links, so a click no longer reloads the app; the sidebar starts collapsed
+                                        on phones and closes itself after navigation. test_chain section 16 smoke-runs every page with AppTest.
                                         REMOVED 2026-09-24 (all on backup/walkthrough-ui-2026-09-22): app.py (FastAPI API),
                                         ui/ (dashboard, walkthrough, simple/index/trace pages, cards.js, theme.css),
                                         01_data/walkthrough.json, ui2/ (onboarding prototype, never committed), ui3/,

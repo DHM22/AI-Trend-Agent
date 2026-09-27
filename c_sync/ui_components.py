@@ -95,8 +95,16 @@ h1,h2,h3{letter-spacing:-.04em} p{line-height:1.6}
 .cs-dash .cite{font-family:ui-monospace,Consolas,monospace;font-size:.78rem;color:#b8c9df;margin-top:6px;overflow-wrap:anywhere}
 @media(max-width:850px){.sr-pipeline{display:flex;overflow-x:auto;padding-bottom:7px}.sr-step{min-width:140px;min-height:82px}.sr-radar{height:330px}.sr-data-radar{height:360px}.sr-flow-arrow{display:none}.sr-hero-title{font-size:3.7rem}.sr-decision{padding:26px}}
 @media(prefers-reduced-motion:reduce){.sr-radar-sweep{animation:none}.sr-glass,[data-testid="stButton"] button{transition:none}[data-testid="stMainBlockContainer"] [data-testid="stElementContainer"],.cs-sq{animation:none;opacity:1}[data-stale="true"],.stale-element{transition:none!important}}
-.sr-radar-stage{position:absolute;top:0;bottom:0;left:50%;aspect-ratio:1;transform:translateX(-50%)}.sr-sweep{position:absolute;inset:5%;pointer-events:none;z-index:2}.sr-sweep-beam{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,transparent 0deg 290deg,#67e8f914 320deg,#67e8f955 356deg,#a5f3fc 360deg);animation:sr-spin 6s linear infinite}.sr-sweep-beam::after{content:"";position:absolute;left:50%;top:0;height:50%;border-left:2px solid #a5f3fcd9;box-shadow:0 0 14px #67e8f9}@keyframes sr-spin{to{transform:rotate(360deg)}}.sr-data-node{animation:sr-ping 6s linear infinite}@keyframes sr-ping{0%{filter:brightness(1.9) drop-shadow(0 0 10px var(--node-color))}14%,100%{filter:none}}.cs-ev{display:flex;flex-direction:column;gap:8px}.cs-ev details{background:#111b2bdc;border:1px solid #ffffff18;border-left:3px solid var(--ev,#5b6b86);border-radius:12px;opacity:0;animation:cs-rise .5s ease forwards}.cs-ev details.ok{--ev:#34d399;background:linear-gradient(90deg,#34d3991c,#111b2bdc 55%);border-color:#34d39955}.cs-ev details.bad{--ev:#f87171}.cs-ev details.warn{--ev:#fbbf24}.cs-ev summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:10px 14px;flex-wrap:wrap}.cs-ev summary::-webkit-details-marker{display:none}.cs-ev summary::after{content:"▸";margin-left:auto;color:#87a4ca;transition:transform .2s}.cs-ev details[open] summary::after{transform:rotate(90deg)}.cs-ev-num{font-size:.66rem;letter-spacing:.14em;color:#87a4ca;font-weight:800;white-space:nowrap}.cs-ev-title{color:#f0f4ff;font-weight:650;font-size:.92rem;flex:1 1 220px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cs-ev-badge{font-size:.72rem;font-weight:800;border-radius:100px;padding:3px 9px;border:1px solid;white-space:nowrap}.cs-ev-badge.stars{color:#fcd34d;border-color:#fbbf2455;background:#fbbf2412}.cs-ev-badge.ok{color:#6ee7b7;border-color:#34d39966;background:#34d3991a}.cs-ev-badge.bad{color:#fca5a5;border-color:#f8717166;background:#f871711a}.cs-ev-badge.warn{color:#fcd34d;border-color:#fbbf2466;background:#fbbf241a}.cs-ev-body{padding:0 14px 12px;color:#c2d0e1;font-size:.88rem;line-height:1.5;word-break:break-word}.cs-ev-body a{color:#67e8f9;font-weight:650}.cs-reveal{opacity:0;animation:cs-rise .6s ease forwards}@keyframes cs-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){.sr-sweep-beam,.sr-data-node{animation:none!important}.cs-ev details,.cs-reveal{animation:none!important;opacity:1!important}}[data-testid="stElementContainer"]:has(iframe[srcdoc*="cs-scroll-top"]){position:absolute!important;height:0!important;overflow:hidden;margin:0!important}</style>
+.sr-radar-stage{position:absolute;top:0;bottom:0;left:50%;aspect-ratio:1;transform:translateX(-50%)}.sr-sweep{position:absolute;inset:5%;pointer-events:none;z-index:2}.sr-sweep-beam{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,transparent 0deg 290deg,#67e8f914 320deg,#67e8f955 356deg,#a5f3fc 360deg);animation:sr-spin 6s linear infinite}.sr-sweep-beam::after{content:"";position:absolute;left:50%;top:0;height:50%;border-left:2px solid #a5f3fcd9;box-shadow:0 0 14px #67e8f9}@keyframes sr-spin{to{transform:rotate(360deg)}}.sr-data-node{animation:sr-ping 6s linear infinite}@keyframes sr-ping{0%{filter:brightness(1.9) drop-shadow(0 0 10px var(--node-color))}14%,100%{filter:none}}.cs-ev{display:flex;flex-direction:column;gap:8px}.cs-ev details{background:#111b2bdc;border:1px solid #ffffff18;border-left:3px solid var(--ev,#5b6b86);border-radius:12px;opacity:0;animation:cs-rise .5s ease forwards}.cs-ev details.ok{--ev:#34d399;background:linear-gradient(90deg,#34d3991c,#111b2bdc 55%);border-color:#34d39955}.cs-ev details.bad{--ev:#f87171}.cs-ev details.warn{--ev:#fbbf24}.cs-ev summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:10px 14px;flex-wrap:wrap}.cs-ev summary::-webkit-details-marker{display:none}.cs-ev summary::after{content:"▸";margin-left:auto;color:#87a4ca;transition:transform .2s}.cs-ev details[open] summary::after{transform:rotate(90deg)}.cs-ev-num{font-size:.66rem;letter-spacing:.14em;color:#87a4ca;font-weight:800;white-space:nowrap}.cs-ev-title{color:#f0f4ff;font-weight:650;font-size:.92rem;flex:1 1 220px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cs-ev-badge{font-size:.72rem;font-weight:800;border-radius:100px;padding:3px 9px;border:1px solid;white-space:nowrap}.cs-ev-badge.stars{color:#fcd34d;border-color:#fbbf2455;background:#fbbf2412}.cs-ev-badge.ok{color:#6ee7b7;border-color:#34d39966;background:#34d3991a}.cs-ev-badge.bad{color:#fca5a5;border-color:#f8717166;background:#f871711a}.cs-ev-badge.warn{color:#fcd34d;border-color:#fbbf2466;background:#fbbf241a}.cs-ev-body{padding:0 14px 12px;color:#c2d0e1;font-size:.88rem;line-height:1.5;word-break:break-word}.cs-ev-body a{color:#67e8f9;font-weight:650}.cs-reveal{opacity:0;animation:cs-rise .6s ease forwards}@keyframes cs-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){.sr-sweep-beam,.sr-data-node{animation:none!important}.cs-ev details,.cs-reveal{animation:none!important;opacity:1!important}}[data-testid="stElementContainer"]:has(iframe[srcdoc*="cs-scroll-top"]),[data-testid="stElementContainer"]:has(iframe[srcdoc*="cs-radar-bridge"]){position:absolute!important;height:0!important;overflow:hidden;margin:0!important}h1.sr-page-title,h1.sr-hero-title{padding:0}.sr-data-node::after{content:"";position:absolute;inset:-9px;border-radius:50%}.st-key-radar_nav{display:none!important}@media(max-width:640px){.st-key-stagebar [data-testid="stHorizontalBlock"]{flex-wrap:nowrap!important;overflow-x:auto;padding-bottom:4px}.st-key-stagebar [data-testid="stColumn"]{flex:0 0 auto!important;width:auto!important;min-width:118px!important}}</style>
 """
+
+
+# The last rules of CSS: page titles are real <h1>s, so Streamlit's heading
+# padding is dropped; every radar light gets an invisible tap area at least
+# 36px wide; the hidden buttons radar lights press are hidden (radar_bridge);
+# on phones the five stage buttons stay one sideways-scrolling row.
+# Never put a "<" inside CSS, even in a /* comment */: st.html's sanitizer
+# then drops the whole <style> block and every page loses its styling.
 
 
 def inject_css() -> None:
@@ -140,7 +148,7 @@ def pipeline(active: str | None) -> None:
 
 
 def page_intro(kicker: str, title: str, subtitle: str) -> None:
-    st.html(f'<div class="sr-eyebrow">{e(kicker)}</div><div class="sr-page-title">{e(title)}</div><p class="sr-lead">{e(subtitle)}</p>')
+    st.html(f'<div class="sr-eyebrow">{e(kicker)}</div><h1 class="sr-page-title">{e(title)}</h1><p class="sr-lead">{e(subtitle)}</p>')
 
 
 def section(title: str, subtitle: str = "", kicker: str = "THE STORY") -> None:
@@ -228,12 +236,16 @@ def dashboard_card(record: dict) -> None:
 def scroll_to_top(nonce: int) -> None:
     """Streamlit keeps the scroll position across reruns, so a page change
     would open the new page wherever the old one was scrolled. Jump back to
-    the top. st.html runs no script, so this is a same-origin iframe, hidden
-    by the :has(...cs-scroll-top) rule in CSS; the nonce makes each jump a
-    new element so the script runs again."""
+    the top. On a phone the sidebar covers the page, so close it too (the
+    custom nav buttons don't, unlike st.navigation). st.html runs no script,
+    so this is a same-origin iframe, hidden by the :has(...cs-scroll-top)
+    rule in CSS; the nonce makes each jump a new element so the script runs again."""
     targets = '["[data-testid=stMain]","[data-testid=stAppViewContainer]","section.main"]'
     st.iframe(f"<!-- cs-scroll-top {nonce} --><script>"
-              f"const d=window.parent.document;const up=()=>{{for(const s of {targets}){{"
+              f"const w=window.parent,d=w.document;const up=()=>{{for(const s of {targets}){{"
               f"const el=d.querySelector(s);if(el)el.scrollTo({{top:0,behavior:'instant'}});}}"
-              f"window.parent.scrollTo({{top:0,behavior:'instant'}});}};"
-              f"up();[80,250,600].forEach(t=>setTimeout(up,t));</script>", height=1)
+              f"w.scrollTo({{top:0,behavior:'instant'}});}};"
+              f"up();[80,250,600].forEach(t=>setTimeout(up,t));"
+              f"if(w.innerWidth<768){{const sb=d.querySelector('[data-testid=stSidebar][aria-expanded=true]');"
+              f"const b=sb&&sb.querySelector('[data-testid=stSidebarCollapseButton] button');if(b)b.click();}}"
+              f"</script>", height=1)

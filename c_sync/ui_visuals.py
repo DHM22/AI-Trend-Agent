@@ -18,6 +18,22 @@ ACTION_COLORS = {
 }
 
 
+def radar_bridge() -> None:
+    """Make a click on a radar light press that light's hidden st.button
+    (key radar_go_<index>) instead of following its ?trend= link, which would
+    reload the whole app and drop the session. The link stays as the fallback
+    when script can't run. Same hidden-iframe trick as scroll_to_top; the
+    listener lives on the parent document and replaces any earlier copy."""
+    st.iframe("<!-- cs-radar-bridge --><script>"
+              "const w=window.parent,d=w.document;"
+              "if(w.__csRadar)d.removeEventListener('click',w.__csRadar,true);"
+              "w.__csRadar=function(ev){const a=ev.target.closest&&ev.target.closest('a.sr-data-node');if(!a)return;"
+              "const m=(a.getAttribute('href')||'').match(/trend=(\\d+)/);if(!m)return;"
+              "const b=d.querySelector('.st-key-radar_go_'+m[1]+' button');if(!b)return;"
+              "ev.preventDefault();b.click();};"
+              "d.addEventListener('click',w.__csRadar,true);</script>", height=1)
+
+
 def radar_map(visible: list[tuple[int, dict]], maturity: list[int | None]) -> None:
     """Render clickable trend nodes; the query parameter opens their story."""
     nodes = []

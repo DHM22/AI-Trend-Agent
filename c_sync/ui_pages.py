@@ -15,7 +15,7 @@ from ui_components import (
     action_label, action_tone, dashboard_card, e, empty_state, page_intro, pill,
     score_ring, section, squares_funnel, stat, trend_card,
 )
-from ui_visuals import radar_map
+from ui_visuals import radar_bridge, radar_map
 
 
 def go(page: str, selected: int | None = None) -> None:
@@ -144,7 +144,7 @@ def maturity_scores(records: list[dict]) -> list[int | None]:
 
 
 def home(snapshot: dict, records: list[dict], signals: list) -> None:
-    st.html('<div class="sr-eyebrow">CURRICULUM INTELLIGENCE</div><div class="sr-hero-title">C-<span class="sr-gradient">Sync</span></div>'
+    st.html('<div class="sr-eyebrow">CURRICULUM INTELLIGENCE</div><h1 class="sr-hero-title">C-<span class="sr-gradient">Sync</span></h1>'
             '<p class="sr-hero-copy">C-Sync watches the technology landscape, checks what is real, compares it with the course, and recommends what should change. A human approves.</p>')
     actionable = sum(1 for r in records if r.get("recommended_action") != "watch")
     section("From noise to curriculum.", "Each square is a stage of the run; its size is how much survives.", "THE BIG PICTURE")
@@ -213,6 +213,13 @@ def radar(records: list[dict], signals: list) -> None:
         empty_state("The radar is quiet", "No trends are saved in the current recorded run.")
         return
     radar_map(list(enumerate(records)), maturity_scores(records))
+    # One hidden button per light: radar_bridge makes a click on a light press
+    # its button, so the story opens in this session instead of reloading the app.
+    with st.container(key="radar_nav"):
+        for index in range(len(records)):
+            st.button(f"Open trend {index}", key=f"radar_go_{index}",
+                      on_click=go, args=("Trend story", index))
+    radar_bridge()
     st.caption("Node size = maturity · Glow = confidence · Color = action")
     st.button("Next: 02 Verify", type="primary", icon=":material/arrow_forward:",
               on_click=go, args=("Trend story",))

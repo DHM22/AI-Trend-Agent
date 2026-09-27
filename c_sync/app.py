@@ -16,7 +16,7 @@ st.set_page_config(
     page_title="C-Sync",
     page_icon=":material/sync_alt:",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",   # open on desktop, collapsed on phones
 )
 
 # Left panel: every page. Top bar: only the five pipeline stages.
@@ -48,12 +48,14 @@ def side_panel() -> None:
 
 def stage_bar() -> None:
     active = STAGE_OF.get(st.session_state["page"])
-    cols = st.columns(len(STAGES), gap="small")
-    for i, (col, (name, _)) in enumerate(zip(cols, STAGES), 1):
-        with col:
-            st.button(f"0{i}  {name}", key=f"stage_{name}", width="stretch",
-                      type="primary" if name == active else "secondary",
-                      on_click=go, args=(STAGE_PAGE[name],))
+    # keyed so the CSS can keep it one scrollable row on phones instead of five stacked buttons
+    with st.container(key="stagebar"):
+        cols = st.columns(len(STAGES), gap="small")
+        for i, (col, (name, _)) in enumerate(zip(cols, STAGES), 1):
+            with col:
+                st.button(f"0{i}  {name}", key=f"stage_{name}", width="stretch",
+                          type="primary" if name == active else "secondary",
+                          on_click=go, args=(STAGE_PAGE[name],))
 
 
 def main() -> None:
