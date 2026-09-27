@@ -1,0 +1,264 @@
+{
+  "format_version": 1,
+  "timestamp_utc": "2026-09-27T03:12:04.292333+00:00",
+  "code": {
+    "commit": "c8b097a1323a172d7ddf767dd9b8b91d7fef38da",
+    "dirty": true
+  },
+  "dataset": {
+    "path": "04_eval/data/test_signals_graded_v2.json",
+    "sha256": "c4ba268e61f413eced4d85767694981f9ddc463fc4a372e396d312f975c73d5f",
+    "item_count": 13,
+    "split": "test"
+  },
+  "model": {
+    "requested_identifier": "gpt-4o-mini",
+    "observed_identifiers": [
+      "gpt-4o-mini-2024-07-18"
+    ],
+    "temperature": 0,
+    "version_pinned": false,
+    "note": "Set OPENAI_MODEL to a provider version-pinned identifier before freezing a live baseline."
+  },
+  "repeats": 1,
+  "runs": [
+    {
+      "layers": {
+        "clustering": {
+          "status": "implemented",
+          "metrics": {
+            "contamination_rate": {
+              "value": 0.0
+            },
+            "cluster_count": {
+              "value": 12
+            },
+            "expected_cluster_count": {
+              "value": 13
+            },
+            "cluster_count_delta": {
+              "value": -1
+            }
+          },
+          "score": 100.0
+        },
+        "verification": {
+          "status": "implemented",
+          "metrics": {
+            "truth_confidence_gap": {
+              "value": 0.3273809523809525
+            },
+            "confidence_mae": {
+              "value": 0.16923076923076924
+            },
+            "classification_accuracy": {
+              "value": 0.9230769230769231
+            },
+            "gold_confidence_gap": {
+              "value": 0.5547619047619049
+            },
+            "perfect_calibration_ceiling_score": {
+              "value": 77.73809523809524
+            },
+            "stale_flag_rate": {
+              "value": null,
+              "requirement": "gold.stale_presented_as_new plus a verification output field/contract that records a stale flag; VerifiedTrend has neither"
+            }
+          },
+          "score": 57.90750915750915
+        },
+        "curriculum": {
+          "status": "implemented",
+          "metrics": {
+            "precision_at_3": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals; CurriculumAgent exposes one selected match, not its top-3 candidates"
+            },
+            "recall": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.acceptable_citations"
+            },
+            "correct_abstention_rate": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.no_match_expected"
+            }
+          },
+          "score": null
+        },
+        "evaluation": {
+          "status": "implemented",
+          "metrics": {
+            "spearman_rank_correlation": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.rank"
+            },
+            "maturity_mae": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.maturity (1\u20135)"
+            },
+            "relevance_mae": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.relevance (1\u20135)"
+            }
+          },
+          "score": null
+        },
+        "recommendation": {
+          "status": "implemented",
+          "metrics": {
+            "exact_tier_accuracy": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.action_tier"
+            },
+            "off_by_one_tier_accuracy": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.action_tier and an agreed ordered-tier policy"
+            },
+            "over_recommendation_rate": {
+              "value": null,
+              "requirement": "gold labels must be event-level and map each expected event to its signals plus gold.action_tier and an agreed ordered-tier policy"
+            }
+          },
+          "score": null
+        }
+      },
+      "composite_score": 76.61528286528285,
+      "pipeline": {
+        "clusters": 12,
+        "recommendations": 12
+      },
+      "repeat": 1,
+      "total_tokens": 46212,
+      "wall_clock_seconds": 62.457430375012336
+    }
+  ],
+  "aggregate": {
+    "layers": {
+      "clustering": {
+        "status": "implemented",
+        "metrics": {
+          "contamination_rate": {
+            "mean": 0.0,
+            "std": 0.0
+          },
+          "cluster_count": {
+            "mean": 12.0,
+            "std": 0.0
+          },
+          "expected_cluster_count": {
+            "mean": 13.0,
+            "std": 0.0
+          },
+          "cluster_count_delta": {
+            "mean": -1.0,
+            "std": 0.0
+          }
+        },
+        "score": {
+          "mean": 100.0,
+          "std": 0.0
+        }
+      },
+      "verification": {
+        "status": "implemented",
+        "metrics": {
+          "truth_confidence_gap": {
+            "mean": 0.3273809523809525,
+            "std": 0.0
+          },
+          "confidence_mae": {
+            "mean": 0.16923076923076924,
+            "std": 0.0
+          },
+          "classification_accuracy": {
+            "mean": 0.9230769230769231,
+            "std": 0.0
+          },
+          "gold_confidence_gap": {
+            "mean": 0.5547619047619049,
+            "std": 0.0
+          },
+          "perfect_calibration_ceiling_score": {
+            "mean": 77.73809523809524,
+            "std": 0.0
+          },
+          "stale_flag_rate": {
+            "mean": null,
+            "std": null
+          }
+        },
+        "score": {
+          "mean": 57.90750915750915,
+          "std": 0.0
+        }
+      },
+      "curriculum": {
+        "status": "implemented",
+        "metrics": {
+          "precision_at_3": {
+            "mean": null,
+            "std": null
+          },
+          "recall": {
+            "mean": null,
+            "std": null
+          },
+          "correct_abstention_rate": {
+            "mean": null,
+            "std": null
+          }
+        },
+        "score": {
+          "mean": null,
+          "std": null
+        }
+      },
+      "evaluation": {
+        "status": "implemented",
+        "metrics": {
+          "spearman_rank_correlation": {
+            "mean": null,
+            "std": null
+          },
+          "maturity_mae": {
+            "mean": null,
+            "std": null
+          },
+          "relevance_mae": {
+            "mean": null,
+            "std": null
+          }
+        },
+        "score": {
+          "mean": null,
+          "std": null
+        }
+      },
+      "recommendation": {
+        "status": "implemented",
+        "metrics": {
+          "exact_tier_accuracy": {
+            "mean": null,
+            "std": null
+          },
+          "off_by_one_tier_accuracy": {
+            "mean": null,
+            "std": null
+          },
+          "over_recommendation_rate": {
+            "mean": null,
+            "std": null
+          }
+        },
+        "score": {
+          "mean": null,
+          "std": null
+        }
+      }
+    },
+    "composite_score": {
+      "mean": 76.61528286528285,
+      "std": 0.0
+    }
+  }
+}
