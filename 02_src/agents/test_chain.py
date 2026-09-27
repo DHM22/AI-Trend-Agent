@@ -75,8 +75,12 @@ def test_verification_scoring():
 
     c = cluster()
 
-    check("verif: 2 sources + claim confirmed -> 0.95",
-          V._score(c, facts(verified=2, repo_exists=True, claim=True)), 0.95)
+    # Two corroborating sources + a confirmed claim is 0.85, not 0.95: the exact
+    # release is confirmed, but the verifier never reads release notes, so it is
+    # not certain about every claimed feature. Deliberately only 0.05 above the
+    # claim-unconfirmed 0.80 band below.
+    check("verif: 2 sources + claim confirmed -> 0.85",
+          V._score(c, facts(verified=2, repo_exists=True, claim=True)), 0.85)
 
     check("verif: 2 sources, claim unconfirmed -> 0.80",
           V._score(c, facts(verified=2, repo_exists=True)), 0.80)
@@ -721,8 +725,13 @@ def test_verification_staleness_gate():
     check("staleness: prerelease flag also respected", r.status, "verified")
 
     r = _run_verifier(latest, *_confirming_script())       # every tool call errors
+    # The point of this test is unchanged: an errored tool call is a NO-OP, never
+    # a contradiction (status stays "unverified"). The confidence is 0.4, not 0.5:
+    # with nothing verified the score is the tier-agnostic "unresolved" floor --
+    # a primary source tier no longer buys a 0.50 floor on its own (that was the
+    # source-tier shortcut this work removes).
     check("staleness: tool error is a no-op, not a contradiction",
-          (r.status, r.confidence), ("unverified", 0.5))
+          (r.status, r.confidence), ("unverified", 0.4))
 
 
 def test_verification_publisher_gate():
@@ -924,8 +933,13 @@ def test_repo_guard_through_the_agent():
         _fake_reply("done"))
 
     t = _verifier(lookup_script(), lambda n, a: markitdown_first).run(_lc_cluster())
+    # The guard still finds the real repo among lower-ranked results (repo_exists
+    # True). verified_source_count is 0, not 1: repository existence alone is no
+    # longer a "verified source" -- a source counts only once its exact release
+    # tag is confirmed (this script does a lookup but no verify_release). Matches
+    # the (False, 0) unrelated-repo case just below.
     check("repo guard: the named repo is found even when a bigger one ranks first",
-          (t.repo_exists, t.verified_source_count), (True, 1))
+          (t.repo_exists, t.verified_source_count), (True, 0))
 
     t = _verifier(lookup_script(), lambda n, a: markitdown_only).run(_lc_cluster())
     check("repo guard: an unrelated top result never confirms the claim",
@@ -1009,8 +1023,14 @@ def test_verifier_real_data_fixes():
           t.confidence > V.MISSING_REPO_CEILING, True, f"got {t.confidence}")
     t = _verifier(None, none_found).run(cluster(
         "NeuroForgeX 2.0 ships agent memory", "tech_blog", "secondary"))
-    check_true("fix 2: a secondary claim naming a product that does not exist still caps",
-               t.confidence <= V.MISSING_REPO_CEILING)
+    # A bare product name (no owner/repo, no github URL) that a search can't find
+    # is NOT proof of fabrication -- plenty of real products (Ollama, Qdrant, MCP)
+    # have no matching repo lookup. So it stays UNRESOLVED (< 0.5, not actionable)
+    # rather than being pushed to the missing-repo ceiling. That ceiling is now
+    # reserved for a signal that explicitly NAMES an owner/repo which then isn't
+    # found; a failed search on a bare name can no longer mark a repo "missing".
+    check_true("fix 2: a secondary bare-name product that isn't found stays unconfirmed",
+               t.confidence < 0.5)
 
     # FIX 3: a same-named (squatter) repo never confirms a secondary-only claim
     squatter = lambda n, a: {"found": 1, "results": [
