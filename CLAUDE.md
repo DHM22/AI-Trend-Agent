@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # AI Trend Agent — Project Context
 
 Capstone project for the SDA × WeCloudData Agentic AI Engineering Program.
-Repo: https://github.com/RafeefAlsuhaibani/Capstone-Project, branch `feature/ai-trend-agent`.
+Repo: https://github.com/DHM22/AI-Trend-Agent, branch `feature/ai-trend-agent`.
 Team lead: Dhom (Abdurahman Al-Duraywish). Four workstreams: Data/Ingestion, Agent/Tools, Platform/Security, Evaluation/QA.
 
 ## Commands
