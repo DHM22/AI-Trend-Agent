@@ -8,7 +8,8 @@ this repo, and by default it reads the checkout it sits in. Set `CSYNC_BACKEND`
 It shows a **recorded run** (written by `02_src/demo_snapshot.py --capture`):
 the snapshot at `SNAPSHOT_PATH` (default `01_data/demo_snapshot.json`) and the
 signals file named by that snapshot's `source_signals`. It does not re-run any
-agent and makes no API calls.
+agent to show a page. Only two things call a model, and only when
+`OPENAI_API_KEY` is set: the Ask page and the "Draft the fix" button.
 
 - Maturity is `evaluation.py`'s own `_maturity_score` applied to the stored
   confidence.
@@ -18,7 +19,7 @@ agent and makes no API calls.
 ## Layout
 
 - **Left panel:** all pages. These are Home, Dashboard, Radar, Trend story,
-  The gap, Evaluation, Decision and How it works. (The Curriculum page was
+  The gap, Evaluation, Decision, Ask and How it works. (The Curriculum page was
   removed: it repeated The gap.)
 - **Top bar:** the five stages: 01 Discover, 02 Verify, 03 Compare, 04 Evaluate
   and 05 Decide. Each opens the page for that stage.
@@ -36,11 +37,24 @@ agent and makes no API calls.
   (✅) only when `verify_release` CONFIRMED the release.
 - **Evaluation (04 Evaluate):** the scores stay hidden until you click "Reveal
   the scores", then fade in.
-- **Decision (05 Decide):** the evidence chain is collapsed.
+- **Decision (05 Decide):** the action and plan, with the evidence chain
+  collapsed. Below it:
+  - **The proposed fix** appears on "Update existing material" recommendations.
+    "Draft the fix" shows the lab cell before and after, marked "Draft · not
+    applied". It is never written anywhere.
+  - **Your decision** is the human in the loop: Approve, Request changes or
+    Reject, with an optional note. Decisions are saved to `REVIEWS_PATH`
+    (default `01_data/reviews.json`, not committed) and show as a status pill
+    here and on each Dashboard card.
+- **Ask:** the Instructor Companion answers questions about one recommendation,
+  citing the record. Without a key it restates the record instead.
 
 ## Run
 
 ```powershell
-python -m pip install -r c_sync/requirements-ui.txt
+python -m pip install -r requirements.txt
 python -m streamlit run c_sync/app.py
 ```
+
+Or run it in Docker from the repo root: `docker compose up --build`, then open
+http://localhost:8501.
