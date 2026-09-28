@@ -17,12 +17,12 @@ Capstone project for the **SDA × WeCloudData Agentic AI Engineering Program**.
 
 ## Team
 
-| Name | |
+| Name | Role |
 | --- | --- |
-| Abdurahman Al-Duraywish | Team lead |
-| Rafeef Alsuhaibani | |
-| Aldanah Aldosari | Built the SkillRadar UI that C-sync grew from |
-| Reyouf Faisal | |
+| Abdurahman Al-Duraywish | Team lead · integration: end-to-end pipeline, C-sync interface, Docker |
+| Rafif Alsuhaibani | Verification agent and its tests · gold-dataset evaluation |
+| Aldanah Aldosari | Evaluation agent · SkillRadar UI, the base of C-sync |
+| Ruyuf Almajnooni | Data ingestion · curriculum retrieval (hybrid RAG search) and the curriculum agent |
 
 ## The problem
 

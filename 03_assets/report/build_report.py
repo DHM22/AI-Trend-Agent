@@ -49,7 +49,7 @@ RENDERED = HERE / "_render.html"
 OUTPUT = HERE / "AI_Trend_Agent_Final_Report.pdf"
 DEBUG_PORT = 9334
 
-TEAM = ["Abdurahman Al-Duraywish", "Rafeef Alsuhaibani", "Aldanah Aldosari", "Reyouf Faisal"]
+TEAM = ["Abdurahman Al-Duraywish", "Rafif Alsuhaibani", "Aldanah Aldosari", "Ruyuf Almajnooni"]
 METADATA = {
     "title": "AI Trend Agent: Final Project Report",
     "author": ", ".join(TEAM),
