@@ -11,7 +11,6 @@ agents only recommend; an instructor approves.**
 
 Capstone project for the **SDA × WeCloudData Agentic AI Engineering Program**.
 
-📄 [Final report (PDF)](03_assets/report/AI_Trend_Agent_Final_Report.pdf) ·
 🧭 [Architecture diagram](03_assets/diagrams/architecture.svg) ·
 🖼️ [Screenshots](03_assets/screenshots/)
 
@@ -225,7 +224,6 @@ citations and tiers, and a missing label is never counted as zero. See
    curriculum_ingest.py     Index PDF, PPTX and notebook content into ChromaDB
    demo_snapshot.py         Capture or replay a recorded run
 03_assets/
-   report/                  Final report (PDF + source)
    diagrams/                Architecture diagram (SVG + PNG)
    screenshots/             One screenshot per C-sync page
    logo/                    C-sync logo

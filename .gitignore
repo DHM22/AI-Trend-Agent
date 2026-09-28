@@ -40,3 +40,6 @@ temp/
 # instructor decisions recorded in C-Sync (local, per machine)
 01_data/reviews.json
 01_data/reviews.tmp
+
+# final report: submitted separately, kept local
+03_assets/report/
