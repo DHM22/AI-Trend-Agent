@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AI Trend Agent: Final Project Report</title>
+<!--
+  Source of the final report. Build the PDF with:
+      python 03_assets/report/build_report.py
+  The build prepares figures/ from 03_assets/screenshots/, inserts the charts
+  (the CHART markers below), renders with headless Chrome and fills in the
+  contents page numbers. Section 4 is laid out page by page: each .newpage
+  starts a page, and each figure's width (style="width:..mm") is chosen so
+  that page's content fits. Re-check those pages after editing their text.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#141827; --ink-2:#434b61; --muted:#6f7890; --rule:#e3e6ee;
+  --violet:#7c3aed; --violet-d:#5b21b6; --violet-t:#f6f3fe;
+  --cyan:#0891b2; --cyan-d:#0e6f86; --cyan-t:#eef9fc;
+  --amber:#d97706; --amber-d:#92400e; --amber-t:#fdf7ea;
+  --green:#059669; --green-d:#065f46; --green-t:#edfaf4;
+}
+@page{
+  size:A4;
+  margin:21mm 17mm 19mm 17mm;
+  @top-left{content:"AI Trend Agent \00B7  C-sync"; font-family:Inter,"Segoe UI",sans-serif; font-size:7pt; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#7c3aed}
+  @top-right{content:"Final Project Report \00B7  September 2026"; font-family:Inter,"Segoe UI",sans-serif; font-size:7pt; font-weight:500; letter-spacing:.04em; color:#7a8299}
+  @bottom-left{content:"SDA \00D7  WeCloudData \00B7  Agentic AI Engineering Program \00B7  Capstone Project"; font-family:Inter,"Segoe UI",sans-serif; font-size:7pt; color:#7a8299}
+  @bottom-right{content:counter(page); font-family:Inter,"Segoe UI",sans-serif; font-size:8pt; font-weight:700; color:#141827}
+}
+@page :first{
+  margin:0;
+  @top-left{content:none} @top-right{content:none} @bottom-left{content:none} @bottom-right{content:none}
+}
+html{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+body{margin:0; font-family:Inter,"Segoe UI",system-ui,sans-serif; font-size:9.5pt; line-height:1.58; color:var(--ink); font-kerning:normal}
+a{color:inherit; text-decoration:none}
+p{margin:0 0 6.5pt; orphans:3; widows:3}
+strong,b{font-weight:650}
+ul,ol{margin:0 0 7pt; padding-left:14pt}
+li{margin:0 0 2.6pt; padding-left:1pt}
+li::marker{color:var(--violet)}
+code,pre{font-variant-ligatures:none; font-feature-settings:"calt" 0, "liga" 0}
+code{font-family:"JetBrains Mono",Consolas,monospace; font-size:8.1pt; background:#f3f1fa; border:1px solid #e7e3f5; border-radius:3px; padding:0 2.6pt; color:#3d2b91; white-space:nowrap}
+pre{font-family:"JetBrains Mono",Consolas,monospace; font-size:7.7pt; line-height:1.55; background:#0f1424; color:#dfe6f5; border-radius:6px; padding:9pt 11pt; margin:4pt 0 10pt; white-space:pre-wrap; break-inside:avoid}
+pre .c{color:#8b95b3}
+pre b{color:#b9a4ff; font-weight:600}
+.newpage{break-before:page}
+
+/* ---------- chapter furniture ---------- */
+.chapter{break-before:page}
+.kicker{font-size:7.4pt; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--violet); margin:0 0 5pt}
+h1{font-size:21pt; line-height:1.14; font-weight:800; letter-spacing:-.022em; margin:0; color:#0d1020}
+.rule{height:3px; width:42mm; border-radius:2px; background:linear-gradient(90deg,#7c3aed,#22d3ee); margin:9pt 0 12pt}
+.lede{font-size:10.8pt; line-height:1.52; color:var(--ink-2); margin:0 0 13pt}
+h2{font-size:12.4pt; line-height:1.3; font-weight:750; letter-spacing:-.01em; margin:17pt 0 5pt; color:#0d1020; break-after:avoid}
+h2 .n{color:var(--violet); margin-right:7pt; font-variant-numeric:tabular-nums}
+h3{font-size:9.9pt; line-height:1.35; font-weight:700; margin:11pt 0 3pt; color:#1b2140; break-after:avoid}
+h3 .n{color:var(--violet); margin-right:5pt}
+.muted{color:var(--muted)}
+.small{font-size:8.4pt}
+.compact h3{margin-top:8.5pt}
+.compact p{margin-bottom:4pt}
+
+/* ---------- tables ---------- */
+.tcap{font-size:8pt; font-weight:600; color:var(--ink); margin:12pt 0 4pt; break-after:avoid}
+.tcap span{color:var(--violet); font-weight:700; margin-right:4pt}
+table{width:100%; border-collapse:collapse; font-size:8.3pt; line-height:1.42; margin:0 0 10pt}
+table.keep{break-inside:avoid}
+thead{display:table-header-group}
+th{text-align:left; font-size:6.9pt; letter-spacing:.09em; text-transform:uppercase; color:#4c3aa6; background:#f4f1fd; font-weight:700; padding:5.5pt 7pt; border-bottom:1.2px solid #cfc5f4; vertical-align:bottom}
+td{padding:5pt 7pt; border-bottom:1px solid var(--rule); vertical-align:top}
+tr{break-inside:avoid}
+td.num,th.num{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
+td.nw{white-space:nowrap}
+td code{white-space:normal}
+td.nw code{white-space:nowrap}
+tr.hl td{background:#faf8ff}
+table.kv td:first-child{font-weight:650; width:24%; color:#1b2140}
+
+/* ---------- figures ---------- */
+figure{margin:9pt 0 13pt; break-inside:avoid}
+figure img{display:block; width:100%; border-radius:6px; border:1px solid #d6dae4}
+figure.fit{margin-left:auto; margin-right:auto}
+figure.chart{border:1px solid var(--rule); border-radius:8px; padding:10pt 12pt 8pt; background:#fff}
+figure.chart svg{display:block; width:100%; height:auto}
+figcaption{font-size:8pt; color:var(--ink-2); margin-top:5.5pt; line-height:1.48}
+figcaption b{color:var(--ink); font-weight:700}
+figcaption b.fn{color:var(--violet)}
+
+/* ---------- callouts, KPIs, chips ---------- */
+.callout{border-left:3px solid var(--violet); background:var(--violet-t); padding:8pt 11pt 7pt; border-radius:0 6px 6px 0; margin:8pt 0 11pt; break-inside:avoid}
+.callout p:last-child, .callout ul:last-child{margin-bottom:0}
+.callout ul{padding-left:12pt}
+.callout .ct{font-size:7pt; letter-spacing:.16em; text-transform:uppercase; font-weight:700; color:var(--violet-d); margin-bottom:3pt}
+.callout.cyan{border-color:var(--cyan); background:var(--cyan-t)} .callout.cyan .ct{color:var(--cyan-d)}
+.callout.amber{border-color:var(--amber); background:var(--amber-t)} .callout.amber .ct{color:var(--amber-d)}
+.callout.quote p{font-size:10.4pt; line-height:1.5; color:#1b2140; font-weight:500}
+.kpis{display:grid; grid-template-columns:repeat(5,1fr); gap:6pt; margin:8pt 0 12pt; break-inside:avoid}
+.kpi{border:1px solid var(--rule); border-radius:8px; padding:7pt 9pt 6pt; background:#fbfbfe}
+.kpi .v{font-size:19pt; font-weight:800; letter-spacing:-.03em; line-height:1.05; color:#0d1020}
+.kpi .l{font-size:6.8pt; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; font-weight:700; margin-top:4pt; line-height:1.3}
+.kpi.accent{border-color:#d3c4fa; background:var(--violet-t)} .kpi.accent .v{color:var(--violet-d)}
+.kpi.good{border-color:#bfe9d6; background:var(--green-t)} .kpi.good .v{color:var(--green-d)}
+.chip{display:inline-block; font-size:6.9pt; font-weight:700; letter-spacing:.06em; text-transform:uppercase; border-radius:99px; padding:1.2pt 6pt; border:1px solid; white-space:nowrap; vertical-align:1px}
+.chip.v{color:#5b21b6; border-color:#cdbdf8; background:#f5f1fe}
+.chip.c{color:#0e6f86; border-color:#a9dfec; background:#eef9fc}
+.chip.a{color:#92400e; border-color:#f3d39b; background:#fdf7ea}
+.chip.g{color:#065f46; border-color:#a7e3c8; background:#edfaf4}
+.chip.n{color:#434b61; border-color:#d6dae4; background:#f6f7fa}
+.cols2{display:grid; grid-template-columns:1fr 1fr; gap:14pt}
+.cols2 > div > :first-child{margin-top:0}
+.problem{border:1px solid #d9cdfb; background:linear-gradient(135deg,#f7f4ff,#eef9fc); border-radius:10px; padding:11pt 15pt; margin:8pt 0 12pt; break-inside:avoid}
+.problem .ct{font-size:7pt; letter-spacing:.16em; text-transform:uppercase; font-weight:700; color:var(--violet-d); margin-bottom:4pt}
+.problem p{font-size:11pt; line-height:1.5; font-weight:600; color:#1b2140; margin:0}
+
+/* ---------- case-study trail ---------- */
+.trail{margin:6pt 0 10pt 6pt; border-left:2px solid #d9cdfb}
+.step{position:relative; padding:0 0 7pt 16pt; break-inside:avoid}
+.step::before{content:""; position:absolute; left:-5.5pt; top:3pt; width:9pt; height:9pt; border-radius:50%; background:#fff; border:2.2px solid var(--violet)}
+.step.ok::before{border-color:var(--green)}
+.step.hu::before{border-color:var(--amber)}
+.step .sl{font-size:7pt; letter-spacing:.14em; text-transform:uppercase; font-weight:800; color:var(--violet-d)}
+.step.ok .sl{color:var(--green-d)} .step.hu .sl{color:var(--amber-d)}
+.step p{margin:1pt 0 0}
+
+/* ---------- contents ---------- */
+.toc{margin-top:2pt}
+.toc a{display:flex; align-items:baseline; gap:6pt; padding:2.2pt 0; font-size:9.1pt; line-height:1.32; color:var(--ink)}
+.toc a .tt{flex:0 1 auto}
+.toc a .dots{flex:1 1 auto; border-bottom:1.2px dotted #b8bfcf; transform:translateY(-2pt); min-width:12pt}
+.toc a .pg{flex:0 0 auto; width:16pt; text-align:right; font-variant-numeric:tabular-nums; font-weight:600}
+.toc a.l1{font-weight:700; font-size:9.9pt; margin-top:8pt}
+.toc a.l1:first-child{margin-top:0}
+.toc a.l1 .no{color:var(--violet); width:20pt; flex:0 0 20pt; font-variant-numeric:tabular-nums}
+.toc a.l2{padding-left:20pt; color:var(--ink-2)}
+.toc a.l2 .no{color:var(--muted); width:22pt; flex:0 0 22pt; font-variant-numeric:tabular-nums}
+.toc a.l2 .pg{font-weight:500}
+
+/* ---------- cover ---------- */
+.cover{position:relative; width:210mm; height:297mm; overflow:hidden; background:#080c17; color:#eef2ff; break-after:page}
+.cover .glow{position:absolute; inset:0;
+  background:radial-gradient(135mm 110mm at 6% 2%, #2f2166 0%, rgba(47,33,102,0) 72%),
+             radial-gradient(120mm 95mm at 104% 16%, #0b3552 0%, rgba(11,53,82,0) 72%),
+             radial-gradient(170mm 120mm at 88% 108%, #1d1650 0%, rgba(29,22,80,0) 70%)}
+.cover .radar{position:absolute; width:178mm; height:178mm; left:98mm; top:88mm}
+.cover .inner{position:absolute; inset:0; padding:22mm 22mm 20mm}
+.cover .top{display:flex; justify-content:space-between; font-size:7.6pt; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:#8fe4f5}
+.cover .top span:last-child{color:#98a6c4}
+.cover .logo{position:absolute; left:17mm; top:40mm; width:104mm}
+.cover .title{position:absolute; left:22mm; top:94mm; width:128mm}
+.cover .title .pre{font-size:8pt; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:#b9a7ff; margin-bottom:7pt}
+.cover h1.ct{font-size:40pt; line-height:1.02; letter-spacing:-.035em; font-weight:800; color:#ffffff; margin:0}
+.cover .sub{font-size:14pt; line-height:1.38; color:#c3cde2; margin:12pt 0 0; font-weight:500; letter-spacing:-.005em}
+.cover .bar{height:3px; width:52mm; border-radius:2px; background:linear-gradient(90deg,#a78bfa,#22d3ee); margin:15pt 0 13pt}
+.cover .desc{font-size:9.6pt; line-height:1.6; color:#95a4c2; width:118mm}
+.cover .team{position:absolute; left:22mm; right:22mm; bottom:44mm}
+.cover .team .k{font-size:7.4pt; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:#8fe4f5; margin-bottom:9pt}
+.cover .people{display:grid; grid-template-columns:1fr 1fr; gap:9pt 18pt; width:140mm}
+.cover .person{border-left:2px solid #3a2f78; padding:1pt 0 1pt 9pt}
+.cover .person .nm{font-size:12pt; font-weight:700; color:#f5f7ff; letter-spacing:-.01em; line-height:1.3}
+.cover .person .rl{font-size:7.2pt; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#b9a7ff; margin-top:1pt}
+.cover .person.lead{border-left-color:#a78bfa}
+.cover .foot{position:absolute; left:22mm; right:22mm; bottom:18mm; border-top:1px solid #222b45; padding-top:9pt; display:flex; justify-content:space-between; align-items:flex-end; font-size:8pt; color:#98a6c4; line-height:1.5}
+.cover .foot b{color:#e6ebfb; font-weight:650}
+.cover .foot .r{text-align:right}
+</style>
+</head>
+<body>
+
+<!-- ======================================================= COVER -->
+<section class="cover">
+  <div class="glow"></div>
+  <!-- 1 unit = 0.445mm; centre at (187mm, 177mm). The sweep points up and to the
+       right of the title, and no dot sits under text. -->
+  <svg class="radar" viewBox="0 0 400 400" aria-hidden="true">
+    <defs>
+      <radialGradient id="cv-sweep" cx="200" cy="200" r="190" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#67e8f9" stop-opacity="0"/>
+        <stop offset="1" stop-color="#67e8f9" stop-opacity=".2"/>
+      </radialGradient>
+    </defs>
+    <g fill="none" stroke="#7dd3fc" stroke-width="1">
+      <circle cx="200" cy="200" r="190" stroke-opacity=".14"/><circle cx="200" cy="200" r="145" stroke-opacity=".12"/>
+      <circle cx="200" cy="200" r="100" stroke-opacity=".1"/><circle cx="200" cy="200" r="55" stroke-opacity=".1"/>
+      <path d="M200 10v380M10 200h380" stroke-opacity=".07"/>
+    </g>
+    <path d="M200 200 L135 21.5 A190 190 0 0 1 249.2 16.5 Z" fill="url(#cv-sweep)"/>
+    <line x1="200" y1="200" x2="249.2" y2="16.5" stroke="#a5f3fc" stroke-opacity=".45" stroke-width="1.3"/>
+    <circle cx="175" cy="76" r="11" fill="#a78bfa" fill-opacity=".16"/><circle cx="175" cy="76" r="5.5" fill="#a78bfa"/>
+    <circle cx="229" cy="38" r="4" fill="#67e8f9"/>
+    <circle cx="151" cy="252" r="9" fill="#fbbf24" fill-opacity=".14"/><circle cx="151" cy="252" r="4.5" fill="#fbbf24"/>
+    <circle cx="211" cy="333" r="10" fill="#67e8f9" fill-opacity=".15"/><circle cx="211" cy="333" r="5" fill="#67e8f9"/>
+    <circle cx="54" cy="229" r="3.8" fill="#fbbf24"/>
+    <circle cx="83" cy="263" r="3.5" fill="#67e8f9"/>
+    <circle cx="180" cy="372" r="3.8" fill="#a78bfa"/>
+    <circle cx="262" cy="140" r="3.5" fill="#fbbf24"/>
+    <circle cx="200" cy="200" r="6" fill="#c4b5fd"/>
+  </svg>
+  <div class="inner">
+    <div class="top"><span>Capstone Project</span><span>September 2026</span></div>
+  </div>
+  <svg class="logo" viewBox="0 0 600 200" role="img" aria-label="C-sync: Sync education with real-world trends">
+    <defs>
+      <linearGradient id="cs-arc" x1="100" y1="10" x2="20" y2="110" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#c084fc"/><stop offset="0.5" stop-color="#6366f1"/><stop offset="1" stop-color="#22d3ee"/>
+      </linearGradient>
+      <radialGradient id="cs-sweep" cx="60" cy="60" r="32" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#67e8f9" stop-opacity="0"/><stop offset="1" stop-color="#67e8f9" stop-opacity="0.45"/>
+      </radialGradient>
+      <linearGradient id="cs-word" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#c084fc"/>
+      </linearGradient>
+    </defs>
+    <g transform="translate(24 20) scale(1.3333)">
+      <g fill="none" stroke="#67e8f9" stroke-opacity="0.28" stroke-width="1">
+        <circle cx="60" cy="60" r="31"/><circle cx="60" cy="60" r="19"/>
+        <path d="M60 27v66M27 60h66" stroke-opacity="0.16"/>
+      </g>
+      <path d="M60 60 L81.9 34 A34 34 0 0 1 91.6 47.3 Z" fill="url(#cs-sweep)"/>
+      <path d="M91.1 28.9 A44 44 0 1 0 91.1 91.1" fill="none" stroke="url(#cs-arc)" stroke-width="13" stroke-linecap="round"/>
+      <line x1="60" y1="60" x2="81.9" y2="34" stroke="#e0f2fe" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="81.9" cy="34" r="2.6" fill="#67e8f9"/><circle cx="60" cy="60" r="4.2" fill="#f0f9ff"/>
+    </g>
+    <text x="212" y="112" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="86" font-weight="700" letter-spacing="-1"><tspan fill="#f8fafc">C-</tspan><tspan fill="url(#cs-word)">sync</tspan></text>
+    <g font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="500" letter-spacing="4.5" fill="#cbd5e1">
+      <text x="216" y="146">SYNC EDUCATION WITH</text><text x="216" y="168">REAL-WORLD TRENDS</text>
+    </g>
+  </svg>
+  <div class="title">
+    <div class="pre">Final Project Report</div>
+    <h1 class="ct">AI Trend Agent</h1>
+    <p class="sub">Keeping an AI engineering curriculum in sync with real-world technology change</p>
+    <div class="bar"></div>
+    <p class="desc">A multi-agent system that monitors library releases and official blogs, verifies what it finds, locates the exact slides and lab cells each change affects, and recommends an evidence-backed curriculum update for an instructor to approve.</p>
+  </div>
+  <div class="team">
+    <div class="k">Prepared by</div>
+    <div class="people">
+      <div class="person lead"><div class="nm">Abdurahman Al-Duraywish</div><div class="rl">Team Lead</div></div>
+      <div class="person"><div class="nm">Rafeef Alsuhaibani</div></div>
+      <div class="person"><div class="nm">Aldanah Aldosari</div></div>
+      <div class="person"><div class="nm">Reyouf Faisal</div></div>
+    </div>
+  </div>
+  <div class="foot">
+    <div><b>SDA &times; WeCloudData</b><br>Agentic AI Engineering Program</div>
+    <div class="r"><a href="https://github.com/DHM22/AI-Trend-Agent">github.com/DHM22/AI-Trend-Agent</a><br>September 2026</div>
+  </div>
+</section>
+
+<!-- ======================================================= CONTENTS -->
+<section class="front" id="contents">
+  <div class="kicker">Report guide</div>
+  <h1>Contents</h1>
+  <div class="rule"></div>
+  <nav class="toc">
+    <a class="l1" href="#summary"><span class="no"></span><span class="tt">Executive summary</span><span class="dots"></span><span class="pg" data-for="summary">00</span></a>
+    <a class="l1" href="#intro"><span class="no">1</span><span class="tt">Introduction: background, problem, objectives and scope</span><span class="dots"></span><span class="pg" data-for="intro">00</span></a>
+    <a class="l1" href="#arch"><span class="no">2</span><span class="tt">System architecture</span><span class="dots"></span><span class="pg" data-for="arch">00</span></a>
+    <a class="l2" href="#s2-1"><span class="no">2.1</span><span class="tt">Overview</span><span class="dots"></span><span class="pg" data-for="s2-1">00</span></a>
+    <a class="l2" href="#s2-2"><span class="no">2.2</span><span class="tt">Data contracts</span><span class="dots"></span><span class="pg" data-for="s2-2">00</span></a>
+    <a class="l2" href="#s2-3"><span class="no">2.3</span><span class="tt">Design principles</span><span class="dots"></span><span class="pg" data-for="s2-3">00</span></a>
+    <a class="l2" href="#s2-4"><span class="no">2.4</span><span class="tt">Technology stack</span><span class="dots"></span><span class="pg" data-for="s2-4">00</span></a>
+    <a class="l1" href="#impl"><span class="no">3</span><span class="tt">Implementation</span><span class="dots"></span><span class="pg" data-for="impl">00</span></a>
+    <a class="l2" href="#s3-1"><span class="no">3.1</span><span class="tt">Monitoring</span><span class="dots"></span><span class="pg" data-for="s3-1">00</span></a>
+    <a class="l2" href="#s3-2"><span class="no">3.2</span><span class="tt">Clustering</span><span class="dots"></span><span class="pg" data-for="s3-2">00</span></a>
+    <a class="l2" href="#s3-3"><span class="no">3.3</span><span class="tt">Agent 1: Verification</span><span class="dots"></span><span class="pg" data-for="s3-3">00</span></a>
+    <a class="l2" href="#s3-4"><span class="no">3.4</span><span class="tt">Agent 2: Curriculum retrieval (RAG)</span><span class="dots"></span><span class="pg" data-for="s3-4">00</span></a>
+    <a class="l2" href="#s3-5"><span class="no">3.5</span><span class="tt">Agent 3: Evaluation</span><span class="dots"></span><span class="pg" data-for="s3-5">00</span></a>
+    <a class="l2" href="#s3-6"><span class="no">3.6</span><span class="tt">Agent 4: Recommendation</span><span class="dots"></span><span class="pg" data-for="s3-6">00</span></a>
+    <a class="l2" href="#s3-7"><span class="no">3.7</span><span class="tt">Instructor Companion and Fix Agent</span><span class="dots"></span><span class="pg" data-for="s3-7">00</span></a>
+    <a class="l2" href="#s3-8"><span class="no">3.8</span><span class="tt">Reproducibility: capture, replay and traces</span><span class="dots"></span><span class="pg" data-for="s3-8">00</span></a>
+    <a class="l1" href="#ui"><span class="no">4</span><span class="tt">The C-Sync interface</span><span class="dots"></span><span class="pg" data-for="ui">00</span></a>
+    <a class="l2" href="#s4-1"><span class="no">4.1</span><span class="tt">Home and Dashboard</span><span class="dots"></span><span class="pg" data-for="s4-1">00</span></a>
+    <a class="l2" href="#s4-2"><span class="no">4.2</span><span class="tt">Discover and Verify</span><span class="dots"></span><span class="pg" data-for="s4-2">00</span></a>
+    <a class="l2" href="#s4-3"><span class="no">4.3</span><span class="tt">Compare and Evaluate</span><span class="dots"></span><span class="pg" data-for="s4-3">00</span></a>
+    <a class="l2" href="#s4-4"><span class="no">4.4</span><span class="tt">Decide: the human in the loop</span><span class="dots"></span><span class="pg" data-for="s4-4">00</span></a>
+    <a class="l2" href="#s4-5"><span class="no">4.5</span><span class="tt">Ask and How it works</span><span class="dots"></span><span class="pg" data-for="s4-5">00</span></a>
+    <a class="l1" href="#results"><span class="no">5</span><span class="tt">Results</span><span class="dots"></span><span class="pg" data-for="results">00</span></a>
+    <a class="l2" href="#s5-1"><span class="no">5.1</span><span class="tt">The recorded run</span><span class="dots"></span><span class="pg" data-for="s5-1">00</span></a>
+    <a class="l2" href="#s5-2"><span class="no">5.2</span><span class="tt">Case study: langchain-core 1.6.4</span><span class="dots"></span><span class="pg" data-for="s5-2">00</span></a>
+    <a class="l2" href="#s5-3"><span class="no">5.3</span><span class="tt">What the run tells us</span><span class="dots"></span><span class="pg" data-for="s5-3">00</span></a>
+    <a class="l1" href="#eval"><span class="no">6</span><span class="tt">Evaluation</span><span class="dots"></span><span class="pg" data-for="eval">00</span></a>
+    <a class="l2" href="#s6-1"><span class="no">6.1</span><span class="tt">Offline test suites</span><span class="dots"></span><span class="pg" data-for="s6-1">00</span></a>
+    <a class="l2" href="#s6-2"><span class="no">6.2</span><span class="tt">Golden dataset and harness</span><span class="dots"></span><span class="pg" data-for="s6-2">00</span></a>
+    <a class="l2" href="#s6-3"><span class="no">6.3</span><span class="tt">Results</span><span class="dots"></span><span class="pg" data-for="s6-3">00</span></a>
+    <a class="l2" href="#s6-4"><span class="no">6.4</span><span class="tt">Evaluating the evaluator</span><span class="dots"></span><span class="pg" data-for="s6-4">00</span></a>
+    <a class="l1" href="#lessons"><span class="no">7</span><span class="tt">Challenges and lessons learned</span><span class="dots"></span><span class="pg" data-for="lessons">00</span></a>
+    <a class="l1" href="#limits"><span class="no">8</span><span class="tt">Limitations and future work</span><span class="dots"></span><span class="pg" data-for="limits">00</span></a>
+    <a class="l1" href="#conclusion"><span class="no">9</span><span class="tt">Conclusion</span><span class="dots"></span><span class="pg" data-for="conclusion">00</span></a>
+    <a class="l1" href="#appendix"><span class="no">A&ndash;D</span><span class="tt">Appendices: team, running the system, repository, glossary</span><span class="dots"></span><span class="pg" data-for="appendix">00</span></a>
+  </nav>
+</section>
+
+<!-- ======================================================= SUMMARY -->
+<section class="chapter" id="summary">
+  <div class="kicker">Executive summary</div>
+  <h1>An agent that recommends, and a person who decides</h1>
+  <div class="rule"></div>
+  <p class="lede">AI Trend Agent keeps an AI engineering course in step with the tools it teaches. It watches official release channels, verifies what it finds, pinpoints the slide or lab cell each change affects, and recommends a specific, cited action. An instructor approves every recommendation; the system never edits course material itself.</p>
+
+  <div class="kpis">
+    <div class="kpi"><div class="v">74</div><div class="l">Signals captured in 30 days</div></div>
+    <div class="kpi"><div class="v">57</div><div class="l">Distinct events after clustering</div></div>
+    <div class="kpi"><div class="v">29</div><div class="l">Recommendations with evidence</div></div>
+    <div class="kpi accent"><div class="v">13</div><div class="l">Actionable for the course</div></div>
+    <div class="kpi good"><div class="v">257</div><div class="l">Offline tests, 0 API calls</div></div>
+  </div>
+
+  <h3>The problem</h3>
+  <p>Libraries such as LangChain and the OpenAI SDK publish releases every few days, while course material is revised between cohorts. In the 30 days before our final capture, the watched sources produced 74 signals, including 30 stable releases. Finding by hand which of the course&rsquo;s 107 files a release affects is slow and error-prone. A language model left to judge on its own gives confident answers even when a signal is fabricated, stale or irrelevant.</p>
+
+  <h3>The approach</h3>
+  <p>A deterministic clustering stage groups signals into events. Four agents then ask, in turn: is the event real, where is it taught, how much does it matter, and what should change? Models choose tool calls, search queries and wording; Python computes every score and action tier from facts the tools established. Failures are explicit, so a search that could not run is never reported as &ldquo;no match&rdquo;. C-Sync, the interface, shows each recommendation as a traceable story from signal to decision and records the instructor&rsquo;s verdict.</p>
+
+  <h3>Results</h3>
+  <p>On the recorded run of 21 September 2026, the 30 largest of 57 events produced 29 recommendations: 6 to <em>update existing material</em>, 7 to <em>add optional content</em> and 16 to <em>keep watching</em>, each with its evidence and full agent trace. In the headline case, langchain-core 1.6.4 deprecated chat message history on the day of the capture. The system confirmed the release, followed the identifier <code>RunnableWithMessageHistory</code> to cell 36 of the Week 3 LangChain lab, and recommended updating that cell, with a score of 4.5 out of 5.</p>
+
+  <h3>Quality</h3>
+  <p>257 offline tests (243 for the pipeline and 14 for the verifier) run with zero API calls. A golden-dataset harness scores the pipeline layer by layer. Clustering scores 100 out of 100; verification scores 56.0 offline and 60.9 &plusmn; 3.4 live, for composite scores of 75.6 and 78.3 &plusmn; 1.9. Building the harness also exposed a pairing bug that had misaligned earlier verification scores, and we fixed it.</p>
+
+  <div class="callout amber">
+    <div class="ct">Honest limits</div>
+    <p>The golden dataset is small (12 signals) and does not yet label the curriculum, evaluation and recommendation layers. The fix-drafting agent has not been exercised against a live model, and further live runs are blocked by the API project&rsquo;s spend limit. Section 8 sets out the next steps.</p>
+  </div>
+</section>
+
+<!-- ======================================================= 1 INTRODUCTION -->
+<section class="chapter" id="intro">
+  <div class="kicker">Section 1</div>
+  <h1>Introduction</h1>
+  <div class="rule"></div>
+  <p class="lede">Course material and the tools it teaches change on different schedules. This project closes the gap between them without taking the decision away from the instructor.</p>
+
+  <h2 id="s1-1"><span class="n">1.1</span>Background and motivation</h2>
+  <p>AI engineering is one of the fastest-moving areas of software. The frameworks taught in the WeCloudData Agentic AI Engineering program publish new versions every few days. They include LangChain, LangGraph, LangSmith, the OpenAI Python SDK, Chroma and FastAPI. In the four weeks before our final capture, four of the watched repositories published 30 stable releases (Figure 1), and three official vendor blogs published another 44 posts.</p>
+  <figure class="chart">
+    <!--CHART:releases-->
+    <figcaption><b class="fn">Figure 1.</b> <b>Every stable release from the watched repositories in the capture window</b>, one dot per release; releases on the same day are stacked. Chroma and FastAPI published no stable releases in this period. The three official blogs added 44 posts that are not shown.</figcaption>
+  </figure>
+  <p>Course material changes on a slower clock. Slides and lab notebooks are written for a cohort and revised between cohorts. In the meantime, a release can deprecate an API that a lab calls, rename a module that a slide shows, or introduce a capability worth teaching. Students usually meet the problem first, as a deprecation warning or a failing cell in the middle of a lab. This is not hypothetical: our team ran into exactly this while taking the course.</p>
+
+  <h2 id="s1-2"><span class="n">1.2</span>Problem statement</h2>
+  <p>Keeping a course current by hand means reading the release notes of every library it uses, deciding which changes matter, and then finding which of the 107 course files are affected. For Weeks 2 to 6, those files are 24 slide decks and 83 lab notebooks. The work is slow, easy to postpone and hard to do consistently. Automating it naively is also risky: a language model asked &ldquo;does this release affect our course?&rdquo; answers confidently even when the signal is fabricated, out of date or unrelated to what the course teaches.</p>
+  <div class="problem">
+    <div class="ct">Problem statement</div>
+    <p>How can an instructor learn, soon after a technology change happens, exactly which slides or lab cells it affects and what to do about it, with evidence strong enough to trust and without the system changing the course on its own?</p>
+  </div>
+
+  <h2 id="s1-3"><span class="n">1.3</span>Objectives</h2>
+  <ol>
+    <li><strong>Monitor</strong> primary sources, meaning official releases and official blogs, for changes relevant to the course.</li>
+    <li><strong>Consolidate and verify.</strong> Group duplicate reports of the same event, then confirm with tools, rather than with model opinion, that each event is real.</li>
+    <li><strong>Locate</strong> the affected course material precisely, down to the week, the file and the slide or notebook cell.</li>
+    <li><strong>Prioritise</strong> each trend with transparent, reproducible scoring rules.</li>
+    <li><strong>Recommend</strong> one of five action tiers with a concrete, cited plan, and leave the decision to an instructor.</li>
+    <li><strong>Explain and measure.</strong> Make every recommendation traceable, and evaluate each stage against human labels.</li>
+  </ol>
+
+  <h2 id="s1-4"><span class="n">1.4</span>Scope</h2>
+  <div class="cols2">
+    <div>
+      <h3>In scope</h3>
+      <ul>
+        <li>GitHub releases from six repositories and posts from three official blogs, with optional Hacker News feeds as secondary sources (Table 3).</li>
+        <li>The WeCloudData curriculum for Weeks 2 to 6: slides and lab notebooks, indexed locally.</li>
+        <li>Five action tiers, each with a cited action plan.</li>
+        <li>An interface for review and approval, an instructor Q&amp;A companion, and drafted fixes for lab cells.</li>
+        <li>Offline tests and a golden-dataset evaluation harness.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Out of scope</h3>
+      <ul>
+        <li>Editing course material automatically. The agent only recommends; a person approves.</li>
+        <li>Continuous, scheduled monitoring. Runs are captured on demand and replayed.</li>
+        <li>Sources beyond the configured feeds, such as package indexes and social media.</li>
+        <li>Course content outside Weeks 2 to 6. The slide sources are kept outside the repository for redistribution reasons.</li>
+      </ul>
+    </div>
+  </div>
+  <p>The rest of the report is organised as follows. Section 2 presents the architecture and Section 3 the implementation of each stage. Section 4 walks through the C-Sync interface, and Section 5 reports the results of the recorded run. Section 6 describes how we evaluated the system, and Sections 7 to 9 cover lessons learned, limitations and conclusions.</p>
+</section>
+
+<!-- ======================================================= 2 ARCHITECTURE -->
+<section class="chapter" id="arch">
+  <div class="kicker">Section 2</div>
+  <h1>System architecture</h1>
+  <div class="rule"></div>
+  <p class="lede">A linear pipeline of deterministic stages and tool-using agents, with a human at the end of every path.</p>
+
+  <h2 id="s2-1"><span class="n">2.1</span>Overview</h2>
+  <p>Figure 2 shows the whole system. Monitoring collects signals from GitHub releases and official blogs, and clustering, which uses no language model, groups them into events. Four agents then run in sequence: <strong>Verification</strong> (is it real?), <strong>Curriculum</strong> (where is it taught?), <strong>Evaluation</strong> (how much does it matter?) and <strong>Recommendation</strong> (what should change?). C-Sync presents each recommendation with its evidence, and an instructor approves it, requests changes or rejects it. On demand, the <strong>Instructor Companion</strong> answers questions about a recommendation and the <strong>Fix Agent</strong> drafts the change to a lab cell.</p>
+  <figure class="fit" style="width:164mm">
+    <img src="figures/fig-architecture.png" alt="AI Trend Agent architecture: monitoring, clustering, four agents, C-Sync, instructor and companion">
+    <figcaption><b class="fn">Figure 2.</b> <b>How a signal becomes a recommendation.</b> The agents call tools (the GitHub API and the course index) behind guards, and every recommendation reaches an instructor. The evaluation harness grades the pipeline against human-labelled signals.</figcaption>
+  </figure>
+  <p>One rule divides the work throughout. Models make the judgements that need language: which tool to call next, which query to search, how to phrase a plan. Python computes every number and every decision that has consequences. Section 3 explains why.</p>
+
+  <h2 id="s2-2"><span class="n">2.2</span>Data contracts</h2>
+  <p>Each stage&rsquo;s output is the next stage&rsquo;s input, and every contract is defined once, in <code>02_src/schemas.py</code>. Renaming a field requires telling the team, because downstream code would otherwise break silently. The contracts let the four workstreams build in parallel.</p>
+  <div class="tcap"><span>Table 1.</span>Pipeline stages and the contract each one produces</div>
+  <table>
+    <thead><tr><th>Stage</th><th>Module</th><th>Output</th><th>Key fields</th></tr></thead>
+    <tbody>
+      <tr><td>Monitoring</td><td><code>monitoring_github.py</code>, <code>monitoring_rss.py</code></td><td><code>RawSignal</code></td><td>title, source, source tier (primary / secondary), summary, URL, published date</td></tr>
+      <tr><td>Clustering</td><td><code>clustering.py</code></td><td><code>TrendCluster</code></td><td>signals judged to report one event; independent source count</td></tr>
+      <tr><td>Agent 1: Verification</td><td><code>agents/verification.py</code></td><td><code>VerifiedTrend</code></td><td>confidence 0&ndash;1, status, evidence trail, reasoning steps, loop mode</td></tr>
+      <tr><td>Agent 2: Curriculum</td><td><code>agents/curriculum.py</code></td><td><code>CurriculumMatch</code></td><td>week, topic, file, slide or cell, similarity, exact identifier, content type</td></tr>
+      <tr><td>Agent 3: Evaluation</td><td><code>agents/evaluation.py</code></td><td><code>EvaluationResult</code></td><td>maturity 1&ndash;5, relevance 1&ndash;5, total score, rationale</td></tr>
+      <tr><td>Agent 4: Recommendation</td><td><code>agents/recommendation.py</code></td><td><code>Recommendation</code></td><td>action tier, action plan, evidence, match, total score</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="s2-3"><span class="n">2.3</span>Design principles</h2>
+  <ul>
+    <li><strong>Deterministic decisions, model-written language.</strong> Scores and tiers are pure functions of checked facts: reproducible, testable offline, and impossible to argue upward.</li>
+    <li><strong>Failures are states, not silence.</strong> &ldquo;Searched and found nothing&rdquo;, &ldquo;tried and failed&rdquo; and &ldquo;never searched&rdquo; stay distinct.</li>
+    <li><strong>Evidence travels with the recommendation.</strong> Sources, tool results and reasoning steps come along, so a reviewer sees <em>why</em> as well as <em>what</em>.</li>
+    <li><strong>Reproducible demonstrations.</strong> A live run is captured once and replayed with zero API calls.</li>
+    <li><strong>A human in the loop.</strong> Nothing in the course changes until an instructor approves.</li>
+  </ul>
+
+  <h2 id="s2-4"><span class="n">2.4</span>Technology stack</h2>
+  <div class="tcap"><span>Table 2.</span>Technologies used</div>
+  <table class="kv">
+    <tbody>
+      <tr><td>Language</td><td>Python 3.10+</td></tr>
+      <tr><td>Language model</td><td>OpenAI <code>gpt-4o-mini</code> (set by <code>OPENAI_MODEL</code>), with function calling for every agent&rsquo;s tool loop</td></tr>
+      <tr><td>Retrieval</td><td>ChromaDB with all-MiniLM-L6-v2 embeddings, plus a lexical pass fused by Reciprocal Rank Fusion</td></tr>
+      <tr><td>Document parsing</td><td><code>python-pptx</code> (with speaker notes), <code>pdfplumber</code> (optional Tesseract OCR), notebook JSON</td></tr>
+      <tr><td>Sources</td><td>GitHub REST API (<code>requests</code>) and RSS/Atom feeds (<code>feedparser</code>)</td></tr>
+      <tr><td>Interface and quality</td><td>Streamlit (C-Sync); offline test suites, Streamlit <code>AppTest</code> and a custom evaluation harness</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ======================================================= 3 IMPLEMENTATION -->
+<section class="chapter" id="impl">
+  <div class="kicker">Section 3</div>
+  <h1>Implementation</h1>
+  <div class="rule"></div>
+  <p class="lede">Each stage in turn: what it does, how it decides, and the measurements that shaped it.</p>
+
+  <h2 id="s3-1"><span class="n">3.1</span>Monitoring</h2>
+  <p><code>monitoring_github.py</code> reads the GitHub Releases API for six repositories and drops drafts and pre-releases (tags ending in <code>a</code>, <code>b</code> or <code>rc</code> plus a number), because students do not install those. <code>monitoring_rss.py</code> reads three official blogs. Both kinds are <em>primary</em> sources: the project&rsquo;s own announcement. Three Hacker News queries are available as <em>secondary</em> sources behind <code>--secondary</code>; they are noisy on purpose, to give the verifier something to filter out.</p>
+  <div class="tcap"><span>Table 3.</span>Monitored sources and their signals in the recorded 30-day window (25 Aug &ndash; 21 Sep 2026)</div>
+  <table>
+    <thead><tr><th>Source</th><th>Type</th><th>Tier</th><th class="num">Signals</th></tr></thead>
+    <tbody>
+      <tr><td><code>openai/openai-python</code></td><td>GitHub releases</td><td>primary</td><td class="num">10</td></tr>
+      <tr><td><code>langchain-ai/langsmith-sdk</code></td><td>GitHub releases</td><td>primary</td><td class="num">10</td></tr>
+      <tr><td><code>langchain-ai/langchain</code></td><td>GitHub releases</td><td>primary</td><td class="num">7</td></tr>
+      <tr><td><code>langchain-ai/langgraph</code></td><td>GitHub releases</td><td>primary</td><td class="num">3</td></tr>
+      <tr><td><code>chroma-core/chroma</code>, <code>fastapi/fastapi</code></td><td>GitHub releases</td><td>primary</td><td class="num">0</td></tr>
+      <tr><td>Hugging Face, OpenAI and LangChain blogs</td><td>RSS</td><td>primary</td><td class="num">15 + 15 + 14</td></tr>
+      <tr><td>Hacker News: <em>langchain</em>, <em>AI agents</em>, <em>langgraph</em></td><td>RSS (opt-in)</td><td>secondary</td><td class="num">not used</td></tr>
+      <tr class="hl"><td><strong>Total</strong></td><td></td><td></td><td class="num"><strong>74</strong></td></tr>
+    </tbody>
+  </table>
+  <p>One operational lesson: the Hacker News feed provider sometimes returns malformed XML, and the fetcher then reports zero posts without an error. We therefore check the counts feed by feed after every capture, not only the total.</p>
+
+  <h2 id="s3-2"><span class="n">3.2</span>Clustering</h2>
+  <p>Clustering does two jobs. It deduplicates, because a GitHub release and the blog post announcing it are one event and should not be verified or recommended twice. It also produces the <em>independent source count</em> that verification confidence depends on.</p>
+  <p>It runs in two passes, with no language model, so every run gives the same result. The first pass merges signals that share a rare identifier, such as <code>create_agent</code> or <code>AgentExecutor</code>, meaning one that appears in at most 8% of signals. The second pass falls back to title similarity with a 0.75 threshold. We raised the threshold from 0.4 after measuring on 63 real signals: at 0.4, unrelated posts merged on connective words and produced false high-confidence clusters. Maintainer handles such as <code>langchain-ai</code> sit on a stop list. In the recorded run, 74 signals formed 57 clusters, 8 of them with two or more signals.</p>
+
+  <h2 id="s3-3"><span class="n">3.3</span>Agent 1: Verification (&ldquo;is it real?&rdquo;)</h2>
+  <p>The model drives a genuine tool-calling loop. It reads the cluster, decides which tool to call, judges whether each observation settles the question, and decides when to stop, within a cap of six rounds. <code>github_lookup</code> checks that a project exists (stars, last push), and <code>verify_release</code> confirms that a specific version actually shipped. We do not script the order of calls.</p>
+  <p>The model never produces a number. Python computes confidence from the facts that the <em>raw</em> tool results established: whether a matching repository exists, whether the specific claim was confirmed, and how many independent sources were corroborated. Hard ceilings are then applied.</p>
+  <div class="tcap"><span>Table 4.</span>Deterministic verification confidence</div>
+  <table>
+    <thead><tr><th>Checked facts</th><th class="num">Confidence</th></tr></thead>
+    <tbody>
+      <tr><td>Two or more verified independent sources <em>and</em> the claim itself confirmed</td><td class="num">0.95</td></tr>
+      <tr><td>Two or more verified sources, claim not confirmed</td><td class="num">0.80</td></tr>
+      <tr><td>One verified source and the claim confirmed (for example, a release that <code>verify_release</code> found)</td><td class="num">0.75</td></tr>
+      <tr><td>One verified source, or a first-party post with nothing independently checkable</td><td class="num">0.60</td></tr>
+      <tr><td>Something real but nothing checkable, or a single unchecked secondary source</td><td class="num">0.50 / 0.40</td></tr>
+      <tr><td>The named repository was not found</td><td class="num">0.15</td></tr>
+      <tr class="hl"><td colspan="2"><strong>Ceilings applied afterwards:</strong> fewer than 2 verified sources &rarr; at most 0.75. Named repository missing &rarr; at most 0.30. Prompt-injection markers in the signal &rarr; at most 0.10. A &ldquo;latest&rdquo; claim superseded by a newer release, or a publisher who is not the release author &rarr; 0.0 and status <em>contradicted</em>.</td></tr>
+    </tbody>
+  </table>
+  <p>Guards protect the facts that the scorer relies on:</p>
+  <ul>
+    <li><strong>Repository matching.</strong> Each lookup result is checked against the repository the signal names. A lookup for &ldquo;langchain&rdquo; once returned <code>microsoft/markitdown</code> first, because results are sorted by stars, and the top result was taken as confirmation.</li>
+    <li><strong>&ldquo;Unchecked&rdquo; is not &ldquo;missing&rdquo;.</strong> A network error or cache miss is recorded as unchecked, never as &ldquo;repository not found&rdquo;. A repository can be declared missing only if a signal names it, because the model sometimes invents repositories.</li>
+    <li><strong>Deterministic fallback.</strong> Without an API key, or if the model fails, the same tools run in a scripted loop and the same scorer applies, so a score means the same thing in either mode. The trace records which mode ran.</li>
+  </ul>
+  <div class="callout">
+    <div class="ct">Why code, not the model, computes confidence</div>
+    <p>When an earlier version let the model report confidence directly, it returned 0.85 for a single-source trend <em>and</em> 0.85 for a two-source trend, although the rubric separated the two cases. Models compress ranges; code does not. A deterministic score is also testable offline, and a persuasive model cannot talk it upward.</p>
+  </div>
+
+  <h2 id="s3-4"><span class="n">3.4</span>Agent 2: Curriculum retrieval (&ldquo;where is it taught?&rdquo;)</h2>
+  <p><strong>Indexing.</strong> <code>curriculum_ingest.py</code> extracts text from slide decks (<code>.pptx</code> with speaker notes; <code>.pdf</code> with optional OCR) and from lab notebooks, cell by cell. The week comes from the folder name and the topic from the file name. Each chunk records whether it is a <em>slide</em> or a <em>lab</em> cell and has a stable ID, so re-ingestion updates chunks instead of duplicating them. The index holds <strong>2,721 chunks from 107 files</strong> covering Weeks 2 to 6.</p>
+  <p><strong>Hybrid search.</strong> Embeddings blur rare identifiers. On the real decks, a slide that literally contains &ldquo;FAISS&rdquo; scored 0.303 against a FAISS query, which is indistinguishable from unrelated noise at 0.31. Search therefore fuses semantic and lexical ranks with Reciprocal Rank Fusion (k = 60) and flags any <em>exact identifier</em> match. The semantic relevance floor of 0.48 was calibrated on the course decks: genuine matches scored 0.65&ndash;0.66, while unrelated text scored around 0.31.</p>
+  <p><strong>The agent.</strong> Similarity search always returns <em>something</em>, so something has to judge the results. The agent writes its own queries, preferring identifiers such as <code>RunnableWithMessageHistory</code> to prose, and can search again within a limit of four steps. It must also decide whether a hit is actually affected. Its prompt defines impact strictly: a trend affects an item only when it makes the material incorrect, outdated, incompatible, misleading or broken, and shared vocabulary does not count. It checks labs as well as slides, because a notebook cell that calls a deprecated API stops running.</p>
+  <div class="callout cyan">
+    <div class="ct">Three outcomes that must never be merged</div>
+    <p><strong>Searched</strong>: the agent looked, and its reason says what it found. <strong>Search failed</strong>: it tried, but the search could not run, which is <em>not</em> a finding of &ldquo;no match&rdquo;. <strong>Skipped</strong>: verification confidence was below 0.4, so no search was attempted. Collapsing these states was the most serious bug we found (Section 7).</p>
+  </div>
+
+  <h2 id="s3-5"><span class="n">3.5</span>Agent 3: Evaluation (&ldquo;how much does it matter?&rdquo;)</h2>
+  <p>Python computes two scores from values the pipeline already trusts, and the model only explains them in plain language. If the model&rsquo;s reply states or argues for a number, it is rejected, and a template built from the same facts is used instead. The rationale therefore cannot contradict the score.</p>
+  <div class="tcap"><span>Table 5.</span>Scoring bands (total = &frac12; maturity + &frac12; relevance)</div>
+  <table>
+    <thead><tr><th>Score</th><th>Question</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td class="nw"><strong>Maturity</strong> 1&ndash;5</td><td>Is this real and established?</td><td>From verification confidence: &ge; 0.85 &rarr; 5; &ge; 0.70 &rarr; 4; &ge; 0.50 &rarr; 3; &ge; 0.30 &rarr; 2; otherwise 1.</td></tr>
+      <tr><td class="nw"><strong>Relevance</strong> 1&ndash;5</td><td>How directly does it hit what we teach?</td><td>Exact identifier match &rarr; 5. Slides: similarity &ge; 0.65 &rarr; 5, &ge; 0.55 &rarr; 4, &ge; 0.48 &rarr; 3. Labs: &ge; 0.55 &rarr; 5, &ge; 0.45 &rarr; 4. A weak match floors at 2; no match at all &rarr; 1.</td></tr>
+    </tbody>
+  </table>
+  <p>Labs get the lower thresholds on purpose, because a broken lab cell is more urgent than an outdated concept slide. &ldquo;No match&rdquo; (1) is kept separate from &ldquo;weak match&rdquo; (2), because the recommendation stage treats the absence of coverage as a distinct state.</p>
+
+  <h2 id="s3-6"><span class="n">3.6</span>Agent 4: Recommendation (&ldquo;what should change?&rdquo;)</h2>
+  <p>Python picks the tier, because a curriculum lead acts on it, so it must be reproducible and testable. The first rule that applies wins:</p>
+  <div class="tcap"><span>Table 6.</span>Deterministic tier selection</div>
+  <table>
+    <thead><tr><th>#</th><th>Condition</th><th>Tier</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td>Maturity below 4: not established enough to act on</td><td><span class="chip a">Keep watching</span></td></tr>
+      <tr><td class="num">2</td><td>A curriculum match exists and relevance &ge; 4</td><td><span class="chip v">Update existing material</span></td></tr>
+      <tr><td class="num">3</td><td>A match exists with lower relevance</td><td><span class="chip c">Add optional content</span></td></tr>
+      <tr><td class="num">4</td><td>No match, and the curriculum was never checked (skipped or failed)</td><td><span class="chip a">Keep watching</span></td></tr>
+      <tr><td class="num">5</td><td>No match, but the trend is a version bump (e.g. <code>v3.9.0</code>, <code>==1.6.2</code>)</td><td><span class="chip a">Keep watching</span></td></tr>
+      <tr><td class="num">6</td><td>No match, and the title names nothing the course could teach</td><td><span class="chip a">Keep watching</span></td></tr>
+      <tr><td class="num">7</td><td>Verified, in scope and genuinely uncovered</td><td><span class="chip g">Create a new lesson</span></td></tr>
+    </tbody>
+  </table>
+  <p>The model writes the plan (at most five steps and 1,500 characters), and the plan is then checked against the tier. A plan whose wording argues for a different tier, such as &ldquo;new lesson&rdquo; under <em>keep watching</em>, is rejected, and so is one that contains instruction-override phrases. This stops a prompt-injected recommendation from slipping through in the prose even when the tier itself is safe. Releases that cite the same lab cell are collapsed into one recommendation. The fifth tier, <em>investigate larger change</em>, is deliberately unreachable: an evaluation carries a single match, so there is no multi-module signal to base it on, and inventing one would be fabrication.</p>
+
+  <h2 id="s3-7"><span class="n">3.7</span>Instructor Companion and Fix Agent</h2>
+  <div class="cols2">
+    <div>
+      <h3>Instructor Companion</h3>
+      <p>A conversational layer over <em>one</em> recorded recommendation. The companion answers questions such as &ldquo;why this tier?&rdquo; or &ldquo;which lab cell is hit?&rdquo; from the record and its trace. It explains the decision and never recomputes or overrules it. Follow-up lookups use the local course index and cached GitHub responses only, so they never make a live GitHub request. Answers cite typed labels: [R] record, [E] evidence, [M] match, [C] curriculum searches, [V] verification steps and [T] chat lookups. A checker flags invented labels and claims that contradict the trace.</p>
+    </div>
+    <div>
+      <h3>Fix Agent</h3>
+      <p>For an <em>update existing material</em> recommendation, the Fix Agent drafts the change itself. It retrieves the full lab cell from the index, together with the release evidence, and proposes a before-and-after version of the cell. It may change only what the evidence supports, must keep the lab&rsquo;s <code># YOUR CODE HERE</code> placeholders, and must list anything the evidence does not settle. Code then flags every identifier in the draft that appears in neither the cell nor the evidence. The draft is labelled <em>not applied</em> and is never written anywhere.</p>
+    </div>
+  </div>
+
+  <h2 id="s3-8"><span class="n">3.8</span>Reproducibility: capture, replay and traces</h2>
+  <p>The live pipeline is measurably non-deterministic: across three live runs over the same 10 signals, 5 of the 10 changed tier at least once. We document that variance and demonstrate from a frozen run instead. <code>demo_snapshot.py --capture</code> runs the pipeline once and saves every recommendation with its agent trace. C-Sync and <code>--replay</code> read that file with zero API calls. A trace records every verification step (the thought, the tool and the observed result), every curriculum query, and whether the curriculum was searched, failed or skipped. Successful GitHub responses are cached on disk, and <code>TOOL_CACHE_ONLY=1</code> runs the tools without touching the network.</p>
+</section>
+
+<!-- ======================================================= 4 C-SYNC -->
+<section class="chapter" id="ui">
+  <div class="kicker">Section 4</div>
+  <h1>The C-Sync interface</h1>
+  <div class="rule"></div>
+  <p class="lede">A story-led Streamlit interface that follows one recorded trend from signal to decision, in the order a reviewer needs to see it.</p>
+  <p>C-Sync reads the recorded run and never re-runs an agent, so every page agrees with every other. Only two actions can call a model, and both need an explicit click: asking the companion a question, and pressing <em>Draft the fix</em>. The left panel lists all nine pages. The top bar holds the five pipeline stages, <em>01 Discover</em> to <em>05 Decide</em>, and each stage opens its page. The interface builds on the team&rsquo;s SkillRadar UI prototype.</p>
+  <p class="small muted">All screenshots were captured from the recorded run of 21 September 2026 (<code>01_data/demo_snapshot.json</code>) with the featured trend, langchain-core 1.6.4, selected. No review decisions had been recorded at capture time.</p>
+
+  <h2 id="s4-1"><span class="n">4.1</span>Home and Dashboard</h2>
+  <p>The Home page opens with the big picture. Each square is one stage of the run, and its area is proportional to the real count at that stage, so the reader sees how much noise the pipeline removes before it recommends anything. A featured trend invites the reader to follow one decision from beginning to end.</p>
+  <figure class="fit" style="width:164mm">
+    <img src="figures/fig-home.jpg" alt="C-Sync Home page">
+    <figcaption><b class="fn">Figure 3.</b> <b>Home.</b> &ldquo;From noise to curriculum&rdquo; sizes each stage by its real count: 74 signals &rarr; 57 clusters &rarr; 30 assessed &rarr; 29 recommendations &rarr; 13 actionable. The left panel lists every page; the top bar holds the five pipeline stages.</figcaption>
+  </figure>
+
+  <p class="newpage">The Dashboard lists every recommendation, most urgent tier first. It can be filtered by action tier, by the kind of material cited (lab or slides) and by &ldquo;actionable only&rdquo;. Each card shows the score, the confidence, the exact course citation and the instructor&rsquo;s review status. The action plan sits behind a &ldquo;Full plan&rdquo; expander, so that the list stays easy to scan.</p>
+  <figure class="fit" style="width:176mm">
+    <img src="figures/fig-dashboard.jpg" alt="C-Sync Dashboard page">
+    <figcaption><b class="fn">Figure 4.</b> <b>Dashboard</b> (the first three rows of 29 cards). The highest-scoring recommendations each point at a specific course location, such as <em>Week 3 / Lab: Lab LangChain wikipedia (studentVersion) / cell 36</em>.</figcaption>
+  </figure>
+
+  <h2 id="s4-2" class="newpage"><span class="n">4.2</span>Discover and Verify</h2>
+  <p>The Radar (01 Discover) shows each assessed trend as a light on a sweeping scanner. Colour encodes the recommended action, size the maturity score and glow the verification confidence. Clicking a light opens that trend&rsquo;s story without reloading the app.</p>
+  <figure class="fit" style="width:176mm">
+    <img src="figures/fig-radar.jpg" alt="C-Sync Radar page">
+    <figcaption><b class="fn">Figure 5.</b> <b>Radar (01 Discover).</b> 29 lights, one per recommendation: amber is <em>keep watching</em>, violet <em>update existing material</em> and cyan <em>add optional content</em>. A light flashes as the beam passes over it.</figcaption>
+  </figure>
+  <div class="callout">
+    <div class="ct">Design choices that run through every page</div>
+    <ul>
+      <li><strong>Story order.</strong> Each stage page leads to the next with a button, so a reviewer reads the evidence before the verdict.</li>
+      <li><strong>Only recorded facts.</strong> Repository stars come only from the recorded lookup. A release check turns green only when <code>verify_release</code> confirmed the release, and a failed curriculum search is shown as failed.</li>
+      <li><strong>Accessible by default.</strong> Visible focus rings, a primary colour that gives white text a 5.7:1 contrast ratio, reduced-motion support, and a phone layout with a collapsing sidebar.</li>
+    </ul>
+  </div>
+  <p>The Trend story (02 Verify, Figure 6) answers &ldquo;why is this trending, and why should we trust it?&rdquo;. It shows the original signal, including its release notes, then the evidence the Verification Agent recorded, one card at a time.</p>
+
+  <figure class="fit newpage" style="width:176mm">
+    <img src="figures/fig-trend-story.jpg" alt="C-Sync Trend story page">
+    <figcaption><b class="fn">Figure 6.</b> <b>Trend story (02 Verify)</b> for langchain-core 1.6.4. The release notes include &ldquo;deprecate chat message history&rdquo;. The evidence includes the repository lookup (146,323 stars) and the confirmed release check, which is expanded here.</figcaption>
+  </figure>
+
+  <h2 id="s4-3" class="newpage"><span class="n">4.3</span>Compare and Evaluate</h2>
+  <p>The gap (03 Compare) places the trend beside the course material that the Curriculum Agent matched. The verdict is phrased with care. &ldquo;Related material found&rdquo; needs a citation, and &ldquo;Curriculum gap identified&rdquo; appears only when the agent actually proposed a new lesson. Otherwise the page says &ldquo;Coverage not established&rdquo;, because a missing match alone does not prove a gap.</p>
+  <figure class="fit" style="width:160mm">
+    <img src="figures/fig-gap.jpg" alt="C-Sync The gap page">
+    <figcaption><b class="fn">Figure 7.</b> <b>The gap (03 Compare).</b> The trend beside Week 3, LangChain lab, cell 36. The match was made through the exact identifier <code>RunnableWithMessageHistory</code>, and the cell&rsquo;s code, which imports <code>ChatMessageHistory</code>, is open for inspection.</figcaption>
+  </figure>
+
+  <p class="newpage">Evaluation (04 Evaluate) keeps the focus on the evidence until the reader asks for the numbers. When <em>Reveal the scores</em> is pressed, three rings show maturity, relevance and the overall score, and a caption explains how each was derived from the stored run.</p>
+  <figure class="fit" style="width:176mm">
+    <img src="figures/fig-evaluation.jpg" alt="C-Sync Evaluation page">
+    <figcaption><b class="fn">Figure 8.</b> <b>Evaluation (04 Evaluate).</b> Maturity 4 (confidence 0.75), relevance 5 (an exact identifier match in a lab) and an overall 4.5 out of 5, with the matched course material shown as the evidence behind the scores.</figcaption>
+  </figure>
+
+  <h2 id="s4-4"><span class="n">4.4</span>Decide: the human in the loop</h2>
+  <p>The Decision page (05 Decide) is where the system hands over to a person. It shows the recommended action with its verification note, review status and cited course area, then the plan the Recommendation Agent wrote (Figure 9). Below the plan, <em>The proposed fix</em> drafts a before-and-after version of the lab cell. The Fix Agent runs only when the instructor presses <em>Draft the fix</em>, and the draft is never applied.</p>
+  <p><em>Your decision</em> (Figure 10) records the verdict (Approve, Request changes or Reject) with an optional note, and can attach the drafted fix. The verdict then appears as a status pill on the Decision header and on the Dashboard card. A collapsible evidence chain shows the path from trend to evidence, curriculum, evaluation and decision on one line.</p>
+
+  <figure class="fit newpage" style="width:176mm">
+    <img src="figures/fig-decision-plan.jpg" alt="C-Sync Decision page: recommendation, action plan and proposed fix">
+    <figcaption><b class="fn">Figure 9.</b> <b>Decision (05 Decide), part 1.</b> <em>Update existing material</em> for Week 3 lab cell 36, marked <em>awaiting instructor review</em>, with the four-step action plan and the <em>Draft the fix</em> button.</figcaption>
+  </figure>
+
+  <figure class="fit newpage" style="width:176mm">
+    <img src="figures/fig-decision-review.jpg" alt="C-Sync Decision page: review panel and evidence chain">
+    <figcaption><b class="fn">Figure 10.</b> <b>Decision, part 2</b> (content area). The review panel and the evidence chain from trend to decision. C-sync only recommends; nothing in the course changes until an instructor approves.</figcaption>
+  </figure>
+
+  <h2 id="s4-5"><span class="n">4.5</span>Ask and How it works</h2>
+  <p>The Ask page puts the Instructor Companion in front of one recommendation. Pills show the tier and the curriculum outcome (searched, search <em>failed</em>, skipped or no trace), so the three states are never blurred. Suggested questions help an instructor start. Without an API key, the page restates what the run recorded instead of answering.</p>
+
+  <figure class="fit newpage" style="width:176mm">
+    <img src="figures/fig-ask.jpg" alt="C-Sync Ask page">
+    <figcaption><b class="fn">Figure 11.</b> <b>Ask.</b> The companion answers questions about one recorded recommendation from its evidence and trace, using typed, checked citations. It explains the decision and cannot change it.</figcaption>
+  </figure>
+  <figure class="fit" style="width:118mm">
+    <img src="figures/fig-how.jpg" alt="C-Sync How it works page">
+    <figcaption><b class="fn">Figure 12.</b> <b>How it works.</b> The five steps in plain language for readers new to the system, with the run&rsquo;s signals &rarr; clusters &rarr; recommendations trail.</figcaption>
+  </figure>
+</section>
+
+<!-- ======================================================= 5 RESULTS -->
+<section class="chapter" id="results">
+  <div class="kicker">Section 5</div>
+  <h1>Results</h1>
+  <div class="rule"></div>
+  <p class="lede">What the system produced on real data: a 30-day capture of the course&rsquo;s own toolchain, recorded on 21 September 2026.</p>
+
+  <h2 id="s5-1"><span class="n">5.1</span>The recorded run</h2>
+  <p>The capture fetched 30 days of primary-source signals: 74 signals, which clustering reduced to 57 events. The pipeline assessed the 30 largest clusters and collapsed one pair that cited the same material, leaving 29 recommendations. Every recommendation carries a trace. The Verification Agent ran in agentic mode on all 29. The curriculum was searched for 28 trends and skipped once, below the confidence gate, and not a single search failed.</p>
+  <figure class="chart">
+    <!--CHART:tiers-->
+    <figcaption><b class="fn">Figure 13.</b> <b>Recommendations by action tier and by the kind of course material they cite.</b> Every actionable recommendation cites a specific slide or lab cell, and 8 of the 13 cite a lab cell. No trend qualified as <em>create a new lesson</em> (Section 5.3).</figcaption>
+  </figure>
+  <div class="tcap"><span>Table 7.</span>The six &ldquo;update existing material&rdquo; recommendations</div>
+  <table class="keep">
+    <thead><tr><th>Release</th><th>Cited course material</th><th>Matched by</th><th class="num">Score</th></tr></thead>
+    <tbody>
+      <tr class="hl"><td class="nw"><code>langchain-core==1.6.4</code></td><td>Week 3 / Lab: Lab LangChain wikipedia (studentVersion) / cell 36</td><td>identifier <code>RunnableWithMessageHistory</code></td><td class="num">4.5</td></tr>
+      <tr><td class="nw"><code>openai-python v3.16.0</code></td><td>Week 4 / Agents for Real Tasks / slide 53</td><td>identifier <code>MCP</code></td><td class="num">4.5</td></tr>
+      <tr><td class="nw"><code>openai-python v3.12.0</code></td><td>Week 2 / Lab: Story Writing with Prompt Chaining (OpenAI) / cell 6</td><td>similarity 0.685</td><td class="num">4.5</td></tr>
+      <tr><td class="nw"><code>openai-python v3.10.0</code></td><td>Week 3 / Lab: Demo LangChain Document Chat using OpenAI (solution) / cell 17</td><td>similarity 0.734</td><td class="num">4.5</td></tr>
+      <tr><td class="nw"><code>langchain-openai==1.6.3</code></td><td>Week 5 / Lab: Demo Diagnosing Coordination Failures (solution) / cell 4</td><td>similarity 0.595</td><td class="num">4.0</td></tr>
+      <tr><td class="nw"><code>openai-python v3.13.0</code></td><td>Week 4 / Agents for Real Tasks / slide 44</td><td>similarity 0.639</td><td class="num">4.0</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="s5-2"><span class="n">5.2</span>Case study: langchain-core 1.6.4</h2>
+  <p>The headline recommendation shows every stage at work on the kind of change that motivated the project: a release that deprecates an API used by a student lab.</p>
+  <div class="trail">
+    <div class="step"><div class="sl">Signal &middot; GitHub release &middot; 21 Sep 2026</div><p><code>langchain-ai/langchain: langchain-core==1.6.4</code>. The release notes list <em>&ldquo;chore(core): deprecate chat message history (#40711)&rdquo;</em>.</p></div>
+    <div class="step ok"><div class="sl">Verification &middot; agentic loop &middot; 2 tool calls</div><p><code>github_lookup</code> matched <code>langchain-ai/langchain</code> (146,323 stars), and <code>verify_release</code> <strong>confirmed</strong> the release, published 21 Sep and not a pre-release. Confidence is <strong>0.75</strong>: one independent source with its claim confirmed, at the single-source ceiling.</p></div>
+    <div class="step ok"><div class="sl">Curriculum &middot; 2 queries</div><p>&ldquo;chat message history&rdquo; ranked Week 3 lab cell 36 first (0.585). A follow-up query for <code>RunnableWithMessageHistory</code> found that identifier verbatim in three cells. The agent&rsquo;s reason: the lab teaches <code>RunnableWithMessageHistory</code> and <code>ChatMessageHistory</code>, which the deprecation makes potentially outdated.</p></div>
+    <div class="step ok"><div class="sl">Evaluation</div><p>Maturity <strong>4</strong> (confidence &ge; 0.70) and relevance <strong>5</strong> (exact identifier in a lab cell) give <strong>4.5 / 5</strong>.</p></div>
+    <div class="step"><div class="sl">Recommendation</div><p><span class="chip v">Update existing material</span>: a match is present and relevance is at least 4. The plan: update the imports in cell 36, align references to <code>langchain_core</code> with the current documentation, replace deprecated calls, and re-run the cell.</p></div>
+    <div class="step hu"><div class="sl">Human review</div><p>Shown in C-Sync as <em>awaiting instructor review</em>. The instructor can draft the fix, then approve it, request changes or reject it.</p></div>
+  </div>
+  <p>Figures 6 to 8 show this same trace in C-Sync. Because the evidence and the reasoning travel with the recommendation, a reviewer can check each step instead of trusting the conclusion.</p>
+
+  <h2 id="s5-3"><span class="n">5.3</span>What the run tells us</h2>
+  <ul>
+    <li><strong>Confidence follows the evidence, not the prose.</strong> The 18 GitHub-release trends score 0.75: one independent source with its claim confirmed. The 10 blog-post trends score 0.60, as first-party posts with nothing independently checkable, which puts them at maturity 3, below the action floor.</li>
+    <li><strong>No false &ldquo;new lessons&rdquo;.</strong> Five releases matched nothing in the course. Each was a version bump, so each correctly stayed at <em>keep watching</em>, instead of prompting a lesson about a library the course already teaches (Section 7).</li>
+    <li><strong>Labs dominate the actionable list.</strong> 8 of the 13 actionable recommendations cite a lab cell. That reflects both the scoring, which treats labs as more urgent, and the reality that code breaks before concepts do.</li>
+    <li><strong>A new lesson needs corroboration.</strong> <em>Create a new lesson</em> requires a verified, in-scope trend with no match that is not a version bump, which in practice means a new capability confirmed by a release check or by two independent sources. This capture had none. The rule is conservative by design (Section 8).</li>
+    <li><strong>One known artefact.</strong> A genuine blog post scored 0.15 because the model invented a repository to look up. A guard now prevents this (Section 3.3), but the recorded run is kept as captured.</li>
+  </ul>
+</section>
+
+<!-- ======================================================= 6 EVALUATION -->
+<section class="chapter" id="eval">
+  <div class="kicker">Section 6</div>
+  <h1>Evaluation</h1>
+  <div class="rule"></div>
+  <p class="lede">Three tiers of evidence: deterministic tests on every change, a human-labelled golden dataset scored layer by layer, and behavioural cases aimed at failures we actually observed.</p>
+  <p>Offline test suites exercise the deterministic logic with zero API calls. A golden dataset of human-labelled signals, including fabricated claims, is scored layer by layer, with repeated runs to average out model non-determinism. Behavioural test cases target specific observed failures. We wrote twelve such cases for promptfoo but could not run them, because the tool needs Node 22.22 or later (Section 8).</p>
+
+  <h2 id="s6-1"><span class="n">6.1</span>Offline test suites</h2>
+  <p><code>test_chain.py</code> blanks the API key when it is imported, so a real key in <code>.env</code> is never used. It runs <strong>243 checks, all passing</strong>. <code>test_verification.py</code> adds <strong>14 passing tests</strong> of the verifier&rsquo;s tool loop. Both suites run before every merge.</p>
+  <div class="tcap"><span>Table 8.</span>What the offline suite guards (sections of <code>test_chain.py</code>)</div>
+  <table>
+    <thead><tr><th>Area</th><th>Guarantees tested</th></tr></thead>
+    <tbody>
+      <tr><td>Verification (sections 1, 2, 10, 13)</td><td>Scoring bands and ceilings; repository matching; injection, staleness and publisher gates; the restored deterministic verifier and its four real-data fixes</td></tr>
+      <tr><td>Evaluation and recommendation (3, 4, 12)</td><td>Score mapping; every tier rule; a fallback verdict can never be acted on</td></tr>
+      <tr><td>Retrieval and tools (6, 7)</td><td>The FAISS case (an exact identifier beats similarity); tools report errors as data and never raise into the loop</td></tr>
+      <tr><td>Safety (5)</td><td>Prompt-injection markers in titles, summaries and slide text</td></tr>
+      <tr><td>Failure states (9, 11)</td><td>A curriculum search failure driven through the real agent loop, and end to end through <code>capture()</code></td></tr>
+      <tr><td>Observability (8, 14)</td><td>Agent traces are recorded, and their plain-language display keeps searched, failed and skipped apart</td></tr>
+      <tr><td>Interface (16)</td><td>Every C-Sync page is smoke-run with Streamlit <code>AppTest</code>; only the Ask page and the fix panel may import an agent</td></tr>
+      <tr><td>Companion, fix and review (17, 18)</td><td>Citation checks, offline and error modes, placeholder preservation, flagging of new names, persistence of review decisions</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="s6-2"><span class="n">6.2</span>Golden dataset and harness</h2>
+  <p>The golden dataset holds 12 signals labelled by hand: 10 genuine and 2 fabricated. Each label records whether the claim is genuine, the confidence verification <em>should</em> assign, whether the signal presents stale news as new, a priority rank, the expected maturity and relevance, and the expected action tier. The labelling guide asks reviewers to leave a field empty rather than guess, because a guessed label silently invalidates the score. <code>run_eval.py</code> scores five layers, and <code>compare.py</code> refuses to compare runs that used different datasets (by SHA-256 hash) or different models.</p>
+  <div class="tcap"><span>Table 9.</span>Metrics by pipeline layer</div>
+  <table class="keep">
+    <thead><tr><th>Layer</th><th>Metrics</th><th class="num">Weight</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Clustering</td><td>Contamination rate; cluster count against the expected count</td><td class="num">0.20</td><td><span class="chip g">Scored</span></td></tr>
+      <tr><td>Verification</td><td>Truth&ndash;confidence gap (genuine minus fabricated); confidence MAE; stale-flag rate</td><td class="num">0.25</td><td><span class="chip g">Scored</span> <span class="small muted">stale flag needs a new output field</span></td></tr>
+      <tr><td>Curriculum</td><td>Precision@3; recall; correct abstention</td><td class="num">0.15</td><td><span class="chip n">Null</span> <span class="small muted">needs event-level citation labels</span></td></tr>
+      <tr><td>Evaluation</td><td>Spearman rank correlation; maturity and relevance MAE</td><td class="num">0.20</td><td><span class="chip n">Null</span> <span class="small muted">needs event-level labels</span></td></tr>
+      <tr><td>Recommendation</td><td>Exact tier accuracy; off-by-one accuracy; over-recommendation rate</td><td class="num">0.20</td><td><span class="chip n">Null</span> <span class="small muted">needs event-level tier labels</span></td></tr>
+    </tbody>
+  </table>
+  <p>A layer whose labels or outputs are missing scores <em>null</em>, never zero, and the composite renormalises its weights over the available layers. On the current dataset the composite is therefore a weighted mean of clustering and verification. The verification score is the mean of the truth&ndash;confidence gap &times; 100 and (1 &minus; MAE) &times; 100. Each run records the commit, dataset hash, model, token usage and the mean &plusmn; standard deviation over its repeats.</p>
+
+  <h2 id="s6-3"><span class="n">6.3</span>Results</h2>
+  <p>We scored four configurations of the verifier on the same dataset (SHA-256 <code>eb13e5ada377&hellip;</code>). The three offline runs used cached tool responses and no model (<code>TOOL_CACHE_ONLY=1</code>). The live run used <code>gpt-4o-mini-2024-07-18</code> with three repeats. Clustering scored 100 in every run: zero contamination, and 11 clusters against the 11 expected.</p>
+  <figure class="chart">
+    <!--CHART:eval-->
+    <figcaption><b class="fn">Figure 14.</b> <b>Verification and composite scores by verifier configuration</b> (0&ndash;100; higher is better). The error bars on the live run show &plusmn;1 standard deviation over three repeats; the offline runs are deterministic. Table 10 lists the same values.</figcaption>
+  </figure>
+  <div class="tcap"><span>Table 10.</span>Evaluation results on the golden dataset (12 signals, 3 repeats each)</div>
+  <table class="keep">
+    <thead><tr><th>Verifier configuration</th><th>Mode</th><th class="num">Verification</th><th class="num">Gap</th><th class="num">MAE</th><th class="num">Composite</th></tr></thead>
+    <tbody>
+      <tr><td>Pre-restore, source-tier fallback <span class="muted small">3f5c2a7</span></td><td>offline</td><td class="num">65.42</td><td class="num">0.450</td><td class="num">0.142</td><td class="num">80.79</td></tr>
+      <tr><td>Restored deterministic verifier, before fixes <span class="muted small">7d435e8</span></td><td>offline</td><td class="num">33.71</td><td class="num">&minus;0.005</td><td class="num">0.321</td><td class="num">63.17</td></tr>
+      <tr class="hl"><td>Restored verifier + 4 real-data fixes <span class="muted small">c4c9355</span></td><td>offline</td><td class="num">56.04</td><td class="num">0.275</td><td class="num">0.154</td><td class="num">75.58</td></tr>
+      <tr class="hl"><td>Restored verifier + fixes, live model <span class="muted small">156d86f</span></td><td>live &times;3</td><td class="num">60.90 &plusmn; 3.44</td><td class="num">0.358</td><td class="num">0.140</td><td class="num">78.28 &plusmn; 1.91</td></tr>
+    </tbody>
+  </table>
+  <p>The four fixes came from running the restored verifier on real data. Monorepo tags such as <code>langchain==1.4.0</code> are confirmed verbatim. A bare-name &ldquo;not found&rdquo; counts only against claims that rest on secondary sources alone, and a bare-name match never confirms such a claim, because of name-squatting repositories. A first-party post with nothing checkable scores 0.60, below the action floor. Together, the fixes raised the verification score from 33.7 to 56.0 offline. The live run, in which the model chooses the tool calls, scored 60.9 &plusmn; 3.4 and used about 245,000 tokens over its three repeats.</p>
+  <div class="callout amber">
+    <div class="ct">Reading these numbers honestly</div>
+    <p>In this 12-item set, every fabricated item is a secondary source and every genuine item a primary one, so a rule that looks only at source tier separates them by construction. The pre-restore verifier&rsquo;s higher score reflects that shortcut, not better verification. The restored verifier scores only what its tools confirmed, which is the behaviour we want on real data, where source tier and truth do not line up so neatly. The dataset needs harder cases before verification scores can be compared with confidence.</p>
+  </div>
+
+  <h2 id="s6-4"><span class="n">6.4</span>Evaluating the evaluator</h2>
+  <p>The harness itself had a bug, and finding it changed our numbers. <code>run_eval.py</code> used to pair trends with labels using <code>zip(trends, entries)</code>, that is, one trend per <em>cluster</em> against one label per <em>signal</em>. The default set has 11 clusters and 12 signals, so after the first merged cluster every trend was scored against the <em>next</em> signal&rsquo;s label. Each signal is now matched to the cluster that contains it. Every verification score produced before the fix, including figures we had previously reported, was misaligned and has been retired. A second fix made the dataset hash independent of line endings, so a Windows checkout of the same labels no longer looks like a different dataset to <code>compare.py</code>. The lesson: evaluation code deserves the same scrutiny as the code it evaluates.</p>
+</section>
+
+<!-- ======================================================= 7 LESSONS -->
+<section class="chapter compact" id="lessons">
+  <div class="kicker">Section 7</div>
+  <h1>Challenges and lessons learned</h1>
+  <div class="rule"></div>
+  <p class="lede">Most of the design in Section 3 exists because something went wrong on real data first. These are the failures that taught us the most.</p>
+
+  <h3><span class="n">7.1</span>A failed search looked exactly like &ldquo;no match&rdquo;</h3>
+  <p>The Curriculum Agent returned nothing both when it searched and found no match <em>and</em> when the search itself failed. During one live run the API spend limit was hit (HTTP 429). Every search failed silently, and three trends received confident <em>create a new lesson</em> recommendations claiming &ldquo;no existing coverage found&rdquo;, although no search had run. <strong>Fix:</strong> a <code>search_failed</code> state with a reason on every failure path; a rule that keeps unchecked trends at <em>keep watching</em>; and a banner stating that a failed search is <em>not</em> a finding of &ldquo;no match&rdquo;. The fix is verified offline end to end, and the re-run at scale is waiting for API quota.</p>
+
+  <h3><span class="n">7.2</span>Models compress confidence, and code can go missing</h3>
+  <p>Model-reported confidence did not separate one source from two, so all scoring moved into code (Section 3.3). A version-control lesson came with it: the deterministic verifier had never been committed, so for a while the model set confidence. We restored it from the team&rsquo;s reference copy and re-scored it (Table 10).</p>
+
+  <h3><span class="n">7.3</span>Title similarity merged unrelated news</h3>
+  <p>Clustering by title alone produced spurious cross-source merges that looked like corroborated, high-confidence events. An identifier-first pass with a strict 0.75 title fallback fixed this (Section 3.2).</p>
+
+  <h3><span class="n">7.4</span>&ldquo;Create a new lesson&rdquo; for everything</h3>
+  <p>In one live batch, nine of ten trends became new-lesson recommendations. They included independent journalism in Ukraine and the Navier&ndash;Stokes Millennium Prize problem: all verified, all uncovered, none in scope. An in-domain gate now requires a positive technical signal in the <em>title</em>, because vendor names appear in the body of every post a vendor publishes.</p>
+
+  <h3><span class="n">7.5</span>A version bump is not a curriculum gap</h3>
+  <p>openai-python v3.7.0 to v3.10.0 each proposed a new lesson introducing the OpenAI Python library, which the course already teaches in several labs. A release that matches nothing now stays at <em>keep watching</em>.</p>
+
+  <h3><span class="n">7.6</span>Tools return the wrong thing, and models invent inputs</h3>
+  <p>A GitHub search for &ldquo;langchain&rdquo; returned <code>microsoft/markitdown</code> first, because results are sorted by stars, and the top result was taken as confirmation. The model also invented <code>openai/openai</code> while checking a genuine post. Lookups are now matched against the repository a signal names, and only a named repository can be reported as missing.</p>
+
+  <h3><span class="n">7.7</span>Matching words is not matching meaning</h3>
+  <p>&ldquo;Announcing LangGraph v0.1&rdquo; matched a cell that already used the new API, where the old name appeared only in a comment. &ldquo;An Alien Mind&rdquo; matched an AI-ethics slide through the word &ldquo;alignment&rdquo;, but the essay argued policy while the slide taught technique. Exact matching cannot tell code from commentary about code. That is why a human approves every recommendation, and why labelled positive cases are scarce.</p>
+
+  <h3><span class="n">7.8</span>Live runs are not repeatable</h3>
+  <p>The same 10 signals changed tier on 5 of 10 across three live runs. We capture a run once, replay it deterministically and document the variance, rather than demonstrating live and hoping.</p>
+</section>
+
+<!-- ======================================================= 8 LIMITATIONS -->
+<section class="chapter" id="limits">
+  <div class="kicker">Section 8</div>
+  <h1>Limitations and future work</h1>
+  <div class="rule"></div>
+  <p class="lede">What the current system cannot yet claim, and the work that would change that.</p>
+
+  <h2>Limitations</h2>
+  <ul>
+    <li><strong>The evaluation covers only part of the pipeline.</strong> The default golden dataset has 12 signals, and its tier labels are 10 &times; <em>keep watching</em> and 2 &times; <em>add optional content</em>, with no <em>update existing material</em> or <em>create a new lesson</em> labels. A 13-signal variant adds one <em>update</em> case (LangChain and LangGraph v1.0, <code>create_react_agent</code> &rarr; <code>create_agent</code>), but it lacks the fields that the clustering metrics need. The curriculum, evaluation and recommendation layers score null until the labels are event-level.</li>
+    <li><strong>Two metrics need new outputs, not more labels.</strong> The stale-flag rate needs an explicit staleness field on <code>VerifiedTrend</code>, and precision@3 needs the Curriculum Agent to expose its top three candidates rather than only its final choice.</li>
+    <li><strong>Behavioural tests have not been run.</strong> The twelve promptfoo cases are written, but promptfoo requires Node 22.22 or later and the development machine runs 21.6.</li>
+    <li><strong>Some agents are lightly exercised.</strong> The Instructor Companion has been tested live only lightly, and the quality of its answers has not been evaluated. The Fix Agent&rsquo;s first live request hit the spend limit; the interface correctly showed the error and a retry button, but no draft has been produced live yet.</li>
+    <li><strong>Live runs are blocked.</strong> The OpenAI project&rsquo;s spend limit prevents the at-scale re-run that would confirm the search-failure fix, and a full evaluation re-run. The limit applies to the project, so a new key does not help.</li>
+    <li><strong>The design is conservative.</strong> Blog-only trends cannot reach an action tier without corroboration, and <em>investigate larger change</em> is unreachable. Both choices trade recall for trust.</li>
+    <li><strong>Retrieval has a narrow range.</strong> MiniLM compresses similarity scores into a narrow band. The thresholds are calibrated to it and must be re-measured if the embedding model changes.</li>
+  </ul>
+
+  <h2>Future work</h2>
+  <ol>
+    <li><strong>A Content-Type Agent.</strong> Classify each signal as a release, announcement, case study, self-promotion or opinion before the tier gates, to filter the Show HN posts and vendor case studies that pass the in-domain gate.</li>
+    <li><strong>An event-level golden dataset with positive cases.</strong> Merge the two dataset variants, key labels by event, and add verified <em>update</em> and <em>new lesson</em> cases. That would unblock a whole column of metrics at once.</li>
+    <li><strong>Scheduled monitoring and notifications.</strong> Run the capture on a schedule and notify instructors about new actionable recommendations.</li>
+    <li><strong>Multi-module signals.</strong> Let an evaluation carry several matches, so that <em>investigate larger change</em> becomes reachable for paradigm shifts.</li>
+    <li><strong>From approval to pull request.</strong> Turn an approved fix into a pull request against the course repository, so that a human still reviews and merges it.</li>
+    <li><strong>More sources and stronger retrieval.</strong> Add package indexes and documentation changelogs, and evaluate a larger embedding model against the calibrated thresholds.</li>
+  </ol>
+</section>
+
+<!-- ======================================================= 9 CONCLUSION -->
+<section class="chapter" id="conclusion">
+  <div class="kicker">Section 9</div>
+  <h1>Conclusion</h1>
+  <div class="rule"></div>
+  <p class="lede">AI Trend Agent shows that an agentic system can keep a fast-moving course current without asking anyone to trust a black box.</p>
+  <p>We set out to tell an instructor, soon after a change happens, exactly which slides or lab cells it affects and what to do about it, with evidence strong enough to trust. On a real 30-day capture of the course&rsquo;s own toolchain, the system reduced 74 signals to 29 evidence-backed recommendations. It pinpointed 13 actionable changes to specific slides and lab cells, including the deprecation that motivated the project, which it traced from a GitHub release to cell 36 of the Week 3 LangChain lab.</p>
+  <p>The most important decisions were about <em>where</em> to use a language model. Models choose tool calls, write queries and explain decisions; code computes confidence, scores and tiers from facts the tools established. Failures are explicit states rather than silent defaults, every recommendation carries its trace, and an instructor makes the final call. Each of these rules exists because we saw what happened without it on real data.</p>
+  <p>The evaluation is honest about its reach. The deterministic core is well tested, with 257 offline tests. The golden dataset scores clustering and verification, but it needs event-level labels and harder cases before it can grade the later stages. With those labels, a Content-Type Agent and scheduled runs, C-Sync could move from a recorded demonstration to a tool that instructors use every week.</p>
+  <div class="callout quote">
+    <p>The agent recommends. A human decides. Every recommendation shows its work.</p>
+  </div>
+</section>
+
+<!-- ======================================================= APPENDICES -->
+<section class="chapter" id="appendix">
+  <div class="kicker">Appendices</div>
+  <h1>Appendices</h1>
+  <div class="rule"></div>
+
+  <h2><span class="n">A</span>Project team</h2>
+  <table>
+    <thead><tr><th>Name</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Abdurahman Al-Duraywish</strong></td><td>Team Lead</td></tr>
+      <tr><td><strong>Rafeef Alsuhaibani</strong></td><td>Team member</td></tr>
+      <tr><td><strong>Aldanah Aldosari</strong></td><td>Team member</td></tr>
+      <tr><td><strong>Reyouf Faisal</strong></td><td>Team member</td></tr>
+    </tbody>
+  </table>
+  <p class="small">The work was organised into four workstreams: Data &amp; Ingestion, Agents &amp; Tools, Platform &amp; Security, and Evaluation &amp; QA. Capstone project for the SDA &times; WeCloudData Agentic AI Engineering Program. Repository: <a href="https://github.com/DHM22/AI-Trend-Agent"><code>github.com/DHM22/AI-Trend-Agent</code></a>, branch <code>feature/ai-trend-agent</code>.</p>
+
+  <h2><span class="n">B</span>Running the system</h2>
+  <p class="small">Python 3.10+, <code>pip install -r requirements.txt</code>, and copy <code>.env.example</code> to <code>.env</code>. <code>OPENAI_API_KEY</code> is needed only for live agent runs; <code>GITHUB_TOKEN</code> raises the GitHub rate limit. On Windows, set <code>PYTHONIOENCODING=utf-8</code> before printing feed titles.</p>
+<pre><span class="c"># the interface: replays the recorded run, no API calls except Ask and "Draft the fix"</span>
+<b>python -m streamlit run c_sync/app.py</b>
+
+<span class="c"># offline checks (0 API calls); run both before merging</span>
+python 02_src/agents/test_chain.py
+python 02_src/tests/test_verification.py
+
+<span class="c"># replay or capture a run</span>
+python 02_src/demo_snapshot.py --replay
+python 02_src/demo_snapshot.py --capture --snapshot 01_data/experiment.json --limit 2
+
+<span class="c"># build the course index, then query it</span>
+python 02_src/curriculum_ingest.py --curriculum 01_data/curriculum --db ./vectorstore
+python 02_src/curriculum_ingest.py --db ./vectorstore --query "chunking" --week 2
+
+<span class="c"># monitoring and clustering</span>
+python 02_src/monitoring_github.py --days 30
+python 02_src/monitoring_rss.py --days 30 [--secondary]
+python 02_src/clustering.py --signals 01_data/signals.json --check
+
+<span class="c"># evaluation</span>
+python 04_eval/run_eval.py --repeats 3 --out 04_eval/results/&lt;name&gt;.json
+python 04_eval/compare.py &lt;baseline.json&gt; &lt;after.json&gt;</pre>
+
+  <h2><span class="n">C</span>Repository structure</h2>
+<pre>01_data/          curriculum (Weeks 2&ndash;6, not in Git), signals*.json, demo_snapshot.json
+02_src/           schemas, monitoring, clustering, curriculum_ingest, demo_snapshot
+02_src/agents/    verification, curriculum, evaluation, recommendation,
+                  companion, fix, tools, test_chain.py
+02_src/tests/     test_verification.py
+03_assets/        architecture diagram, logo, screenshots, presentation, this report
+04_eval/          golden datasets, run_eval.py, compare.py, saved results
+c_sync/           C-Sync, the Streamlit interface (app.py, ui_*.py)
+vectorstore/      local Chroma index, regenerated by curriculum_ingest.py</pre>
+
+  <h2><span class="n">D</span>Glossary</h2>
+  <table class="kv">
+    <tbody>
+      <tr><td>Signal</td><td>One item from a monitored source: a GitHub release or a blog post (<code>RawSignal</code>).</td></tr>
+      <tr><td>Primary / secondary source</td><td>Primary: the project&rsquo;s own words (release, official blog). Secondary: someone reporting on it (forum, news).</td></tr>
+      <tr><td>Cluster (event)</td><td>Signals judged to report the same underlying event; its distinct sources count as independent.</td></tr>
+      <tr><td>Confidence</td><td>Verification&rsquo;s 0&ndash;1 belief that the event is real, computed in code from checked facts.</td></tr>
+      <tr><td>Maturity / relevance</td><td>1&ndash;5 scores: how established the trend is, and how directly it hits what the course teaches.</td></tr>
+      <tr><td>Action tiers</td><td><em>Keep watching</em>, <em>add optional content</em>, <em>update existing material</em>, <em>create a new lesson</em> and <em>investigate larger change</em> (not reachable by design).</td></tr>
+      <tr><td>Exact identifier match</td><td>A code identifier from the trend (e.g. <code>RunnableWithMessageHistory</code>) found verbatim in a slide or cell.</td></tr>
+      <tr><td>Trace</td><td>The recorded reasoning behind a recommendation: verification steps and tool results, curriculum queries and outcome.</td></tr>
+      <tr><td>Snapshot</td><td>A captured pipeline run saved to JSON and replayed by C-Sync with zero API calls.</td></tr>
+      <tr><td>Search failed</td><td>A curriculum search that was attempted but could not run. Never equivalent to &ldquo;no match&rdquo;.</td></tr>
+      <tr><td>Human in the loop</td><td>Every recommendation waits for an instructor&rsquo;s decision: approve, request changes or reject.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</body>
+</html>
