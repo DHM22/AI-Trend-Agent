@@ -44,3 +44,7 @@ dist/
 
 # Claude Code local config and project skills (not shared)
 .claude/
+
+# instructor decisions recorded in C-Sync (local, per machine)
+01_data/reviews.json
+01_data/reviews.tmp

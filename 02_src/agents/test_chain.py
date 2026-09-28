@@ -1257,15 +1257,17 @@ def test_csync():
           "maturity is evaluation.py's band; relevance is solved from total_score")
 
     code = {p.name: p.read_text(encoding="utf-8") for p in cs.glob("*.py")}
-    # ui_ask.py (the Ask page) is the one exception: it runs the CompanionAgent,
-    # and only through it -- never the pipeline's agents or an OpenAI client directly.
-    check("c-sync: no agent is run (no Agent classes, no OpenAI client) outside the Ask page",
-          [n for n, t in code.items() if n != "ui_ask.py"
+    # Two exceptions: ui_ask.py (the Ask page) runs the CompanionAgent and ui_fix.py
+    # (the Decision page's fix panel) runs the FixAgent -- each only its own agent,
+    # never the pipeline's agents or an OpenAI client directly.
+    check("c-sync: no agent is run (no Agent classes, no OpenAI client) outside the Ask page and fix panel",
+          [n for n, t in code.items() if n not in ("ui_ask.py", "ui_fix.py")
            and _re.search(r"^\s*(?:from|import)\s[^\n]*(?:Agent|openai)|\w+Agent\(|OpenAI\(", t, _re.M)], [])
-    ask_code = code.get("ui_ask.py", "")
+    agent_calls = r"\b(\w*Agent)\(|\b(OpenAI)\(|^\s*(?:from|import)\s+(openai)\b"
     check("c-sync: the Ask page runs only the CompanionAgent, never OpenAI directly",
-          sorted(set(_re.findall(r"\b(\w*Agent)\(|\b(OpenAI)\(|^\s*(?:from|import)\s+(openai)\b", ask_code, _re.M))),
-          [("CompanionAgent", "", "")])
+          sorted(set(_re.findall(agent_calls, code.get("ui_ask.py", ""), _re.M))), [("CompanionAgent", "", "")])
+    check("c-sync: the fix panel runs only the FixAgent, never OpenAI directly",
+          sorted(set(_re.findall(agent_calls, code.get("ui_fix.py", ""), _re.M))), [("FixAgent", "", "")])
     check("c-sync: the SkillRadar name is gone from what users see",
           [n for n, t in code.items()
            for line in t.splitlines() if "skillradar" in line.lower() and "SKILLRADAR_BACKEND" not in line], [])
@@ -1475,6 +1477,93 @@ def test_companion():
 
 
 # ===========================================================================
+# 18. FIX AGENT + HUMAN IN THE LOOP (agents/fix.py, c_sync/ui_review.py)
+# A fix is a draft; nothing changes until an instructor decides. Offline only.
+# ===========================================================================
+
+def test_fix_and_review():
+    import json, os, tempfile
+    from agents import fix as FX
+
+    rec = {"trend": "acme/lib: v2.0", "recommended_action": "update_existing_material",
+           "verification_note": "claim CONFIRMED", "evidence": [{"note": "verify_release CONFIRMED v2.0"}],
+           "action_plan": ["update cell 36"],
+           "match": {"citation": "Week 3 / Lab: Demo / cell 36", "content_type": "lab",
+                     "source_file": "Demo.ipynb", "slide_number": 36, "matched_text": "old_api(x)"}}
+    cell = "# YOUR CODE HERE\nfrom acme.lib import old_api\nresult = old_api(x)"
+    signal = types.SimpleNamespace(title="acme/lib: v2.0", summary="deprecate old_api in favour of new_api (#1)")
+    evidence = FX.release_evidence(rec, [signal])
+    check_true("fix: the release notes of the matching signal are evidence",
+               any("new_api" in line for line in evidence) and any("CONFIRMED" in line for line in evidence))
+    check("fix: no cited course content -> no cell", FX.full_cell(None), None)
+
+    d = FX.FixAgent().draft(rec, cell, evidence)
+    check("fix: no key -> offline, nothing drafted", (d.mode, d.can_fix, d.after), (FX.MODE_OFFLINE, False, ""))
+
+    reply = json.dumps({"can_fix": True,
+                        "after": "# YOUR CODE HERE\nfrom acme.lib import new_api\nresult = new_api(x, strict_mode=True)",
+                        "changes": ["old_api -> new_api"], "needs_verification": ["strict_mode default"],
+                        "reason": "old_api is deprecated"})
+    d = FX.FixAgent(client=_ScriptedClient(_fake_reply(content=reply))).draft(rec, cell, evidence)
+    check("fix: a drafted fix keeps the cell as 'before' and the draft as 'after'",
+          (d.mode, d.can_fix, d.before == cell, "new_api" in d.after), (FX.MODE_MODEL, True, True, True))
+    check("fix: names the evidence never mentions are flagged, evidenced ones are not",
+          d.new_names, ["strict_mode"])
+
+    d = FX.FixAgent(client=_ScriptedClient(_fake_reply(content=json.dumps(
+        {"can_fix": False, "after": "x = 1", "reason": "the replacement is not named"})))).draft(rec, cell, evidence)
+    check("fix: can_fix false -> no draft shown, nothing flagged", (d.can_fix, d.after, d.new_names), (False, "", []))
+    d = FX.FixAgent(client=_AlwaysFails()).draft(rec, cell, evidence)
+    check_true("fix: a model failure is an error, never a made-up draft",
+               d.mode == FX.MODE_ERROR and d.after == "" and "failed" in d.reason)
+    d = FX.FixAgent().draft(rec, None, evidence)
+    check_true("fix: without the full cell it falls back to the saved excerpt",
+               d.from_excerpt and d.before == "old_api(x)")
+
+    # --- the instructor's decision, stored outside the repo for the test -----
+    cs = Path(__file__).resolve().parents[2] / "c_sync"
+    if str(cs) not in sys.path:
+        sys.path.insert(0, str(cs))
+    try:
+        import streamlit  # noqa: F401
+        from streamlit.testing.v1 import AppTest
+    except ImportError:
+        SKIP.append("fix/review: streamlit not installed")
+        return
+    import ui_review as RV
+    saved = os.environ.get("REVIEWS_PATH")
+    with tempfile.TemporaryDirectory() as tmp:
+        os.environ["REVIEWS_PATH"] = os.path.join(tmp, "reviews.json")
+        try:
+            check("review: nothing decided -> awaiting review", "Awaiting instructor review" in RV.status_pill("acme/lib: v2.0"), True)
+            RV.save_review("acme/lib: v2.0", "approved", "  ship it  ", fix={"before": "a", "after": "b", "changes": [],
+                                                                         "needs_verification": [], "new_names": []})
+            got = RV.load_reviews()["acme/lib: v2.0"]
+            check("review: a decision is saved with its note and the attached fix",
+                  (got["decision"], got["note"], got["fix"]["after"]), ("approved", "ship it", "b"))
+            check_true("review: the status pill shows the decision", "Approved" in RV.status_pill("acme/lib: v2.0"))
+            try:
+                RV.save_review("acme/lib: v2.0", "maybe")
+                bad = "accepted"
+            except ValueError:
+                bad = "refused"
+            check("review: an unknown decision is refused", bad, "refused")
+
+            at = AppTest.from_file(str(cs / "app.py"), default_timeout=60)
+            at.session_state["page"] = "Decision"
+            at.run()
+            at.button(key="review_approved_0").click().run()
+            snap = json.loads((Path(__file__).resolve().parents[2] / "01_data" / "demo_snapshot.json").read_text(encoding="utf-8"))
+            first = snap["recommendations"][0]["trend"]
+            check("review: 'Approve' on the Decision page records the decision for that trend",
+                  RV.load_reviews().get(first, {}).get("decision"), "approved")
+            check_true("review: no key -> the fix panel says so instead of drafting",
+                       any("no fix can be drafted" in i.value for i in at.info))
+        finally:
+            os.environ.pop("REVIEWS_PATH", None) if saved is None else os.environ.__setitem__("REVIEWS_PATH", saved)
+
+
+# ===========================================================================
 
 TESTS = [
     ("verification scoring", test_verification_scoring),
@@ -1503,6 +1592,7 @@ TESTS = [
     ("capture: verifier mode + reasoning", test_capture_records_verifier_mode_and_reasoning),
     ("c-sync", test_csync),
     ("instructor companion", test_companion),
+    ("fix agent + human in the loop", test_fix_and_review),
 ]
 
 

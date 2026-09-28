@@ -15,6 +15,8 @@ from ui_components import (
     action_label, action_tone, dashboard_card, e, empty_state, page_intro, pill,
     score_ring, section, squares_funnel, stat, trend_card,
 )
+from ui_fix import fix_panel
+from ui_review import load_reviews, review_panel, status_pill
 from ui_visuals import radar_bridge, radar_map
 
 
@@ -192,11 +194,12 @@ def dashboard(records: list[dict]) -> None:
     if not rows:
         empty_state("Nothing matches", "Change the filters above.")
         return
+    reviews = load_reviews()
     for offset in range(0, len(rows), 2):
         cols = st.columns(2, gap="small")
         for col, (index, record) in zip(cols, rows[offset:offset + 2]):
             with col:
-                dashboard_card(record)
+                dashboard_card(record, status_pill(record.get("trend") or "", reviews))
                 with st.container(horizontal=True):
                     st.button("Story", key=f"dash_story_{index}", icon=":material/arrow_forward:",
                               on_click=go, args=("Trend story", index))
@@ -332,10 +335,12 @@ def decision(records: list[dict], signals: list) -> None:
     match = record.get("match")
     area = match.get("citation") if match else "No cited course area"
     ev_pill = pill(f"{len(record.get('evidence') or [])} evidence item(s)", "cyan")
-    st.html(f'<div class="sr-decision {tone}"><div class="sr-kicker">RECOMMENDATION · {e(record.get("trend"))}</div><div class="sr-decision-title">{e(action_label(action))}</div><div class="sr-decision-copy">{e(record.get("verification_note") or "No verification note recorded.")}</div><div style="margin-top:25px;display:flex;gap:8px;flex-wrap:wrap">{ev_pill}{pill(area,"violet") if match else pill("No cited course area","amber")}</div></div>')
+    st.html(f'<div class="sr-decision {tone}"><div class="sr-kicker">RECOMMENDATION · {e(record.get("trend"))}</div><div class="sr-decision-title">{e(action_label(action))}</div><div class="sr-decision-copy">{e(record.get("verification_note") or "No verification note recorded.")}</div><div style="margin-top:25px;display:flex;gap:8px;flex-wrap:wrap">{status_pill(record.get("trend") or "")}{ev_pill}{pill(area,"violet") if match else pill("No cited course area","amber")}</div></div>')
     section("The action plan", "Steps returned by the saved Recommendation Agent run.", "WHAT CHANGES")
     for number, step in enumerate(record.get("action_plan") or [], 1):
         st.html(f'<div class="sr-glass" style="margin-bottom:12px;display:flex;align-items:flex-start;gap:18px"><span class="sr-pill violet">{number:02d}</span><div style="color:#e6edf9;font-size:1.04rem;line-height:1.55">{e(step)}</div></div>')
+    fix_panel(record, selected, signals)
+    review_panel(record, selected)
     chain = [
         ("Trend", record.get("trend") or "Unavailable"),
         ("Evidence", f"{len(record.get('evidence') or [])} saved item(s)"),

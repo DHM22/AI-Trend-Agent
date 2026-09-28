@@ -217,7 +217,7 @@ def squares_funnel(stages: list[tuple[int, str]]) -> None:
             f'aria-label="From noise to curriculum: {e(summary)}">{arrow.join(cells)}</div></div>')
 
 
-def dashboard_card(record: dict) -> None:
+def dashboard_card(record: dict, status: str = "") -> None:
     """Compact dashboard row: tier, score, confidence and citation. The action
     plan stays behind the "Full plan" expander under the card. Everything
     comes from the stored record."""
@@ -226,7 +226,7 @@ def dashboard_card(record: dict) -> None:
     conf = record.get("confidence")
     score = record.get("total_score")
     cite = match.get("citation") or "No curriculum match"
-    pills = pill(action_label(action), action_tone(action))
+    pills = status + pill(action_label(action), action_tone(action))
     if isinstance(conf, (int, float)):
         pills += pill(f"{conf:.2f} confidence", "cyan")
     if match.get("content_type"):
