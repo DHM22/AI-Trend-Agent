@@ -9,7 +9,7 @@ def load(path):
     try: return json.loads(Path(path).read_text())
     except Exception as exc: raise SystemExit(f"compare error: cannot read {path}: {exc}")
 def main():
-    if len(sys.argv) != 3: raise SystemExit("usage: python evals/compare.py <baseline.json> <after.json>")
+    if len(sys.argv) != 3: raise SystemExit("usage: python 04_eval/compare.py <baseline.json> <after.json>")
     before, after = load(sys.argv[1]), load(sys.argv[2])
     for key in ("sha256",):
         if before["dataset"].get(key) != after["dataset"].get(key): raise SystemExit("compare error: dataset sha256 differs; refusing meaningless comparison")

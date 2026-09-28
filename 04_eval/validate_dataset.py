@@ -11,7 +11,7 @@ DATASET = Path(__file__).resolve().parent / "data" / "test_signals_graded.json"
 FIELDS = ("is_genuine", "confidence", "stale_presented_as_new", "rank", "maturity", "relevance", "action_tier")
 # The four tiers recommendation._select_tier actually emits. schemas.ActionTier
 # also declares "investigate_larger_change", but the agent never returns it, so
-# it is not a valid gold value here (see evals/GOLD_LABELS.md).
+# it is not a valid gold value here (see 04_eval/GOLD_LABELS.md).
 TIERS = {"watch", "update_existing_material", "add_optional_content", "add_new_lesson"}
 
 

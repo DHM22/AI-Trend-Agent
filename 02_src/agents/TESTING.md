@@ -21,10 +21,14 @@ The intended pre-merge command is:
 python 02_src/agents/test_chain.py
 ```
 
-It could not be run in this checkout because `02_src/agents/test_chain.py` does
-not exist. This is a repository gap, not a passing test. Do not treat the live
-agent commands as a substitute for an offline pre-merge suite until that file is
-restored or added by the team.
+It makes zero API calls (it blanks `OPENAI_API_KEY` at import) and currently
+reports `243 passed, 0 failed, 0 errored, 0 skipped`. Run the verifier tests too:
+
+```powershell
+python 02_src/tests/test_verification.py
+```
+
+which report `14/14 passed`.
 
 The former `test_tool_use.py` diagnostic was also removed. It answered whether
 verification actually calls its tools instead of guessing from tone. Its trace

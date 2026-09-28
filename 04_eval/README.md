@@ -3,13 +3,13 @@
 Run a baseline:
 
 ```bash
-python3 evals/run_eval.py --repeats 3 --out evals/results/baseline.json
+python 04_eval/run_eval.py --repeats 3 --out 04_eval/results/baseline.json
 ```
 
 Compare it after a change:
 
 ```bash
-python3 evals/compare.py evals/results/baseline.json evals/results/after.json
+python 04_eval/compare.py 04_eval/results/baseline.json 04_eval/results/after.json
 ```
 
 Scores are 0–100. Clustering combines inverse contamination and expected-count

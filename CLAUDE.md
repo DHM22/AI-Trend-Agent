@@ -28,7 +28,15 @@ python 02_src/agents/verification.py --signals 01_data/signals.json --show-reaso
 python -m streamlit run c_sync/app.py                   # C-Sync, the only UI (reads SNAPSHOT_PATH; 0 API calls except Ask + "Draft the fix")
 python 04_eval/run_eval.py --repeats 3 --out 04_eval/results/<name>.json [--dataset ...]   # default 04_eval/data/test_signals_graded.json
 python 04_eval/compare.py <baseline.json> <after.json>  # fails on different dataset hash/model
+docker compose up --build                               # C-Sync in a container on :8501; .env via env_file, vectorstore/ mounted
 ```
+
+Docker (added 2026-09-28; built and verified with Docker Desktop 29.8.1: container healthy, C-Sync served on :8501,
+a decision survived `docker compose restart`, and both suites pass inside the image via
+`docker compose run --rm -w /app c-sync python ...`). Windows needs WSL 2 (`wsl --install`) or Docker Desktop
+reports "virtualization support not detected". In Git Bash set MSYS_NO_PATHCONV=1 or `/data/...` paths get rewritten. `.dockerignore` keeps `.env`, `vectorstore/` and course files OUT
+of the image; `03_assets/logo/` must stay IN (C-Sync's sidebar mark). Decisions persist in the `reviews` volume
+(REVIEWS_PATH=/data/reviews.json). `requirements.txt` is pinned (==) to the versions the suites pass with.
 
 **Environment variables** (beyond `OPENAI_API_KEY` / `GITHUB_TOKEN`):
 
@@ -43,8 +51,7 @@ python 04_eval/compare.py <baseline.json> <after.json>  # fails on different dat
 | `PYTHONIOENCODING` | — | set to `utf-8` on Windows, see gotchas below |
 
 There is no linter or build step. Ingestion is incremental (upsert): delete `vectorstore/` and re-ingest when
-ingestion logic changes. See `02_src/agents/TESTING.md` for expected outputs (note: its claim that `test_chain.py`
-is missing is stale — the file exists).
+ingestion logic changes. See `02_src/agents/TESTING.md` for expected outputs.
 
 **Windows gotchas, both hit in practice:**
 - `monitoring_rss.py` (and anything printing feed titles) dies with `UnicodeEncodeError` on the cp1252 console as
@@ -110,10 +117,8 @@ c_sync/                                C-SYNC, THE ONLY UI: Streamlit (`python -
                                         demo_ui.py. aldanah's ui/ SkillRadar copy was dropped in merge 87e10f4
 01_data/curriculum/week_02..week_06/   slides (.pdf/.pptx) + labs (.ipynb), solutions + some student versions
 01_data/signals.json                   30-day signal capture
-01_data/signals_90.json                90-day primary-source-only (71 signals, 4-repo era)
-01_data/signals_90_sec.json            90-day + secondary sources (Hacker News) (98 signals)
-01_data/signals_90_new.json            90-day primary, AFTER adding langgraph+langsmith-sdk repos (92)
-01_data/signals_90_sec_new.json        as above + secondary (105; short ~26 HN signals — hnrss parse failure, re-fetch)
+01_data/signals_2026-09-21.json        the 74-signal capture the committed snapshot was taken from
+                                        (the four signals_90*.json captures were deleted 2026-09-28; in git history)
 01_data/demo_snapshot.json             frozen run used for offline/deterministic demo (COMMITTED)
 02_src/schemas.py                      shared dataclasses — the data contract across all stages
 02_src/curriculum_ingest.py            RAG ingestion for .pptx/.pdf/.ipynb, hybrid semantic + identifier search
@@ -187,19 +192,17 @@ c_sync/                                C-SYNC, THE ONLY UI: Streamlit (`python -
                                         recommendation layer scores
 04_eval/GOLD_LABELS.md                 Labeling spec: is_genuine, confidence, stale_presented_as_new, rank,
                                         maturity, relevance, action_tier
-04_eval/data/test_signals_graded*.json THREE variants — see "Gold dataset: which file" below
+04_eval/data/test_signals_graded*.json TWO variants — see "Gold dataset: which file" below
 04_eval/make_dataset.py, validate_dataset.py, compare.py   Build/validate the gold dataset; compare two eval runs
 04_eval/DATASET_REQUIREMENTS.md        the spec that answers "why is this metric null" — per-gold-field, and it is
                                         explicit that recency needs a NEW output contract (e.g. VerifiedTrend.is_stale)
                                         and that labels must be event-level. Read it before relabelling anything
 04_eval/results/*.json                 saved eval runs. rescored_{1,2,3}_*_nokey.json are the ONLY verification
-                                        numbers scored with the fixed pairing (see "Eval pairing bug"). The older
-                                        files (baseline, baseline_wk5, baseline_wk5_v2, my_run, my_run_2,
-                                        INVALID_offline_run) have MISALIGNED verification scores -- don't compare
-                                        against them. Each metric's unmet `requirement` string is stored in
-                                        baseline_wk5.json
+                                        numbers scored with the fixed pairing (see "Eval pairing bug").
+                                        baseline_wk5.json has MISALIGNED verification scores -- don't compare
+                                        against it; it is kept because each metric's unmet `requirement` string
+                                        is stored there. The other misaligned runs were deleted 2026-09-28
 promptfooconfig.yaml (12 behavioral cases) is not in the tree; never run (see Known gaps)
-04_eval/README.md still writes paths as evals/... — the directory is 04_eval/
 ```
 
 ## Key design decisions (with rationale — don't relitigate these without new evidence)
@@ -251,16 +254,16 @@ with a red rule. C-Sync does not show traces, so today the failure is visible in
 (`recommendation.py` main, `demo_snapshot.capture`) call; CLI prints `!! SEARCH FAILED -- this is NOT a finding of 'no match'`.
 Verified offline end to end through `capture()` (test_chain section 11). **Not yet verified at scale** — needs a full re-run once API quota allows.
 
-## Gold dataset: which file (three exist, they are NOT interchangeable)
+## Gold dataset: which file (two exist, they are NOT interchangeable)
 
-All three live in `04_eval/data/` (moved from the repo root 2026-09-24; contents and hashes unchanged).
+Both live in `04_eval/data/` (moved from the repo root 2026-09-24; contents and hashes unchanged). A third,
+`test_signals_graded_backup.json` (identical tiers to the default, 7 spec fields only), was deleted 2026-09-28.
 `run_eval.py`'s `DEFAULT_DATASET` is `04_eval/data/test_signals_graded.json`.
 
 | file | entries | gold keys | tiers |
 | --- | --- | --- | --- |
 | `test_signals_graded.json` (default) | 12 | 11 — the 7 spec fields **plus** `event_id`, `is_fabricated`, `no_match_expected`, `acceptable_citations` | 10 watch, 2 optional |
 | `test_signals_graded_updated.json` | 13 | 7 spec fields only | 9 watch, 3 optional, **1 update_existing_material** |
-| `test_signals_graded_backup.json` | 12 | 7 spec fields only | 10 watch, 2 optional |
 
 **The trap:** `_updated.json` is the only file with a positive `update_existing_material` case (LangChain +
 LangGraph v1.0, `create_react_agent` → `create_agent`, maturity 5 / relevance 5), but it has been stripped of the
@@ -301,7 +304,7 @@ script, before trusting a validation run on a non-default dataset.
     but a signal that old surfacing in a 90-day capture is close to the exact case that flag exists to catch.
 - **`run_eval.py`'s curriculum/evaluation/recommendation layers score `null`** until a gold entry has an expected
   citation/maturity/relevance/tier to compare against. Note that only `test_signals_graded.json` has
-  `acceptable_citations` at all (4 of its 12 entries); the other two variants dropped the field entirely.
+  `acceptable_citations` at all (4 of its 12 entries); `_updated.json` dropped the field entirely.
   Each metric's unmet `requirement` string is stored in `04_eval/results/baseline_wk5.json` — read it to see
   exactly what each `null` is still waiting for. Reading those strings, the nulls have **three
   distinct causes**, and only the first is a labelling problem:
