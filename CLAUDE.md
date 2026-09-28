@@ -25,7 +25,7 @@ python 02_src/monitoring_rss.py [--days N] [--secondary] [--check]
 python 02_src/monitoring_github.py [--days N] [--repo owner/name]
 python 02_src/clustering.py --signals 01_data/signals.json [--check|--frequencies]
 python 02_src/agents/verification.py --signals 01_data/signals.json --show-reasoning   # no key -> deterministic tool loop, same scorer; use --index/--limit
-python -m streamlit run c_sync/app.py                   # C-Sync, the only UI (reads SNAPSHOT_PATH; 0 API calls except the Ask page)
+python -m streamlit run c_sync/app.py                   # C-Sync, the only UI (reads SNAPSHOT_PATH; 0 API calls except Ask + "Draft the fix")
 python 04_eval/run_eval.py --repeats 3 --out 04_eval/results/<name>.json [--dataset ...]   # default 04_eval/data/test_signals_graded.json
 python 04_eval/compare.py <baseline.json> <after.json>  # fails on different dataset hash/model
 ```
@@ -39,6 +39,7 @@ python 04_eval/compare.py <baseline.json> <after.json>  # fails on different dat
 | `TOOL_CACHE_ONLY` | unset | `=1` serves tools from cache only and never touches the network; a miss comes back as `{"error": ..., "_cache": "miss"}` **data**, not an exception. This is how a live-ish run happens while the spend limit is up |
 | `TOOL_CACHE_TTL` | never expires | seconds before a cache entry is stale |
 | `SNAPSHOT_PATH` | `01_data/demo_snapshot.json` | which capture C-Sync shows |
+| `REVIEWS_PATH` | `01_data/reviews.json` (gitignored) | where C-Sync saves instructor decisions (approve / changes / reject), keyed by trend title |
 | `PYTHONIOENCODING` | — | set to `utf-8` on Windows, see gotchas below |
 
 There is no linter or build step. Ingestion is incremental (upsert): delete `vectorstore/` and re-ingest when
@@ -81,9 +82,17 @@ c_sync/                                C-SYNC, THE ONLY UI: Streamlit (`python -
                                         evaluation._maturity_score(stored confidence), relevance solved from total_score.
                                         Left sidebar = 9 pages (Home, Dashboard, Radar, Trend story, The gap, Evaluation,
                                         Decision, Ask, How it works); top = only the 5 stages. Ask (ui_ask.py) = the
-                                        Instructor Companion chat over one recorded rec -- the ONLY page that may call a
-                                        model, only via CompanionAgent, only when OPENAI_API_KEY is set (else it restates
-                                        the record). test_chain enforces this: every other c_sync file stays agent-free. Home = "noise to curriculum"
+                                        Instructor Companion chat over one recorded rec, via CompanionAgent, only when
+                                        OPENAI_API_KEY is set (else it restates the record). ui_fix.py is the ONLY other
+                                        file that may call a model (FixAgent only, only on a button press). test_chain
+                                        enforces this: every other c_sync file stays agent-free.
+                                        Decision page, below the plan: "The proposed fix" (ui_fix.py; update_existing_material
+                                        recs only; "Draft the fix" -> before/after of the lab cell, labelled "Draft · not
+                                        applied", never applied) then "Your decision" (ui_review.py, HUMAN IN THE LOOP:
+                                        Approve / Request changes / Reject + note, optionally with the draft attached).
+                                        Decisions go to REVIEWS_PATH (default 01_data/reviews.json, GITIGNORED, local only:
+                                        not shared with the team); the status shows as a pill on the Decision header and
+                                        each Dashboard card. Home = "noise to curriculum"
                                         squares (area ~ real counts). Radar = scanner beam, nodes flash as it passes. Verify =
                                         collapsible evidence cards, stars ONLY from the recorded github_lookup note, verify_release
                                         green only on CONFIRMED. Evaluate hides scores behind a button. Decide's evidence chain
@@ -154,6 +163,13 @@ c_sync/                                C-SYNC, THE ONLY UI: Streamlit (`python -
                                         search_curriculum (local vectorstore) + github_lookup/verify_release forced
                                         TOOL_CACHE_ONLY. curriculum_state() keeps searched / FAILED / skipped / no-trace
                                         apart. No key -> offline_reply(); model failure -> MODE_ERROR, never an answer
+02_src/agents/fix.py                   FixAgent: drafts the fix for ONE update_existing_material rec. full_cell() pulls the
+                                        whole cell from Chroma (falls back to the stored excerpt, flagged from_excerpt);
+                                        release_evidence() = matching signal summaries + verification notes. The prompt
+                                        forbids inventing a replacement API and keeps `# YOUR CODE HERE` placeholders;
+                                        new_names() flags identifiers in the draft found in neither the cell nor the
+                                        evidence. can_fix=False is a valid answer. No key -> MODE_OFFLINE (no draft);
+                                        model failure -> MODE_ERROR, never a draft. The draft is shown, never written anywhere
 02_src/agents/curriculum.py            RAG search agent; has search_failed flag + curriculum_checked() tri-state
 02_src/agents/evaluation.py            Deterministic _maturity_score / _relevance_score; model only writes rationale.
                                         Includes aldanah's lab-threshold change (77732ba, merged 87e10f4): the committed
@@ -161,7 +177,8 @@ c_sync/                                C-SYNC, THE ONLY UI: Streamlit (`python -
                                         update_existing_material (langsmith-sdk v0.14.0, langchain==1.4.2, openai-python v3.14.0)
 02_src/agents/recommendation.py        Orchestrator; tier-selection gates (see Key Decisions)
 02_src/agents/test_chain.py            Offline test suite — 0 API calls (blanks OPENAI_API_KEY at import, so a real key in
-                                        .env is never used). Currently 228 passed, 0 skipped (section 17 = companion)
+                                        .env is never used). Currently 243 passed, 0 skipped (section 17 = companion,
+                                        18 = fix drafter + review panel)
                                         (sections 1-2, written for the deterministic verifier, run again; section 15,
                                         the walkthrough + API routes, was removed with app.py and ui/)
 02_src/tests/test_verification.py      14 offline VerificationAgent tests (from PR #1, adapted to the restored
@@ -296,7 +313,7 @@ script, before trusting a validation run on a non-default dataset.
      flag that `VerifiedTrend` does not have. `curriculum.precision_at_3` needs the agent's top-3 candidates, but
      `CurriculumAgent` exposes only the one selected match. Both require a code change first.
 - **Promptfoo behavioral suite (`04_eval/promptfooconfig.yaml`) has never been run** — blocked by Node version
-  (need 22.22+, machine has 21.6.1). Decided to accept this gap given time constraints; test_chain.py (196 passed) +
+  (need 22.22+, machine has 21.6.1). Decided to accept this gap given time constraints; test_chain.py (243 passed) +
   the written config + gold-set eval numbers are the evaluation answer for now.
 - **Content-Type Agent (proposed, not built):** would classify a signal as release/announcement/case_study/
   self_promotion/opinion before it reaches the tier gates. Would fix false positives from Show HN self-promotion
@@ -309,6 +326,10 @@ script, before trusting a validation run on a non-default dataset.
   other hits (a real live failure). It checks label TYPE, not which item: [E3] for an [E4] fact passes. Known:
   [R] gets over-used for the curriculum conclusion (the outcome line has no label of its own). No eval of answer
   quality exists yet.
+- **Fix drafter (FixAgent) built (2026-09-27), NEVER run live.** Its first live press returned 429
+  (organization_spend_limit_exceeded, the blocker below), and the UI correctly showed the error + "Try again".
+  Only the offline paths are tested. Before demoing it, draft once on the langchain-core 1.6.4 rec and have a
+  person check the proposed code against the library docs. No eval of draft quality exists.
 
 ## Current blocker
 
