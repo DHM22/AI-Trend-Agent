@@ -54,6 +54,29 @@ Course slides are excluded from Git because of their size and redistribution
 restrictions. Place downloaded PDF, PPTX, or notebook files in the matching
 `01_data/curriculum/week_NN/` directory.
 
+## Run with Docker
+
+With [Docker](https://docs.docker.com/get-docker/) installed, one command builds
+and starts C-Sync on the recorded run:
+
+```powershell
+docker compose up --build
+```
+
+Then open http://localhost:8501. No API key is needed to browse the recorded
+run. For the Ask page and "Draft the fix", put `OPENAI_API_KEY` in `.env`
+before starting; the container reads it at start-up and it is never copied into
+the image. Those two pages also search the local course index, so build
+`vectorstore/` first (see Curriculum ingestion below); it is mounted into the
+container, not baked in. Instructor decisions are kept in the `reviews` volume
+and survive restarts.
+
+Run the offline test suite in the same image:
+
+```powershell
+docker compose run --rm -w /app c-sync python 02_src/agents/test_chain.py
+```
+
 ## Quickstart without an API key
 
 Replay the committed run. This makes zero API calls:
