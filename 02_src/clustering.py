@@ -55,6 +55,37 @@ DEFAULT_THRESHOLD = 0.75
 VERSION = re.compile(r"\bv?\d+\.\d+(\.\d+)?([ab]|rc)?\d*\b")
 
 
+def claimed_version(signal: RawSignal) -> str | None:
+    """The explicit version a signal claims, normalised, or None.
+
+    Taken from the TITLE only ('owner/repo: v1.0.0', 'pkg==2.0.0', 'Foo 5.2').
+    The summary is not used: it often mentions neighbouring versions ("since
+    1.3.18") that are not the event's own version.
+    """
+    match = VERSION.search(signal.title)
+    return re.sub(r"^v", "", match.group(0).lower()) if match else None
+
+
+def _version_conflict(signal: RawSignal, cluster: TrendCluster) -> bool:
+    """True if the signal names a different explicit version than the cluster.
+
+    Two releases of the same repo (openai-python v3.11.0 vs v9.0.0) and two
+    unrelated releases that merely share an org token (langgraph v1.0.0 vs
+    langchain==2.0.0) are DIFFERENT events, not one. They must not share a
+    cluster -- otherwise one missing release sinks the genuine sibling and one
+    confirmed release lifts the fabricated one. This keys on the version string
+    in the signal, so it generalises to any product without a curated repo list.
+    Signals with no explicit version (blog posts, announcements) never conflict,
+    so genuine cross-source pairs (a release + its blog post) still merge.
+    """
+    version = claimed_version(signal)
+    if version is None:
+        return False
+    return any(other != version
+               for other in (claimed_version(s) for s in cluster.signals)
+               if other is not None)
+
+
 def normalise(title: str, strip_prefix: bool = False) -> str:
     """Reduce a title to the part that carries meaning."""
     text = title
@@ -198,7 +229,7 @@ def cluster_signals(signals: list[RawSignal],
         # PASS 1: does this share enough rare identifiers with a cluster?
         if sig_idents:
             for cluster, idents in zip(clusters, cluster_idents):
-                if len(sig_idents & idents) >= min_shared:
+                if len(sig_idents & idents) >= min_shared and not _version_conflict(signal, cluster):
                     cluster.signals.append(signal)
                     # do NOT expand the cluster's identifier set. If it grows
                     # as signals join, the cluster becomes a magnet that
@@ -218,7 +249,8 @@ def cluster_signals(signals: list[RawSignal],
                 if idents:
                     continue
                 rep = normalise(cluster.representative_title, strip_prefix)
-                if difflib.SequenceMatcher(None, key, rep).ratio() >= threshold:
+                if (difflib.SequenceMatcher(None, key, rep).ratio() >= threshold
+                        and not _version_conflict(signal, cluster)):
                     cluster.signals.append(signal)
                     placed = True
                     break
