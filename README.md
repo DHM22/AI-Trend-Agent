@@ -35,7 +35,7 @@ is the work C-sync automates.
 ## How it works
 
 <p align="center">
-  <img src="03_assets/diagrams/architecture.png" alt="Architecture: monitoring and clustering feed four agents, then the C-Sync dashboard, the Instructor Companion, and the instructor who approves" width="900">
+  <img src="03_assets/diagrams/architecture.png" alt="Architecture: monitoring and clustering feed four agents; the C-Sync dashboard, the fix drafter and the Instructor Companion lead to the instructor who approves" width="900">
 </p>
 
 | Stage | What happens | Tools |
@@ -47,6 +47,7 @@ is the work C-sync automates.
 | Agent 3: Evaluation | *How much does it matter?* Maturity and relevance | none |
 | Agent 4: Recommendation | *What should change?* One of five action tiers, plus a plan | none |
 | Agent 5: Instructor Companion | Answers an instructor's questions about one recommendation, with citations | `search_curriculum`, GitHub (cache only) |
+| Agent 6: Fix drafter | *What is the fix?* On request, drafts the changed lab cell for an "update existing material" recommendation, from the full cell and the release notes. A draft only, never applied | course index (full cell), release evidence |
 
 The five action tiers are `watch`, `update_existing_material`,
 `add_optional_content`, `add_new_lesson` and `investigate_larger_change`.
@@ -161,6 +162,10 @@ python 02_src/curriculum_ingest.py --curriculum 01_data/curriculum --db ./vector
 python 02_src/curriculum_ingest.py --db ./vectorstore --query "chunking" --week 2
 ```
 
+The submission ZIP already contains a prebuilt `vectorstore/`, so the Ask page
+and "Draft the fix" work from the ZIP without this step. The course files
+themselves are not included.
+
 ## Testing and evaluation
 
 ```powershell
@@ -234,6 +239,10 @@ citations and tiers, and a missing label is never counted as zero. See
 c_sync/                     C-sync, the interface (Streamlit)
 Dockerfile, docker-compose.yml
 ```
+
+Beyond the five standard items (`01_data/`, `02_src/`, `03_assets/`,
+`requirements.txt`, `README.md`), `04_eval/` holds the evaluation harness,
+`c_sync/` the interface, and the Docker files run it in a container.
 
 Generated and private files (`vectorstore/`, `.env`, caches, course material,
 saved decisions) are excluded by `.gitignore`, and from the Docker image by
